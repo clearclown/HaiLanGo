@@ -222,7 +222,7 @@ flutter run
 - [8. 間隔反復学習SRS](docs/featureRDs/8_間隔反復学習SRS.md)
 - [9. 単語帳機能](docs/featureRDs/9_単語帳機能.md)
 - [10. 学習統計ダッシュボード](docs/featureRDs/10_学習統計ダッシュボード.md)
-- [11. 決済統合Stripe](docs/featureRDs/11_決済統合Stripe.md)
+- [11. 決済統合Stripe](docs/featureRDs/11_決済統合Stripe.md) ✅ **実装完了**
 - [12. 辞書API統合](docs/featureRDs/12_辞書API統合.md)
 - [13. OCR結果手動修正](docs/featureRDs/13_OCR結果手動修正.md)
 - [14. 会話パターン抽出](docs/featureRDs/14_会話パターン抽出.md)
