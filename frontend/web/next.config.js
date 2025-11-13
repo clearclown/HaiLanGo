@@ -2,9 +2,12 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  experimental: {
-    appDir: true,
+  images: {
+    domains: ['example.com'],
   },
-}
+  experimental: {
+    typedRoutes: true,
+  },
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

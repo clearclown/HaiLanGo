@@ -1,0 +1,12 @@
+{
+  "text": "Здравствуйте! Это пример текста из OCR.",
+  "detected_language": "ru",
+  "confidence": 0.95,
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "Здравствуйте! Это пример текста из OCR.",
+      "confidence": 0.95
+    }
+  ]
+}
