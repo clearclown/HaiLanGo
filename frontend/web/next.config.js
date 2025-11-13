@@ -2,10 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  images: {
+    domains: ['example.com'],
+  },
   experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb',
-    },
+    typedRoutes: true,
   },
 };
 

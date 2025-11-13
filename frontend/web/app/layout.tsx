@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'HaiLanGo - AI言語学習プラットフォーム',
-  description: '既存の言語学習本をAI技術で最大限に活用する革新的な学習プラットフォーム',
+  title: 'HaiLanGo - AI-Powered Language Learning',
+  description: '既存の言語学習本 × AI技術 = 個人に最適化された能動的な学習体験',
 };
 
 export default function RootLayout({
