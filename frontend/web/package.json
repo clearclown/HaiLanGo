@@ -3,29 +3,38 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
+    "dev": "next dev -H 0.0.0.0",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 0.0.0.0",
     "lint": "biome check .",
     "format": "biome format --write .",
     "type-check": "tsc --noEmit",
-    "test:unit": "vitest",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test": "vitest && playwright test"
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "next": "^14.2.0",
+    "next": "^14.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.0",
-    "@playwright/test": "^1.48.0",
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@vitejs/plugin-react": "^4.3.0",
-    "typescript": "^5.0.0",
-    "vitest": "^2.1.0"
+    "@biomejs/biome": "^1.4.1",
+    "@playwright/test": "^1.40.1",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/user-event": "^14.5.1",
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.46",
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^1.1.0",
+    "autoprefixer": "^10.4.16",
+    "jsdom": "^23.0.1",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
   }
 }

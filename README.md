@@ -4,6 +4,7 @@
 
 📚 既存の言語学習本 × 🤖 AI技術 = 🚀 個人に最適化された能動的な学習体験
 
+[![Tests](https://github.com/clearclown/HaiLanGo/actions/workflows/test.yml/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/test.yml)
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![Next.js](https://img.shields.io/badge/Next.js-14+-000000?style=flat&logo=next.js)](https://nextjs.org)
 [![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?style=flat&logo=flutter)](https://flutter.dev)
@@ -222,7 +223,7 @@ flutter run
 - [8. 間隔反復学習SRS](docs/featureRDs/8_間隔反復学習SRS.md)
 - [9. 単語帳機能](docs/featureRDs/9_単語帳機能.md)
 - [10. 学習統計ダッシュボード](docs/featureRDs/10_学習統計ダッシュボード.md)
-- [11. 決済統合Stripe](docs/featureRDs/11_決済統合Stripe.md)
+- [11. 決済統合Stripe](docs/featureRDs/11_決済統合Stripe.md) ✅ **実装完了**
 - [12. 辞書API統合](docs/featureRDs/12_辞書API統合.md)
 - [13. OCR結果手動修正](docs/featureRDs/13_OCR結果手動修正.md)
 - [14. 会話パターン抽出](docs/featureRDs/14_会話パターン抽出.md)
@@ -254,9 +255,10 @@ flutter run
 - [ ] TTS基本機能（主要言語5つ）
 - [ ] 簡易な単語帳機能
 - [ ] Web版のみ
+- [x] **会話パターン自動抽出** ✅
 
 ### Phase 2: コア機能（2-3ヶ月）
-- [ ] STT + 発音評価
+- [x] STT + 発音評価 ✅ 実装完了
 - [ ] ページバイページ学習モード
 - [ ] 間隔反復学習アルゴリズム
 - [ ] モバイルアプリ（Flutter）
