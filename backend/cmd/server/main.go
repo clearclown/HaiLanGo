@@ -11,13 +11,25 @@ import (
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/clearclown/HaiLanGo/backend/internal/service"
 	"github.com/clearclown/HaiLanGo/backend/pkg/jwt"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 func main() {
+	// 環境変数を読み込み
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: .env file not found, using environment variables")
+	}
+
 	// 環境変数の読み込み
 	port := getEnv("BACKEND_PORT", "8080")
 	dbURL := getEnv("DATABASE_URL", "postgresql://HaiLanGo:password@localhost:5432/HaiLanGo_dev?sslmode=disable")
+	storagePath := getEnv("STORAGE_PATH", "./storage")
+
+	// ストレージディレクトリを作成
+	if err := os.MkdirAll(storagePath, 0755); err != nil {
+		log.Fatalf("ストレージディレクトリ作成エラー: %v", err)
+	}
 
 	// データベース接続
 	db, err := sql.Open("postgres", dbURL)
@@ -50,11 +62,12 @@ func main() {
 	authHandler := handler.NewAuthHandler(authService)
 
 	// ルーターのセットアップ
-	r := router.SetupRouter(authHandler)
+	r := router.SetupRouter(authHandler, storagePath)
 
 	// サーバー起動
 	addr := fmt.Sprintf("0.0.0.0:%s", port)
-	log.Printf("サーバーを起動します: %s", addr)
+	log.Printf("HaiLanGo APIサーバーを起動します: %s", addr)
+	log.Printf("ストレージパス: %s", storagePath)
 
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("サーバー起動エラー: %v", err)
