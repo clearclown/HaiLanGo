@@ -9,6 +9,10 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?style=flat&logo=flutter)](https://flutter.dev)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+[![Backend CI](https://github.com/clearclown/HaiLanGo/workflows/Backend%20CI/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/backend.yml)
+[![Frontend CI](https://github.com/clearclown/HaiLanGo/workflows/Frontend%20CI/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/frontend.yml)
+[![CI](https://github.com/clearclown/HaiLanGo/workflows/CI/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/ci.yml)
+
 </div>
 
 ## 🎯 プロジェクト概要
