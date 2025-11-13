@@ -1,0 +1,156 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'claude/**'
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    name: Test and Lint
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: HaiLanGo
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: HaiLanGo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: backend/go.sum
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          if [ -f go.mod ]; then
+            go mod download
+          else
+            echo "go.mod not found, skipping dependency installation"
+          fi
+
+      - name: Run tests with mocks
+        working-directory: ./backend
+        run: |
+          if [ -f go.mod ]; then
+            go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+          else
+            echo "No Go modules found, skipping tests"
+            exit 0
+          fi
+        env:
+          DATABASE_URL: postgresql://HaiLanGo:test_password@localhost:5432/HaiLanGo_test?sslmode=disable
+          REDIS_URL: redis://localhost:6379
+          USE_MOCK_APIS: true
+          TEST_USE_MOCKS: true
+          APP_ENV: test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: success()
+        with:
+          files: ./backend/coverage.out
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        if: always()
+        with:
+          version: latest
+          working-directory: ./backend
+          skip-pkg-cache: true
+          skip-build-cache: true
+          args: --timeout=5m
+        continue-on-error: true
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build server
+        working-directory: ./backend
+        run: |
+          if [ -f cmd/server/main.go ]; then
+            go build -v -o bin/server ./cmd/server
+          else
+            echo "Server entry point not found, skipping build"
+            exit 0
+          fi
+
+      - name: Build migrate
+        working-directory: ./backend
+        run: |
+          if [ -f cmd/migrate/main.go ]; then
+            go build -v -o bin/migrate ./cmd/migrate
+          else
+            echo "Migrate entry point not found, skipping build"
+            exit 0
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: backend-binaries
+          path: |
+            backend/bin/server
+            backend/bin/migrate
+          retention-days: 7
