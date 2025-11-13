@@ -153,6 +153,10 @@ cd HaiLanGo
 ```bash
 cp .env.example .env
 # .envファイルを編集して必要なAPIキーを設定
+#
+# 重要: APIキーがなくても開発・テストは可能です！
+# USE_MOCK_APIS=true を設定すると自動的にモックが使用されます
+# 詳細は docs/mocking_strategy.md を参照してください
 ```
 
 ### 3. 開発環境の起動
@@ -198,6 +202,30 @@ flutter run
 - [要件定義書](docs/requirements_definition.md) - プロジェクトの全体像と機能要件
 - [UI/UX設計書](docs/ui_ux_design_document.md) - 画面設計とワイヤーフレーム
 - [教師モード技術仕様書](docs/teacher_mode_technical_spec.md) - 自動学習モードの詳細仕様
+- [モック構築戦略](docs/mocking_strategy.md) - APIキーなしでもテスト可能な仕組み
+
+### 機能実装RD（Feature Requirements Documents）
+
+各機能の詳細な実装仕様は `docs/featureRDs/` を参照してください：
+
+- [1. ユーザー認証](docs/featureRDs/1_ユーザー認証.md)
+- [2. 書籍アップロード](docs/featureRDs/2_書籍アップロード.md)
+- [3. OCR処理](docs/featureRDs/3_OCR処理.md)
+- [4. TTS音声読み上げ](docs/featureRDs/4_TTS音声読み上げ.md)
+- [5. STT発音評価](docs/featureRDs/5_STT発音評価.md)
+- [6. ページバイページ学習モード](docs/featureRDs/6_ページバイページ学習モード.md)
+- [7. 教師モード自動学習](docs/featureRDs/7_教師モード自動学習.md)
+- [8. 間隔反復学習SRS](docs/featureRDs/8_間隔反復学習SRS.md)
+- [9. 単語帳機能](docs/featureRDs/9_単語帳機能.md)
+- [10. 学習統計ダッシュボード](docs/featureRDs/10_学習統計ダッシュボード.md)
+- [11. 決済統合Stripe](docs/featureRDs/11_決済統合Stripe.md)
+- [12. 辞書API統合](docs/featureRDs/12_辞書API統合.md)
+- [13. OCR結果手動修正](docs/featureRDs/13_OCR結果手動修正.md)
+- [14. 会話パターン抽出](docs/featureRDs/14_会話パターン抽出.md)
+- [15. WebSocketリアルタイム通知](docs/featureRDs/15_WebSocketリアルタイム通知.md)
+- [16. ホーム画面実装](docs/featureRDs/16_ホーム画面実装.md)
+- [17. 設定画面実装](docs/featureRDs/17_設定画面実装.md)
+- [18. GitHub CI設定](docs/featureRDs/18_GitHub_CI設定.md)
 
 ## 💰 料金プラン
 
@@ -253,8 +281,15 @@ flutter run
 
 ### コーディング規約
 - Go: `gofmt`, `golangci-lint`を使用
-- TypeScript: Biome.jsでフォーマット
+- TypeScript: Biome.jsでフォーマット・リント
+- テスト: Vitest（単体・統合）、Playwright（E2E）
 - コミットメッセージ: Conventional Commits形式
+
+### テスト戦略
+- **TDD原則**: すべての機能はテストファーストで実装
+- **モックシステム**: APIキーなしでもテスト可能（`USE_MOCK_APIS=true`）
+- **CI/CD**: GitHub Actionsで自動テスト実行
+- 詳細は [モック構築戦略](docs/mocking_strategy.md) を参照
 
 ## 📄 ライセンス
 

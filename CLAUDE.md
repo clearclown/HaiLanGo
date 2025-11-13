@@ -10,6 +10,8 @@
 - 要件定義書: @docs/requirements_definition.md
 - UI/UX設計書: @docs/ui_ux_design_document.md
 - 教師モード技術仕様書: @docs/teacher_mode_technical_spec.md
+- モック構築戦略: @docs/mocking_strategy.md
+- 機能実装RD: @docs/featureRDs/ （各機能の詳細仕様）
 
 ## 技術スタック
 
@@ -19,9 +21,11 @@
 - **コンテナ**: Podman（優先）または Docker
 
 ### フロントエンド
-- **Web**: ppnpm使用, Next.js , TypeScript, React, TailwindCSS, ShadCN/UI
-- **Mobile**: Flutter
-- **リンター/フォーマッター**: Biome.js (Web), 単体テスト結合テスト : Vitest, PlayWrite使用, `dart format` (Mobile)
+- **Web**: pnpm使用, Next.js 14+, TypeScript, React, TailwindCSS, ShadCN/UI
+- **Mobile**: Flutter 3.0+
+- **リンター/フォーマッター**: Biome.js (Web), `dart format` (Mobile)
+- **テスト**: Vitest（単体・統合テスト）, Playwright（E2Eテスト）
+- **CI/CD**: GitHub Actions
 
 ### インフラ
 - **開発環境**: Podman Compose
@@ -241,29 +245,76 @@ podman exec -it HaiLanGo-redis redis-cli FLUSHALL
 
 ## 環境変数
 
-### 必須の環境変数
+### 環境変数の設定
+
+`.env.example` ファイルをコピーして `.env` を作成してください：
+
+```bash
+cp .env.example .env
+```
+
+### 重要な設定
+
+#### APIキーなしでも開発可能
+
+**APIキーがなくても開発・テストは可能です！**
+
+```bash
+# .envファイルに追加
+USE_MOCK_APIS=true
+```
+
+この設定により、すべての外部API呼び出しが自動的にモックに置き換わります。
+詳細は [モック構築戦略](docs/mocking_strategy.md) を参照してください。
+
+#### 必須の環境変数（最小構成）
+
 ```.env
+# アプリケーション環境
+APP_ENV=development
+
+# サーバーポート（ポート競合時は変更）
+BACKEND_PORT=8080
+FRONTEND_PORT=3000
+
 # データベース
 DATABASE_URL=postgresql://HaiLanGo:password@localhost:5432/HaiLanGo_dev
 REDIS_URL=redis://localhost:6379
 
-# AI APIs
-GOOGLE_CLOUD_API_KEY=your_key_here
-OPENAI_API_KEY=your_key_here
-ANTHROPIC_API_KEY=your_key_here
-
-# Stripe
-STRIPE_SECRET_KEY=your_key_here
-STRIPE_PUBLISHABLE_KEY=your_key_here
-
-# JWT
-JWT_SECRET=your_secret_here
+# JWT（開発用の簡単な値でも可）
+JWT_SECRET=dev-secret-key-change-in-production
 
 # フロントエンド
 NEXT_PUBLIC_API_URL=http://localhost:8080
 
-# その他, 環境変数にポート番号を記してほしい．ポート競合が発生する可能性がある．
+# モック使用（APIキーなしで開発する場合）
+USE_MOCK_APIS=true
 ```
+
+#### オプションの環境変数（実APIを使用する場合）
+
+```.env
+# Google Cloud APIs
+GOOGLE_CLOUD_VISION_API_KEY=your_key_here
+GOOGLE_CLOUD_TTS_API_KEY=your_key_here
+GOOGLE_CLOUD_STT_API_KEY=your_key_here
+
+# Azure Computer Vision
+AZURE_COMPUTER_VISION_ENDPOINT=https://your-resource.cognitiveservices.azure.com/
+AZURE_COMPUTER_VISION_API_KEY=your_key_here
+
+# OpenAI
+OPENAI_API_KEY=your_key_here
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_your_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
+
+# その他のAPIキー
+# 詳細は .env.example を参照
+```
+
+**注意**: `.env` ファイルはGitにコミットしないでください（`.gitignore`に含まれています）
 
 ## 開発ワークフロー
 
@@ -302,9 +353,17 @@ docs: README.mdにクイックスタートを追加
 
 ## テスト
 
+### テスト戦略
+
+**TDD原則を徹底**: すべての機能はテストファーストで実装します。
+
+**モックシステム**: APIキーなしでもテスト可能です。テスト実行時は自動的にモックが使用されます。
+
+詳細は [モック構築戦略](docs/mocking_strategy.md) を参照してください。
+
 ### バックエンド（Go）
 ```bash
-# すべてのテストを実行
+# すべてのテストを実行（自動的にモック使用）
 go test ./...
 
 # カバレッジ付き
@@ -315,18 +374,28 @@ go test ./internal/service/...
 
 # ベンチマーク
 go test -bench=. ./...
+
+# 実APIを使用したテスト（APIキー必要）
+USE_MOCK_APIS=false go test ./...
 ```
 
 ### フロントエンド（Next.js）
 ```bash
-# Jestテスト
-pnpm test
+# Vitest単体・統合テスト
+pnpm run test:unit
 
 # E2Eテスト（Playwright）
 pnpm run test:e2e
 
+# すべてのテストを実行
+pnpm test
+
 # カバレッジ
 pnpm run test:coverage
+
+# BiomeJSリント・フォーマット
+pnpm run lint
+pnpm run format
 ```
 
 ### モバイル（Flutter）
@@ -420,10 +489,25 @@ pnpm audit fix
 
 ## AI APIの使用
 
+### モックシステム
+
+**APIキーなしでも開発・テスト可能**: `USE_MOCK_APIS=true` を設定すると、すべての外部APIが自動的にモックに置き換わります。
+
+```bash
+# 開発時にモックを使用
+USE_MOCK_APIS=true go run cmd/server/main.go
+
+# テスト時にモックを使用（デフォルト）
+go test ./...
+```
+
+詳細は [モック構築戦略](docs/mocking_strategy.md) を参照してください。
+
 ### コスト管理
 - **キャッシュを最大限活用**（Redis + CDN）
 - **レート制限を設定**（ユーザーごと、APIごと）
 - **バッチ処理**で効率化
+- **開発・テスト時はモックを使用**してコスト削減
 
 ### エラーハンドリング
 ```go
@@ -440,6 +524,23 @@ func callAIAPI(ctx context.Context, request APIRequest) (*APIResponse, error) {
         }
     }
     return nil, errors.New("max retries exceeded")
+}
+```
+
+### APIクライアントの実装パターン
+
+```go
+// インターフェース定義
+type OCRClient interface {
+    ProcessImage(ctx context.Context, imageData []byte) (*OCRResult, error)
+}
+
+// ファクトリー関数（環境変数に基づいて切り替え）
+func NewOCRClient() OCRClient {
+    if os.Getenv("USE_MOCK_APIS") == "true" {
+        return NewMockOCRClient()
+    }
+    return NewGoogleVisionClient(os.Getenv("GOOGLE_CLOUD_VISION_API_KEY"))
 }
 ```
 
