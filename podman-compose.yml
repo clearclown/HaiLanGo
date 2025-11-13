@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: docker.io/library/postgres:15-alpine
+    container_name: hailango-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-HaiLanGo_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-HaiLanGo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-HaiLanGo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: docker.io/library/redis:7-alpine
+    container_name: hailango-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Backend (Go)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hailango-backend
+    environment:
+      # Application
+      APP_ENV: ${APP_ENV:-development}
+      APP_NAME: ${APP_NAME:-HaiLanGo}
+      DEBUG: ${DEBUG:-true}
+
+      # Server
+      BACKEND_PORT: ${BACKEND_PORT:-8080}
+      SERVER_HOST: ${SERVER_HOST:-0.0.0.0}
+
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-HaiLanGo}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-HaiLanGo_dev}
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+
+      # Mock APIs
+      USE_MOCK_APIS: ${USE_MOCK_APIS:-true}
+      MOCK_DATA_DIR: ${MOCK_DATA_DIR:-./mocks/data}
+
+      # OCR
+      OCR_PROVIDER: ${OCR_PROVIDER:-google_vision}
+      GOOGLE_CLOUD_VISION_API_KEY: ${GOOGLE_CLOUD_VISION_API_KEY:-}
+      AZURE_COMPUTER_VISION_ENDPOINT: ${AZURE_COMPUTER_VISION_ENDPOINT:-}
+      AZURE_COMPUTER_VISION_API_KEY: ${AZURE_COMPUTER_VISION_API_KEY:-}
+
+      # TTS/STT
+      GOOGLE_CLOUD_TTS_API_KEY: ${GOOGLE_CLOUD_TTS_API_KEY:-}
+      GOOGLE_CLOUD_STT_API_KEY: ${GOOGLE_CLOUD_STT_API_KEY:-}
+
+      # OpenAI
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+      # Stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      - ./backend:/app
+      - ./mocks:/app/mocks
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend/web
+      dockerfile: Dockerfile
+    container_name: hailango-frontend
+    environment:
+      # Next.js
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      NEXT_PUBLIC_USE_MOCK_APIS: ${USE_MOCK_APIS:-true}
+
+      # Server
+      PORT: ${FRONTEND_PORT:-3000}
+      HOSTNAME: ${SERVER_HOST:-0.0.0.0}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend/web:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
