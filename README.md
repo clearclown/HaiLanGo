@@ -90,11 +90,14 @@ HaiLanGoは、手持ちの言語学習本をAI技術で最大限に活用する�
 - **状態管理**: React Context / Zustand (Web), Riverpod (Flutter)
 
 ### AI / 外部API
-- **OCR**: Google Vision API / Azure Computer Vision
+- **OCR**: Google Vision API / Azure Computer Vision / MarkPDFdown ⭐ NEW
 - **TTS**: Google Cloud TTS / Amazon Polly / ElevenLabs
-- **STT**: Google Cloud STT / Whisper API
+- **STT**: Google Cloud STT / Whisper API / OpenAI Realtime API ⭐ NEW
+- **リアルタイム対話**: OpenAI Realtime API / gpt-realtime ⭐ NEW
+- **翻訳**: DeepL API / Google Translate API
 - **辞書**: Oxford Dictionary API / Wiktionary API
 - **決済**: Stripe
+- **詳細**: [API統合提案書](docs/api_integration_proposal.md) を参照
 
 ### インフラ
 - **初期**: オンプレミス（Podman / Docker Compose）
@@ -203,6 +206,7 @@ flutter run
 - [UI/UX設計書](docs/ui_ux_design_document.md) - 画面設計とワイヤーフレーム
 - [教師モード技術仕様書](docs/teacher_mode_technical_spec.md) - 自動学習モードの詳細仕様
 - [モック構築戦略](docs/mocking_strategy.md) - APIキーなしでもテスト可能な仕組み
+- [API統合提案書](docs/api_integration_proposal.md) - 統合可能な外部API・ツールの包括的調査
 
 ### 機能実装RD（Feature Requirements Documents）
 

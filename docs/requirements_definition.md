@@ -186,11 +186,21 @@
     - GCP Cloud Run（コンテナ）
 
 ### 4.5 外部API
+
+#### 現在計画中のAPI
 - **OCR**：Google Vision API / Azure Computer Vision / Tesseract（オープンソース）
 - **TTS**：Google Cloud TTS / Amazon Polly / ElevenLabs（プレミアム）
 - **STT**：Google Cloud STT / Whisper API
 - **辞書**：Oxford Dictionary API / Free Dictionary API / Wiktionary API
 - **決済**：Stripe
+
+#### 新規検討中のAPI（詳細は api_integration_proposal.md を参照）
+- **リアルタイム音声対話**：OpenAI Realtime API / gpt-realtime ⭐ NEW
+- **PDF処理**：MarkPDFdown（GitHub）⭐ NEW
+- **翻訳**：DeepL API
+- **ストレージ**：Cloudflare R2
+- **監視**：Sentry
+- **AI生成**：Anthropic Claude API
 
 ---
 

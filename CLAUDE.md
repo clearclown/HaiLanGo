@@ -11,6 +11,7 @@
 - UI/UX設計書: @docs/ui_ux_design_document.md
 - 教師モード技術仕様書: @docs/teacher_mode_technical_spec.md
 - モック構築戦略: @docs/mocking_strategy.md
+- API統合提案書: @docs/api_integration_proposal.md ⭐ NEW
 - 機能実装RD: @docs/featureRDs/ （各機能の詳細仕様）
 
 ## 技術スタック
