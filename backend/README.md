@@ -143,6 +143,40 @@ fmt.Printf("Detected Language: %s\n", page.DetectedLang)
 fmt.Printf("Confidence: %.2f\n", page.OCRConfidence)
 ```
 
+#### 書籍全体の処理（複数ページ並列処理）
+
+```go
+import (
+    "context"
+    "github.com/google/uuid"
+    ocrService "github.com/clearclown/HaiLanGo/backend/internal/service/ocr"
+)
+
+ctx := context.Background()
+bookID := uuid.New()
+
+// ページデータを準備
+pages := []ocrService.PageData{
+    {PageID: uuid.New(), ImageData: []byte("page1 data")},
+    {PageID: uuid.New(), ImageData: []byte("page2 data")},
+    {PageID: uuid.New(), ImageData: []byte("page3 data")},
+}
+
+languages := []string{"ru", "en"}
+maxConcurrency := 5 // 最大5ページを並列処理
+
+// 書籍全体をOCR処理
+result, err := service.ProcessBook(ctx, bookID, pages, languages, maxConcurrency)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Total Pages: %d\n", result.TotalPages)
+fmt.Printf("Processed: %d\n", result.ProcessedPages)
+fmt.Printf("Failed: %d\n", result.FailedPages)
+fmt.Printf("Processing Time: %v\n", result.ProcessingTime)
+```
+
 ### モックシステム
 
 APIキーがなくても開発・テストが可能です。環境変数`USE_MOCK_APIS=true`を設定すると、すべての外部API呼び出しが自動的にモックに置き換わります。
