@@ -255,7 +255,13 @@ flutter run
 - [ ] 簡易な単語帳機能
 - [ ] Web版のみ
 
-### Phase 2: コア機能（2-3ヶ月）
+### Phase 2: コア機能（2-3ヶ月） - 一部完了
+- [x] **教師モード（自動学習モード）** ✨ NEW
+  - テスト駆動開発（TDD）で実装完了
+  - フロントエンド: React/TypeScript（Next.js 14+）
+  - バックエンド: Go
+  - Media Session API対応（バックグラウンド再生）
+  - 詳細: [docs/teacher_mode_technical_spec.md](docs/teacher_mode_technical_spec.md)
 - [ ] STT + 発音評価
 - [ ] ページバイページ学習モード
 - [ ] 間隔反復学習アルゴリズム
@@ -263,7 +269,7 @@ flutter run
 - [ ] Stripe決済統合
 
 ### Phase 3: 拡張機能（3-4ヶ月）
-- [ ] 教師モード（オフライン対応）
+- [ ] 教師モードのオフライン対応
 - [ ] 辞書API統合
 - [ ] 学習分析ダッシュボード
 - [ ] マイナー言語対応拡大
