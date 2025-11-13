@@ -10,6 +10,9 @@ HaiLanGoプロジェクトにStripe決済統合を実装しました。
 
 ```
 backend/
+├── cmd/
+│   └── server/
+│       └── main.go                  # サーバーエントリーポイント
 ├── internal/
 │   ├── models/
 │   │   ├── subscription.go          # サブスクリプションモデル
@@ -20,9 +23,19 @@ backend/
 │   │       ├── stripe.go            # Stripe統合実装
 │   │       ├── mock.go              # モック実装
 │   │       └── service_test.go      # テスト
+│   ├── repository/
+│   │   └── subscription.go          # データベースリポジトリ
 │   └── api/
-│       └── payment/
-│           └── handler.go           # HTTPハンドラー
+│       ├── payment/
+│       │   ├── handler.go           # HTTPハンドラー
+│       │   ├── webhook.go           # Webhook署名検証
+│       │   └── response.go          # レスポンス標準化
+│       └── middleware/
+│           └── middleware.go        # ミドルウェア（ログ、CORS、リカバリー）
+├── migrations/
+│   ├── 001_create_subscription_tables.up.sql
+│   ├── 001_create_subscription_tables.down.sql
+│   └── README.md
 ├── go.mod
 └── go.sum
 ```
@@ -222,14 +235,47 @@ go run cmd/server/main.go
 - プラン情報取得: 100ms以内
 - Webhook処理: 即座
 
+## 追加実装内容（精査後）
+
+### サーバーエントリーポイント
+- `cmd/server/main.go` - HTTPサーバーの起動とグレースフルシャットダウン
+- ヘルスチェックエンドポイント（`/health`）
+- タイムアウト設定（読み取り: 15秒、書き込み: 15秒、アイドル: 60秒）
+
+### ミドルウェア
+- **ログ**: HTTPリクエストのログ記録（メソッド、URI、ステータスコード、レスポンス時間）
+- **リカバリー**: パニックからの回復とエラーログ
+- **CORS**: クロスオリジンリクエストの処理
+
+### データベースリポジトリ層
+- `SubscriptionRepository`: サブスクリプションのCRUD操作
+- `PlanRepository`: プランのCRUD操作
+- PostgreSQL対応の完全な実装
+
+### Webhook署名検証
+- Stripeの署名検証機能
+- モック環境では検証スキップ（開発用）
+- 不正なWebhookリクエストの拒否
+
+### レスポンス標準化
+- `ErrorResponse`: エラーレスポンスの統一フォーマット
+- `SuccessResponse`: 成功レスポンスの統一フォーマット
+- HTTPステータスコードの適切な使用
+
+### データベースマイグレーション
+- `001_create_subscription_tables.up.sql` - テーブル作成
+- `001_create_subscription_tables.down.sql` - ロールバック
+- デフォルトプランの自動挿入
+
 ## 今後の拡張
 
-- [ ] データベース統合（PostgreSQL）
 - [ ] キャッシュ機能（Redis）
 - [ ] 複数通貨対応
 - [ ] 割引クーポン機能
 - [ ] 請求書自動生成
 - [ ] 決済失敗時の自動リトライ
+- [ ] 認証ミドルウェアの追加
+- [ ] API レート制限
 
 ## 依存関係
 

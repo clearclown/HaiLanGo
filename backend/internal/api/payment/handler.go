@@ -27,7 +27,7 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/v1/payment/plans", h.ListPlans).Methods("GET")
 	r.HandleFunc("/api/v1/payment/subscription/{id}", h.GetSubscription).Methods("GET")
 	r.HandleFunc("/api/v1/payment/cancel", h.CancelSubscription).Methods("POST")
-	r.HandleFunc("/api/v1/payment/webhook", h.HandleWebhook).Methods("POST")
+	r.HandleFunc("/api/v1/payment/webhook", h.HandleWebhookWithVerification).Methods("POST")
 }
 
 // CreateSubscriptionRequest represents the request body for creating a subscription
@@ -40,43 +40,40 @@ type CreateSubscriptionRequest struct {
 func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	var req CreateSubscriptionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	userID, err := uuid.Parse(req.UserID)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	planID, err := uuid.Parse(req.PlanID)
 	if err != nil {
-		http.Error(w, "Invalid plan ID", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid plan ID")
 		return
 	}
 
 	subscription, err := h.service.CreateSubscription(r.Context(), userID, planID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(subscription)
+	respondWithJSON(w, http.StatusCreated, subscription)
 }
 
 // ListPlans handles listing all subscription plans
 func (h *Handler) ListPlans(w http.ResponseWriter, r *http.Request) {
 	plans, err := h.service.ListPlans(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(plans)
+	respondWithJSON(w, http.StatusOK, plans)
 }
 
 // GetSubscription handles retrieving a subscription by ID
@@ -86,18 +83,17 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		http.Error(w, "Invalid subscription ID", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid subscription ID")
 		return
 	}
 
 	subscription, err := h.service.GetSubscription(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		respondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(subscription)
+	respondWithJSON(w, http.StatusOK, subscription)
 }
 
 // CancelSubscriptionRequest represents the request body for canceling a subscription
@@ -110,45 +106,21 @@ type CancelSubscriptionRequest struct {
 func (h *Handler) CancelSubscription(w http.ResponseWriter, r *http.Request) {
 	var req CancelSubscriptionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	subscriptionID, err := uuid.Parse(req.SubscriptionID)
 	if err != nil {
-		http.Error(w, "Invalid subscription ID", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid subscription ID")
 		return
 	}
 
 	if err := h.service.CancelSubscription(r.Context(), subscriptionID, req.CancelAtPeriodEnd); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+	respondWithSuccess(w, nil, "Subscription canceled successfully")
 }
 
-// HandleWebhook handles Stripe webhook events
-func (h *Handler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
-	// Get event type from header
-	eventType := r.Header.Get("Stripe-Event-Type")
-	if eventType == "" {
-		eventType = r.Header.Get("X-Stripe-Event-Type")
-	}
-
-	// Read payload
-	var payload []byte
-	if _, err := r.Body.Read(payload); err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-
-	// Handle event
-	if err := h.service.HandleWebhookEvent(r.Context(), eventType, payload); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
