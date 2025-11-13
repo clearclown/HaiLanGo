@@ -51,7 +51,8 @@ func NewAudioStorage() AudioStorage {
 
 	// ディレクトリを作成
 	if !useMock {
-		os.MkdirAll(basePath, 0755)
+		// ディレクトリ作成のエラーは無視（Save時に再度作成を試みる）
+		_ = os.MkdirAll(basePath, 0755)
 	}
 
 	return storage

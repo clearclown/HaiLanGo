@@ -12,8 +12,12 @@ import (
 
 func TestMain(m *testing.M) {
 	// テスト実行時は自動的にモックを使用
-	os.Setenv("TEST_USE_MOCKS", "true")
-	os.Setenv("USE_MOCK_APIS", "true")
+	if err := os.Setenv("TEST_USE_MOCKS", "true"); err != nil {
+		panic(err)
+	}
+	if err := os.Setenv("USE_MOCK_APIS", "true"); err != nil {
+		panic(err)
+	}
 	code := m.Run()
 	os.Exit(code)
 }
