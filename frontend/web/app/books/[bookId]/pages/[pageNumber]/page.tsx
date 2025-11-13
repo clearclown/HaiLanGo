@@ -1,15 +1,32 @@
-export default function BookPageDetail({
-  params,
-}: {
-  params: { bookId: string; pageNumber: string }
-}) {
+'use client';
+
+import { PageLearning } from '@/components/learning/PageLearning';
+import { useRouter } from 'next/navigation';
+
+interface PageProps {
+  params: {
+    bookId: string;
+    pageNumber: string;
+  };
+}
+
+export default function LearningPage({ params }: PageProps) {
+  const router = useRouter();
+  const pageNumber = parseInt(params.pageNumber, 10);
+
+  // TODO: ユーザーIDを認証から取得
+  const userId = 'user-123';
+
+  const handlePageChange = (newPageNumber: number) => {
+    router.push(`/books/${params.bookId}/pages/${newPageNumber}`);
+  };
+
   return (
-    <div className="min-h-screen bg-background-secondary p-8">
-      <h1 className="text-2xl font-bold">学習ページ</h1>
-      <p className="mt-4 text-text-secondary">
-        Book ID: {params.bookId}, Page: {params.pageNumber}
-      </p>
-      <p className="mt-2 text-text-secondary">Coming soon...</p>
-    </div>
-  )
+    <PageLearning
+      bookId={params.bookId}
+      pageNumber={pageNumber}
+      userId={userId}
+      onPageChange={handlePageChange}
+    />
+  );
 }
