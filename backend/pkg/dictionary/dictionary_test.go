@@ -2,7 +2,6 @@ package dictionary
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
@@ -308,34 +307,6 @@ func (m *MockWiktionaryClient) GetName() string {
 	return "Wiktionary"
 }
 
-type MockCacheClient struct {
-	data map[string]*models.WordEntry
-}
-
-func NewMockCacheClient() *MockCacheClient {
-	return &MockCacheClient{
-		data: make(map[string]*models.WordEntry),
-	}
-}
-
 func NewMockCacheClientWithData() *MockCacheClient {
-	return &MockCacheClient{
-		data: make(map[string]*models.WordEntry),
-	}
-}
-
-func (m *MockCacheClient) Get(ctx context.Context, key string) (*models.WordEntry, error) {
-	if entry, ok := m.data[key]; ok {
-		return entry, nil
-	}
-	return nil, errors.New("not found in cache")
-}
-
-func (m *MockCacheClient) Set(ctx context.Context, key string, entry *models.WordEntry) error {
-	m.data[key] = entry
-	return nil
-}
-
-func (m *MockCacheClient) GenerateKey(word string, language string) string {
-	return word + ":" + language
+	return NewMockCacheClient()
 }
