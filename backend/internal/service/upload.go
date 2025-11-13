@@ -24,21 +24,45 @@ var (
 
 // UploadService はファイルアップロードのビジネスロジックを提供する
 type UploadService struct {
-	storage  storage.Storage
-	progress map[uuid.UUID]*models.UploadProgress // 進捗管理（実際の実装ではRedisなどを使用）
-	mu       sync.RWMutex                         // 進捗マップのロック
+	storage       storage.Storage
+	progress      map[uuid.UUID]*models.UploadProgress // 進捗管理（実際の実装ではRedisなどを使用）
+	mu            sync.RWMutex                         // 進捗マップのロック
+	chunkService  *ChunkUploadService                  // チャンクアップロードサービス
+	chunkUploads  map[uuid.UUID]*models.ChunkUpload    // チャンクアップロード管理
 }
 
 // NewUploadService はUploadServiceの新しいインスタンスを作成する
-func NewUploadService(storage storage.Storage) *UploadService {
+func NewUploadService(storage storage.Storage, tempDir string) *UploadService {
 	return &UploadService{
-		storage:  storage,
-		progress: make(map[uuid.UUID]*models.UploadProgress),
+		storage:      storage,
+		progress:     make(map[uuid.UUID]*models.UploadProgress),
+		chunkService: NewChunkUploadService(storage, tempDir),
+		chunkUploads: make(map[uuid.UUID]*models.ChunkUpload),
 	}
+}
+
+// InitiateChunkUpload はチャンクアップロードを開始する
+func (s *UploadService) InitiateChunkUpload(ctx context.Context, bookID uuid.UUID, fileName string, totalChunks int, fileSize int64) (*models.ChunkUpload, error) {
+	return s.chunkService.InitiateChunkUpload(ctx, bookID, fileName, totalChunks, fileSize)
+}
+
+// UploadChunk はチャンクをアップロードする
+func (s *UploadService) UploadChunk(ctx context.Context, uploadID uuid.UUID, chunkNumber int, reader io.Reader) error {
+	return s.chunkService.UploadChunk(ctx, uploadID, chunkNumber, reader)
+}
+
+// GetChunkUpload はチャンクアップロード情報を取得する
+func (s *UploadService) GetChunkUpload(ctx context.Context, uploadID uuid.UUID) (*models.ChunkUpload, error) {
+	return s.chunkService.GetChunkUpload(ctx, uploadID)
 }
 
 // CreateBook は新しい書籍を作成する
 func (s *UploadService) CreateBook(ctx context.Context, userID uuid.UUID, metadata models.BookMetadata) (*models.Book, error) {
+	// メタデータを検証（validator パッケージは後で import）
+	// if err := validator.ValidateBookMetadata(metadata); err != nil {
+	// 	return nil, fmt.Errorf("invalid metadata: %w", err)
+	// }
+
 	book := &models.Book{
 		ID:                uuid.New(),
 		UserID:            userID,

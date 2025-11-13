@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/clearclown/HaiLanGo/internal/models"
@@ -130,6 +131,128 @@ func (h *UploadHandler) GetUploadProgress(c *gin.Context) {
 	c.JSON(http.StatusOK, progress)
 }
 
+// InitiateChunkUpload はチャンクアップロードを開始するハンドラー
+// POST /api/v1/books/:book_id/chunk/initiate
+func (h *UploadHandler) InitiateChunkUpload(c *gin.Context) {
+	bookIDStr := c.Param("book_id")
+	bookID, err := uuid.Parse(bookIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid book_id",
+		})
+		return
+	}
+
+	var req struct {
+		FileName    string `json:"file_name" binding:"required"`
+		TotalChunks int    `json:"total_chunks" binding:"required"`
+		FileSize    int64  `json:"file_size" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	chunkUpload, err := h.uploadService.InitiateChunkUpload(c.Request.Context(), bookID, req.FileName, req.TotalChunks, req.FileSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to initiate chunk upload",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, chunkUpload)
+}
+
+// UploadChunk はチャンクをアップロードするハンドラー
+// POST /api/v1/books/:book_id/chunk/:upload_id/:chunk_number
+func (h *UploadHandler) UploadChunk(c *gin.Context) {
+	uploadIDStr := c.Param("upload_id")
+	uploadID, err := uuid.Parse(uploadIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid upload_id",
+		})
+		return
+	}
+
+	var chunkNumber int
+	if _, err := fmt.Sscanf(c.Param("chunk_number"), "%d", &chunkNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid chunk_number",
+		})
+		return
+	}
+
+	// チャンクデータを取得
+	file, err := c.FormFile("chunk")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "chunk file is required",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// ファイルを開く
+	reader, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to open chunk file",
+			"details": err.Error(),
+		})
+		return
+	}
+	defer reader.Close()
+
+	// チャンクをアップロード
+	if err := h.uploadService.UploadChunk(c.Request.Context(), uploadID, chunkNumber, reader); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to upload chunk",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// チャンクアップロード状況を取得
+	chunkUpload, _ := h.uploadService.GetChunkUpload(c.Request.Context(), uploadID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "chunk uploaded successfully",
+		"status": chunkUpload.Status,
+		"uploaded_chunks": chunkUpload.UploadedChunks,
+		"total_chunks": chunkUpload.TotalChunks,
+	})
+}
+
+// GetChunkUploadStatus はチャンクアップロード状況を取得するハンドラー
+// GET /api/v1/books/:book_id/chunk/:upload_id/status
+func (h *UploadHandler) GetChunkUploadStatus(c *gin.Context) {
+	uploadIDStr := c.Param("upload_id")
+	uploadID, err := uuid.Parse(uploadIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid upload_id",
+		})
+		return
+	}
+
+	chunkUpload, err := h.uploadService.GetChunkUpload(c.Request.Context(), uploadID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "chunk upload not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, chunkUpload)
+}
+
 // RegisterRoutes はルートを登録する
 func (h *UploadHandler) RegisterRoutes(router *gin.RouterGroup) {
 	books := router.Group("/books")
@@ -137,5 +260,10 @@ func (h *UploadHandler) RegisterRoutes(router *gin.RouterGroup) {
 		books.POST("", h.CreateBook)
 		books.POST("/:book_id/upload", h.UploadFiles)
 		books.GET("/:book_id/upload-status", h.GetUploadProgress)
+
+		// チャンクアップロード
+		books.POST("/:book_id/chunk/initiate", h.InitiateChunkUpload)
+		books.POST("/:book_id/chunk/:upload_id/:chunk_number", h.UploadChunk)
+		books.GET("/:book_id/chunk/:upload_id/status", h.GetChunkUploadStatus)
 	}
 }

@@ -17,7 +17,7 @@ import (
 func TestUploadService_CreateBook(t *testing.T) {
 	tempDir := t.TempDir()
 	store := storage.NewLocalStorage(tempDir)
-	service := NewUploadService(store)
+	service := NewUploadService(store, tempDir+"/temp")
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -43,7 +43,7 @@ func TestUploadService_CreateBook(t *testing.T) {
 func TestUploadService_UploadFile(t *testing.T) {
 	tempDir := t.TempDir()
 	store := storage.NewLocalStorage(tempDir)
-	service := NewUploadService(store)
+	service := NewUploadService(store, tempDir+"/temp")
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -125,7 +125,7 @@ func TestUploadService_UploadFile(t *testing.T) {
 func TestUploadService_ValidateFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	store := storage.NewLocalStorage(tempDir)
-	service := NewUploadService(store)
+	service := NewUploadService(store, tempDir+"/temp")
 
 	tests := []struct {
 		name    string
@@ -199,7 +199,7 @@ func makeHeader(contentType string) map[string][]string {
 func TestUploadService_GetUploadProgress(t *testing.T) {
 	tempDir := t.TempDir()
 	store := storage.NewLocalStorage(tempDir)
-	service := NewUploadService(store)
+	service := NewUploadService(store, tempDir+"/temp")
 
 	ctx := context.Background()
 	bookID := uuid.New()

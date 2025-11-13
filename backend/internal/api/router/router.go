@@ -29,8 +29,11 @@ func SetupRouter(storagePath string) *gin.Engine {
 	// ストレージを初期化
 	localStorage := storage.NewLocalStorage(storagePath)
 
+	// 一時ディレクトリを作成
+	tempDir := storagePath + "/temp"
+
 	// サービスを初期化
-	uploadService := service.NewUploadService(localStorage)
+	uploadService := service.NewUploadService(localStorage, tempDir)
 
 	// ハンドラーを初期化
 	uploadHandler := handler.NewUploadHandler(uploadService)
