@@ -217,7 +217,7 @@ flutter run
 - [3. OCR処理](docs/featureRDs/3_OCR処理.md)
 - [4. TTS音声読み上げ](docs/featureRDs/4_TTS音声読み上げ.md)
 - [5. STT発音評価](docs/featureRDs/5_STT発音評価.md)
-- [6. ページバイページ学習モード](docs/featureRDs/6_ページバイページ学習モード.md)
+- [6. ページバイページ学習モード](docs/featureRDs/6_ページバイページ学習モード.md) ✅ **実装完了**
 - [7. 教師モード自動学習](docs/featureRDs/7_教師モード自動学習.md)
 - [8. 間隔反復学習SRS](docs/featureRDs/8_間隔反復学習SRS.md)
 - [9. 単語帳機能](docs/featureRDs/9_単語帳機能.md)
@@ -257,7 +257,7 @@ flutter run
 
 ### Phase 2: コア機能（2-3ヶ月）
 - [ ] STT + 発音評価
-- [ ] ページバイページ学習モード
+- [x] **ページバイページ学習モード** ✅
 - [ ] 間隔反復学習アルゴリズム
 - [ ] モバイルアプリ（Flutter）
 - [ ] Stripe決済統合
