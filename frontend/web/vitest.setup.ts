@@ -1,11 +1,16 @@
-import { expect, afterEach } from "vitest";
-import { cleanup } from "@testing-library/react";
-import * as matchers from "@testing-library/jest-dom/matchers";
+import '@testing-library/jest-dom';
+import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
 
-// Extend Vitest's expect with jest-dom matchers
-expect.extend(matchers);
-
-// Cleanup after each test
+// テスト後のクリーンアップ
 afterEach(() => {
-	cleanup();
+  cleanup();
 });
+
+// Media Session API のモック
+global.navigator.mediaSession = {
+  metadata: null,
+  playbackState: 'none',
+  setActionHandler: () => {},
+  setPositionState: () => {},
+} as any;
