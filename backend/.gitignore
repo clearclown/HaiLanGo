@@ -1,0 +1,28 @@
+# Storage directory
+storage/
+pkg/storage/storage/
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+bin/
+
+# Test coverage
+*.out
+coverage.html
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

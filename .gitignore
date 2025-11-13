@@ -3,33 +3,53 @@
 .env.local
 .env.*.local
 
-# Build artifacts
+# Backend (Go)
 backend/bin/
-backend/tmp/
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+backend/storage/
+backend/*.exe
+backend/*.exe~
+backend/*.dll
+backend/*.so
+backend/*.dylib
+backend/*.test
+backend/*.out
+backend/vendor/
+backend/.DS_Store
 
-# Test coverage
-*.out
-coverage.txt
+# Frontend (Next.js / Node)
+frontend/web/node_modules/
+frontend/web/.next/
+frontend/web/out/
+frontend/web/dist/
+frontend/web/.cache/
+frontend/web/.vercel
+frontend/web/.turbo
+frontend/web/npm-debug.log*
+frontend/web/yarn-debug.log*
+frontend/web/yarn-error.log*
+frontend/web/.DS_Store
 
-# IDE
+# Frontend (Flutter)
+frontend/mobile/.dart_tool/
+frontend/mobile/.flutter-plugins
+frontend/mobile/.flutter-plugins-dependencies
+frontend/mobile/.packages
+frontend/mobile/.pub-cache/
+frontend/mobile/.pub/
+frontend/mobile/build/
+frontend/mobile/ios/Pods/
+frontend/mobile/ios/.symlinks/
+frontend/mobile/ios/Flutter/Flutter.framework
+frontend/mobile/ios/Flutter/Flutter.podspec
+frontend/mobile/.DS_Store
+
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
-Thumbs.db
-
-# Dependencies
-node_modules/
-vendor/
 
 # Logs
 *.log
@@ -38,7 +58,13 @@ logs/
 # Database
 *.db
 *.sqlite
+*.sqlite3
+
+# Test coverage
+coverage/
+*.coverprofile
 
 # Temporary files
 tmp/
 temp/
+*.tmp

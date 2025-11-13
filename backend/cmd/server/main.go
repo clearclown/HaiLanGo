@@ -1,87 +1,133 @@
 package main
 
 import (
-	"context"
+<<<<<<< HEAD
+=======
+	"database/sql"
+	"fmt"
+>>>>>>> origin/main
 	"log"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	"github.com/clearclown/HaiLanGo/backend/internal/api/middleware"
-	"github.com/clearclown/HaiLanGo/backend/internal/api/payment"
-	paymentService "github.com/clearclown/HaiLanGo/backend/internal/service/payment"
-	"github.com/gorilla/mux"
+	"github.com/clearclown/HaiLanGo/backend/internal/api/handler"
+	"github.com/clearclown/HaiLanGo/backend/internal/api/router"
+	"github.com/clearclown/HaiLanGo/backend/internal/repository"
+<<<<<<< HEAD
+	"github.com/clearclown/HaiLanGo/backend/internal/service/srs"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Load environment variables
+	// .envファイルを読み込み（存在する場合）
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
+	// ポート設定
 	port := os.Getenv("BACKEND_PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	host := os.Getenv("SERVER_HOST")
-	if host == "" {
-		host = "0.0.0.0"
+	// モックモードの確認
+	useMocks := os.Getenv("USE_MOCK_APIS") == "true"
+
+	log.Println("=================================")
+	log.Println("HaiLanGo Backend Server")
+	log.Println("=================================")
+	log.Printf("Port: %s\n", port)
+	log.Printf("Mock Mode: %v\n", useMocks)
+	log.Println("=================================")
+
+	// モックリポジトリを使用（実際のDB実装は後で追加）
+	reviewItemRepo := repository.NewMockReviewItemRepository()
+
+	// サービス層を初期化
+	srsService := srs.NewSRSService(reviewItemRepo)
+
+	// ハンドラーを初期化
+	reviewHandler := handler.NewReviewHandler(srsService)
+
+	// ルーターをセットアップ
+	r := router.SetupRouter(reviewHandler)
+
+	// サーバー起動
+	log.Printf("Server starting on port %s...\n", port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
-
-	// Initialize services
-	paymentSvc := paymentService.NewPaymentService()
-
-	// Initialize handlers
-	paymentHandler := payment.NewHandler(paymentSvc)
-
-	// Setup router
-	router := mux.NewRouter()
-
-	// Apply middleware
-	router.Use(middleware.Logging)
-	router.Use(middleware.Recovery)
-	router.Use(middleware.CORS)
-
-	// Health check endpoint
-	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
-	}).Methods("GET")
-
-	// Register payment routes
-	paymentHandler.RegisterRoutes(router)
-
-	// Create server
-	addr := host + ":" + port
-	server := &http.Server{
-		Addr:         addr,
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
-
-	// Start server in a goroutine
-	go func() {
-		log.Printf("Starting server on %s", addr)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
-		}
-	}()
-
-	// Wait for interrupt signal to gracefully shutdown the server
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	log.Println("Shutting down server...")
-
-	// Graceful shutdown with 30 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
-	}
-
-	log.Println("Server exited")
 }
+=======
+	"github.com/clearclown/HaiLanGo/backend/internal/service"
+	"github.com/clearclown/HaiLanGo/backend/pkg/jwt"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+)
+
+func main() {
+	// 環境変数を読み込み
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: .env file not found, using environment variables")
+	}
+
+	// 環境変数の読み込み
+	port := getEnv("BACKEND_PORT", "8080")
+	dbURL := getEnv("DATABASE_URL", "postgresql://HaiLanGo:password@localhost:5432/HaiLanGo_dev?sslmode=disable")
+	storagePath := getEnv("STORAGE_PATH", "./storage")
+
+	// ストレージディレクトリを作成
+	if err := os.MkdirAll(storagePath, 0755); err != nil {
+		log.Fatalf("ストレージディレクトリ作成エラー: %v", err)
+	}
+
+	// データベース接続
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("データベース接続エラー: %v", err)
+	}
+	defer db.Close()
+
+	// データベース接続テスト
+	if err := db.Ping(); err != nil {
+		log.Fatalf("データベースPingエラー: %v", err)
+	}
+
+	log.Println("データベースに接続しました")
+
+	// RSA鍵ペアの生成（本番環境では事前に生成した鍵を読み込むこと）
+	if err := jwt.GenerateRSAKeys(); err != nil {
+		log.Fatalf("RSA鍵生成エラー: %v", err)
+	}
+
+	log.Println("RSA鍵ペアを生成しました")
+
+	// リポジトリの初期化
+	userRepo := repository.NewUserRepository(db)
+
+	// サービスの初期化
+	authService := service.NewAuthService(userRepo)
+
+	// ハンドラーの初期化
+	authHandler := handler.NewAuthHandler(authService)
+
+	// ルーターのセットアップ
+	r := router.SetupRouter(authHandler, storagePath)
+
+	// サーバー起動
+	addr := fmt.Sprintf("0.0.0.0:%s", port)
+	log.Printf("HaiLanGo APIサーバーを起動します: %s", addr)
+	log.Printf("ストレージパス: %s", storagePath)
+
+	if err := r.Run(addr); err != nil {
+		log.Fatalf("サーバー起動エラー: %v", err)
+	}
+}
+
+// getEnv は環境変数を取得し、存在しない場合はデフォルト値を返す
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+>>>>>>> origin/main
