@@ -255,15 +255,14 @@ func (h *UploadHandler) GetChunkUploadStatus(c *gin.Context) {
 
 // RegisterRoutes はルートを登録する
 func (h *UploadHandler) RegisterRoutes(router *gin.RouterGroup) {
-	books := router.Group("/books")
+	upload := router.Group("/upload")
 	{
-		books.POST("", h.CreateBook)
-		books.POST("/:book_id/upload", h.UploadFiles)
-		books.GET("/:book_id/upload-status", h.GetUploadProgress)
+		upload.POST("/books/:book_id/files", h.UploadFiles)
+		upload.GET("/books/:book_id/status", h.GetUploadProgress)
 
 		// チャンクアップロード
-		books.POST("/:book_id/chunk/initiate", h.InitiateChunkUpload)
-		books.POST("/:book_id/chunk/:upload_id/:chunk_number", h.UploadChunk)
-		books.GET("/:book_id/chunk/:upload_id/status", h.GetChunkUploadStatus)
+		upload.POST("/books/:book_id/chunk/initiate", h.InitiateChunkUpload)
+		upload.POST("/books/:book_id/chunk/:upload_id/:chunk_number", h.UploadChunk)
+		upload.GET("/books/:book_id/chunk/:upload_id/status", h.GetChunkUploadStatus)
 	}
 }
