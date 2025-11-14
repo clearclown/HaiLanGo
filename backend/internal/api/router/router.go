@@ -1,49 +1,22 @@
 package router
 
 import (
+	"database/sql"
+
 	"github.com/clearclown/HaiLanGo/backend/internal/api/handler"
-<<<<<<< HEAD
-	"github.com/gin-gonic/gin"
-)
-
-// SetupRouter はAPIルーターをセットアップ
-func SetupRouter(reviewHandler *handler.ReviewHandler) *gin.Engine {
-	router := gin.Default()
-
-	// ヘルスチェック
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "ok",
-		})
-	})
-
-	// API v1
-	v1 := router.Group("/api/v1")
-	{
-		// 復習API
-		review := v1.Group("/review")
-		{
-			// 復習項目取得（優先度別）
-			review.GET("/items/:user_id", reviewHandler.GetReviewItems)
-
-			// 復習完了
-			review.POST("/items/:item_id/complete", reviewHandler.CompleteReview)
-
-			// 統計情報取得
-			review.GET("/stats/:user_id", reviewHandler.GetStats)
-		}
-	}
-
-	return router
-=======
 	"github.com/clearclown/HaiLanGo/backend/internal/api/middleware"
+	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/clearclown/HaiLanGo/backend/internal/service"
 	"github.com/clearclown/HaiLanGo/backend/pkg/storage"
 	"github.com/gin-gonic/gin"
 )
 
 // SetupRouter はAPIルーターをセットアップする
-func SetupRouter(authHandler *handler.AuthHandler, storagePath string) *gin.Engine {
+func SetupRouter(
+	db *sql.DB,
+	authHandler *handler.AuthHandler,
+	storagePath string,
+) *gin.Engine {
 	// Ginエンジンの作成
 	r := gin.Default()
 
@@ -53,28 +26,59 @@ func SetupRouter(authHandler *handler.AuthHandler, storagePath string) *gin.Engi
 
 	// ストレージを初期化
 	localStorage := storage.NewLocalStorage(storagePath)
-
-	// 一時ディレクトリを作成
 	tempDir := storagePath + "/temp"
 
-	// サービスを初期化
+	// ========================================
+	// リポジトリの初期化
+	// ========================================
+	bookRepo := repository.NewInMemoryBookRepository()  // TODO: PostgreSQL実装に置き換え
+	reviewRepo := repository.NewInMemoryReviewRepository() // InMemory実装
+	// statsRepo := repository.NewStatsRepository(db) // TODO: 実装必要
+
+	// ========================================
+	// サービスの初期化
+	// ========================================
 	uploadService := service.NewUploadService(localStorage, tempDir)
+	// ocrService := service.NewOCRService() // TODO: 実装必要
+	// statsService := stats.NewService(statsRepo) // TODO: 実装必要
+	// srsService := srs.NewSRSService(reviewRepo) // TODO: 実装必要
 
-	// ハンドラーを初期化
+	// ========================================
+	// ハンドラーの初期化
+	// ========================================
 	uploadHandler := handler.NewUploadHandler(uploadService)
+	booksHandler := handler.NewBooksHandler(bookRepo)
+	reviewHandler := handler.NewReviewHandler(reviewRepo)
+	// statsHandler := handler.NewStatsHandler(statsService) // TODO: 実装必要
+	// dictionaryHandler := handler.NewDictionaryHandler() // TODO: 実装必要
+	// patternHandler := handler.NewPatternHandler() // TODO: 実装必要
+	// ocrHandler := ocr.NewOCRHandler(ocrService) // TODO: 実装必要
+	// learningHandler := learning.NewLearningHandler() // TODO: 実装必要
+	// paymentHandler := payment.NewPaymentHandler() // TODO: 実装必要
+	// teacherModeHandler := teachermode.NewTeacherModeHandler() // TODO: 実装必要
 
+	// WebSocketハブを初期化
+	// wsHub := websocket.NewHub() // TODO: 実装必要
+	// go wsHub.Run()
+	// wsHandler := websocket.NewHandler(wsHub) // TODO: 実装必要
+
+	// ========================================
 	// ヘルスチェックエンドポイント
+	// ========================================
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"status": "ok",
+			"status":  "ok",
 			"message": "HaiLanGo API is running",
+			"version": "1.0.0",
 		})
 	})
 
+	// ========================================
 	// API v1グループ
+	// ========================================
 	v1 := r.Group("/api/v1")
 	{
-		// 認証エンドポイント
+		// 認証エンドポイント（認証不要）
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/register", authHandler.Register)
@@ -83,10 +87,44 @@ func SetupRouter(authHandler *handler.AuthHandler, storagePath string) *gin.Engi
 			auth.POST("/logout", authHandler.Logout)
 		}
 
-		// アップロードルートを登録
-		uploadHandler.RegisterRoutes(v1)
+		// 以下、認証必須
+		authenticated := v1.Group("")
+		authenticated.Use(middleware.AuthRequired())
+		{
+			// Books API
+			booksHandler.RegisterRoutes(authenticated)
+
+			// Upload API
+			uploadHandler.RegisterRoutes(authenticated)
+
+			// Review API
+			reviewHandler.RegisterRoutes(authenticated)
+
+			// Stats API
+			// statsHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+
+			// OCR API
+			// ocrHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+
+			// Learning API
+			// learningHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+
+			// Pattern API
+			// patternHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+
+			// Teacher Mode API
+			// teacherModeHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+
+			// Dictionary API
+			// dictionaryHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+
+			// Payment API
+			// paymentHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+
+			// WebSocket API
+			// authenticated.GET("/ws", wsHandler.HandleWebSocket) // TODO: Uncomment when implemented
+		}
 	}
 
 	return r
->>>>>>> origin/main
 }
