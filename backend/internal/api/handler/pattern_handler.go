@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/clearclown/HaiLanGo/backend/internal/service/pattern"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
@@ -22,23 +22,33 @@ func NewPatternHandler() *PatternHandler {
 	}
 }
 
-// ExtractPatterns handles POST /api/v1/books/{book_id}/patterns/extract
-func (h *PatternHandler) ExtractPatterns(w http.ResponseWriter, r *http.Request) {
+// ExtractPatterns handles POST /api/v1/books/:bookId/patterns/extract
+func (h *PatternHandler) ExtractPatterns(c *gin.Context) {
+	bookIDStr := c.Param("bookId")
+
 	// Parse request
 	var req models.PatternExtractionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+
+	// Parse bookID
+	bookID, err := uuid.Parse(bookIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
+		return
+	}
+	req.BookID = bookID
 
 	// TODO: Fetch book pages from database
 	// For now, this is a placeholder
 	pages := []pattern.PageText{} // Would fetch from database
 
 	// Extract patterns
-	patterns, err := h.extractor.ExtractPatterns(r.Context(), req.BookID, pages, req.MinFrequency)
+	patterns, err := h.extractor.ExtractPatterns(c.Request.Context(), req.BookID, pages, req.MinFrequency)
 	if err != nil {
-		http.Error(w, "Failed to extract patterns", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to extract patterns"})
 		return
 	}
 
@@ -49,18 +59,16 @@ func (h *PatternHandler) ExtractPatterns(w http.ResponseWriter, r *http.Request)
 		ProcessedPages: req.PageEnd - req.PageStart + 1,
 	}
 
-	// Send response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	c.JSON(http.StatusOK, resp)
 }
 
-// GetPatterns handles GET /api/v1/books/{book_id}/patterns
-func (h *PatternHandler) GetPatterns(w http.ResponseWriter, r *http.Request) {
+// GetPatterns handles GET /api/v1/books/:bookId/patterns
+func (h *PatternHandler) GetPatterns(c *gin.Context) {
 	// Extract book_id from URL
-	bookIDStr := r.URL.Query().Get("book_id")
+	bookIDStr := c.Param("bookId")
 	bookID, err := uuid.Parse(bookIDStr)
 	if err != nil {
-		http.Error(w, "Invalid book ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
 		return
 	}
 
@@ -68,28 +76,25 @@ func (h *PatternHandler) GetPatterns(w http.ResponseWriter, r *http.Request) {
 	// For now, return empty list
 	patterns := []models.Pattern{}
 
-	// Send response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	c.JSON(http.StatusOK, gin.H{
 		"patterns": patterns,
 		"book_id":  bookID,
 	})
 }
 
-// GetPatternPractice handles GET /api/v1/patterns/{pattern_id}/practice
-func (h *PatternHandler) GetPatternPractice(w http.ResponseWriter, r *http.Request) {
+// GetPatternPractice handles GET /api/v1/patterns/:patternId/practice
+func (h *PatternHandler) GetPatternPractice(c *gin.Context) {
 	// Extract pattern_id from URL
-	patternIDStr := r.URL.Query().Get("pattern_id")
+	patternIDStr := c.Param("patternId")
 	patternID, err := uuid.Parse(patternIDStr)
 	if err != nil {
-		http.Error(w, "Invalid pattern ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pattern ID"})
 		return
 	}
 
 	// Extract count parameter (default: 10)
-	countStr := r.URL.Query().Get("count")
 	count := 10
-	if countStr != "" {
+	if countStr := c.Query("count"); countStr != "" {
 		if c, err := strconv.Atoi(countStr); err == nil {
 			count = c
 		}
@@ -99,11 +104,24 @@ func (h *PatternHandler) GetPatternPractice(w http.ResponseWriter, r *http.Reque
 	// For now, return placeholder
 	practices := []models.PatternPractice{}
 
-	// Send response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	c.JSON(http.StatusOK, gin.H{
 		"pattern_id": patternID,
 		"practices":  practices,
 		"count":      count,
 	})
+}
+
+// RegisterRoutes registers pattern routes
+func (h *PatternHandler) RegisterRoutes(rg *gin.RouterGroup) {
+	patterns := rg.Group("/patterns")
+	{
+		patterns.GET("/:patternId/practice", h.GetPatternPractice)
+	}
+
+	// Book-specific pattern routes
+	books := rg.Group("/books")
+	{
+		books.POST("/:bookId/patterns/extract", h.ExtractPatterns)
+		books.GET("/:bookId/patterns", h.GetPatterns)
+	}
 }

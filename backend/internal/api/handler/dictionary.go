@@ -1,12 +1,11 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/service/dictionary"
 	pkgDict "github.com/clearclown/HaiLanGo/backend/pkg/dictionary"
+	"github.com/gin-gonic/gin"
 )
 
 // DictionaryHandler handles dictionary-related HTTP requests
@@ -21,74 +20,53 @@ func NewDictionaryHandler(service *dictionary.Service) *DictionaryHandler {
 	}
 }
 
-// LookupWord handles GET /api/v1/dictionary/words/{word}
-func (h *DictionaryHandler) LookupWord(w http.ResponseWriter, r *http.Request) {
-	// Extract word from URL path
-	path := r.URL.Path
-	parts := strings.Split(path, "/")
-	if len(parts) < 6 {
-		http.Error(w, "Invalid URL format", http.StatusBadRequest)
-		return
-	}
-	word := parts[5]
+// LookupWord handles GET /api/v1/dictionary/words/:word
+func (h *DictionaryHandler) LookupWord(c *gin.Context) {
+	word := c.Param("word")
 
 	// Get language from query parameter (default: en)
-	language := r.URL.Query().Get("language")
-	if language == "" {
-		language = "en"
-	}
+	language := c.DefaultQuery("language", "en")
 
 	// Lookup word
-	entry, err := h.service.LookupWord(r.Context(), word, language)
+	entry, err := h.service.LookupWord(c.Request.Context(), word, language)
 	if err != nil {
 		if err == pkgDict.ErrWordNotFound {
-			http.Error(w, "Word not found", http.StatusNotFound)
+			c.JSON(http.StatusNotFound, gin.H{"error": "Word not found"})
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(entry); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, entry)
 }
 
-// LookupWordDetails handles GET /api/v1/dictionary/words/{word}/details
-func (h *DictionaryHandler) LookupWordDetails(w http.ResponseWriter, r *http.Request) {
-	// Extract word from URL path
-	path := r.URL.Path
-	parts := strings.Split(path, "/")
-	if len(parts) < 6 {
-		http.Error(w, "Invalid URL format", http.StatusBadRequest)
-		return
-	}
-	word := parts[5]
+// LookupWordDetails handles GET /api/v1/dictionary/words/:word/details
+func (h *DictionaryHandler) LookupWordDetails(c *gin.Context) {
+	word := c.Param("word")
 
 	// Get language from query parameter (default: en)
-	language := r.URL.Query().Get("language")
-	if language == "" {
-		language = "en"
-	}
+	language := c.DefaultQuery("language", "en")
 
 	// Lookup word details
-	entry, err := h.service.LookupWordDetails(r.Context(), word, language)
+	entry, err := h.service.LookupWordDetails(c.Request.Context(), word, language)
 	if err != nil {
 		if err == pkgDict.ErrWordNotFound {
-			http.Error(w, "Word not found", http.StatusNotFound)
+			c.JSON(http.StatusNotFound, gin.H{"error": "Word not found"})
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(entry); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
+	c.JSON(http.StatusOK, entry)
+}
+
+// RegisterRoutes registers dictionary routes
+func (h *DictionaryHandler) RegisterRoutes(rg *gin.RouterGroup) {
+	dictionary := rg.Group("/dictionary")
+	{
+		dictionary.GET("/words/:word", h.LookupWord)
+		dictionary.GET("/words/:word/details", h.LookupWordDetails)
 	}
 }

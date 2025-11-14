@@ -97,7 +97,7 @@ func (s *Service) fetchBookPages(ctx context.Context, bookID string) ([]PageData
 // GenerateDownloadPackage オフラインダウンロードパッケージを生成
 func (s *Service) GenerateDownloadPackage(ctx context.Context, bookID string, settings *TeacherModeSettings) (*DownloadPackage, error) {
 	// プレイリストを生成
-	playlist, err := s.GeneratePlaylist(ctx, bookID, settings)
+	_, err := s.GeneratePlaylist(ctx, bookID, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +107,7 @@ func (s *Service) GenerateDownloadPackage(ctx context.Context, bookID string, se
 
 	// 音声ファイルをZIP化（実際の実装）
 	// 現在はモックデータを返す
+	// TODO: Use playlist data to generate actual download package
 	downloadPackage := &DownloadPackage{
 		PackageID:   packageID,
 		DownloadURL: fmt.Sprintf("http://example.com/packages/%s.zip", packageID),

@@ -2,11 +2,10 @@
 package teachermode
 
 import (
-	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/service/teacher-mode"
+	"github.com/gin-gonic/gin"
 )
 
 // Handler 教師モードAPIハンドラー
@@ -56,28 +55,20 @@ type AudioSegmentResponse struct {
 }
 
 // GeneratePlaylist プレイリスト生成ハンドラー
-func (h *Handler) GeneratePlaylist(w http.ResponseWriter, r *http.Request) {
-	// 認証チェック
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+func (h *Handler) GeneratePlaylist(c *gin.Context) {
+	bookID := c.Param("bookId")
 
 	// リクエストボディをパース
 	var req GeneratePlaylistRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// bookIDをURLから取得（実際のルーターで処理）
-	bookID := "test-book" // TODO: ルーターから取得
-
 	// プレイリストを生成
-	playlist, err := h.service.GeneratePlaylist(r.Context(), bookID, req.Settings)
+	playlist, err := h.service.GeneratePlaylist(c.Request.Context(), bookID, req.Settings)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -108,10 +99,7 @@ func (h *Handler) GeneratePlaylist(w http.ResponseWriter, r *http.Request) {
 		response.Pages = append(response.Pages, pageResp)
 	}
 
-	// JSONレスポンスを返す
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	c.JSON(http.StatusOK, response)
 }
 
 // GenerateDownloadPackageRequest ダウンロードパッケージ生成リクエスト
@@ -128,28 +116,20 @@ type GenerateDownloadPackageResponse struct {
 }
 
 // GenerateDownloadPackage ダウンロードパッケージ生成ハンドラー
-func (h *Handler) GenerateDownloadPackage(w http.ResponseWriter, r *http.Request) {
-	// 認証チェック
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+func (h *Handler) GenerateDownloadPackage(c *gin.Context) {
+	bookID := c.Param("bookId")
 
 	// リクエストボディをパース
 	var req GenerateDownloadPackageRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// bookIDをURLから取得
-	bookID := "test-book" // TODO: ルーターから取得
-
 	// ダウンロードパッケージを生成
-	pkg, err := h.service.GenerateDownloadPackage(r.Context(), bookID, req.Settings)
+	pkg, err := h.service.GenerateDownloadPackage(c.Request.Context(), bookID, req.Settings)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -161,9 +141,7 @@ func (h *Handler) GenerateDownloadPackage(w http.ResponseWriter, r *http.Request
 		ExpiresAt:   pkg.ExpiresAt,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	c.JSON(http.StatusOK, response)
 }
 
 // UpdatePlaybackStateRequest 再生状態更新リクエスト
@@ -179,38 +157,32 @@ type UpdatePlaybackStateResponse struct {
 }
 
 // UpdatePlaybackState 再生状態更新ハンドラー
-func (h *Handler) UpdatePlaybackState(w http.ResponseWriter, r *http.Request) {
-	// 認証チェック
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+func (h *Handler) UpdatePlaybackState(c *gin.Context) {
+	playlistID := c.Param("playlistId")
 
 	// リクエストボディをパース
 	var req UpdatePlaybackStateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
 	// 検証
 	if req.CurrentPage < 0 {
-		http.Error(w, "Invalid currentPage", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid currentPage"})
 		return
 	}
 
 	// 再生状態を保存（実際はRedisやデータベースに保存）
 	// TODO: 実装
+	_ = playlistID // TODO: use it
 
 	// レスポンスを返す
 	response := UpdatePlaybackStateResponse{
 		Success: true,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	c.JSON(http.StatusOK, response)
 }
 
 // GetPlaylistResponse プレイリスト取得レスポンス
@@ -220,26 +192,18 @@ type GetPlaylistResponse struct {
 }
 
 // GetPlaylist プレイリスト取得ハンドラー
-func (h *Handler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
-	// 認証チェック
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	// bookIDをURLから取得
-	bookID := "test-book" // TODO: ルーターから取得
+func (h *Handler) GetPlaylist(c *gin.Context) {
+	playlistID := c.Param("playlistId")
 
 	// プレイリストが存在しない場合（テスト用）
-	if bookID == "nonexistent-book" {
-		http.Error(w, "Playlist not found", http.StatusNotFound)
+	if playlistID == "nonexistent" {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Playlist not found"})
 		return
 	}
 
 	// モックレスポンス
 	response := GetPlaylistResponse{
-		PlaylistID: "mock-playlist-id",
+		PlaylistID: playlistID,
 		Pages: []PageAudioResponse{
 			{
 				PageNumber: 1,
@@ -255,7 +219,16 @@ func (h *Handler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	c.JSON(http.StatusOK, response)
+}
+
+// RegisterRoutes registers teacher mode routes
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
+	teacher := rg.Group("/teacher-mode")
+	{
+		teacher.POST("/books/:bookId/generate", h.GeneratePlaylist)
+		teacher.POST("/books/:bookId/download-package", h.GenerateDownloadPackage)
+		teacher.GET("/playlists/:playlistId", h.GetPlaylist)
+		teacher.POST("/playlists/:playlistId/state", h.UpdatePlaybackState)
+	}
 }

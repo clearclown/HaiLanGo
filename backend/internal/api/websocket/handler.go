@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
@@ -56,4 +57,39 @@ func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request) {
 // GetHub returns the hub
 func (h *Handler) GetHub() *Hub {
 	return h.hub
+}
+
+// HandleWebSocket handles websocket connections (Gin version)
+func (h *Handler) HandleWebSocket(c *gin.Context) {
+	// TODO: Extract user ID from JWT token or context
+	// For now, we'll use a query parameter (not secure, just for testing)
+	userID := c.Query("user_id")
+	if userID == "" {
+		// Try to get from context (set by auth middleware)
+		if userIDVal, exists := c.Get("user_id"); exists {
+			userID = userIDVal.(string)
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+			return
+		}
+	}
+
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	client := NewClient(h.hub, conn, userID)
+	client.hub.register <- client
+
+	// Allow collection of memory referenced by the caller by doing all work in
+	// new goroutines.
+	go client.writePump()
+	go client.readPump()
+}
+
+// RegisterRoutes registers websocket routes
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
+	rg.GET("/ws", h.HandleWebSocket)
 }

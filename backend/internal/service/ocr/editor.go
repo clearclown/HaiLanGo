@@ -92,7 +92,8 @@ func (s *EditorService) UpdateOCRText(
 	}
 
 	// Update the page with corrected text
-	page.CorrectedText = &correctedText
+	// Note: We store corrections separately, but also update the OCRText
+	page.OCRText = correctedText
 	page.UpdatedAt = time.Now()
 	if err := s.pageRepo.Update(ctx, page); err != nil {
 		return nil, fmt.Errorf("failed to update page: %w", err)

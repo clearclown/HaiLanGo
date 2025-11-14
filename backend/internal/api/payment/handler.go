@@ -1,12 +1,11 @@
 package payment
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/service/payment"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 )
 
 // Handler handles payment-related HTTP requests
@@ -21,15 +20,6 @@ func NewHandler(service payment.Service) *Handler {
 	}
 }
 
-// RegisterRoutes registers payment routes
-func (h *Handler) RegisterRoutes(r *mux.Router) {
-	r.HandleFunc("/api/v1/payment/subscribe", h.CreateSubscription).Methods("POST")
-	r.HandleFunc("/api/v1/payment/plans", h.ListPlans).Methods("GET")
-	r.HandleFunc("/api/v1/payment/subscription/{id}", h.GetSubscription).Methods("GET")
-	r.HandleFunc("/api/v1/payment/cancel", h.CancelSubscription).Methods("POST")
-	r.HandleFunc("/api/v1/payment/webhook", h.HandleWebhookWithVerification).Methods("POST")
-}
-
 // CreateSubscriptionRequest represents the request body for creating a subscription
 type CreateSubscriptionRequest struct {
 	UserID string `json:"user_id"`
@@ -37,63 +27,62 @@ type CreateSubscriptionRequest struct {
 }
 
 // CreateSubscription handles subscription creation requests
-func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateSubscription(c *gin.Context) {
 	var req CreateSubscriptionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
 	userID, err := uuid.Parse(req.UserID)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	planID, err := uuid.Parse(req.PlanID)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid plan ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid plan ID"})
 		return
 	}
 
-	subscription, err := h.service.CreateSubscription(r.Context(), userID, planID)
+	subscription, err := h.service.CreateSubscription(c.Request.Context(), userID, planID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, subscription)
+	c.JSON(http.StatusCreated, subscription)
 }
 
 // ListPlans handles listing all subscription plans
-func (h *Handler) ListPlans(w http.ResponseWriter, r *http.Request) {
-	plans, err := h.service.ListPlans(r.Context())
+func (h *Handler) ListPlans(c *gin.Context) {
+	plans, err := h.service.ListPlans(c.Request.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, plans)
+	c.JSON(http.StatusOK, plans)
 }
 
 // GetSubscription handles retrieving a subscription by ID
-func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idStr := vars["id"]
+func (h *Handler) GetSubscription(c *gin.Context) {
+	idStr := c.Param("id")
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid subscription ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid subscription ID"})
 		return
 	}
 
-	subscription, err := h.service.GetSubscription(r.Context(), id)
+	subscription, err := h.service.GetSubscription(c.Request.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, subscription)
+	c.JSON(http.StatusOK, subscription)
 }
 
 // CancelSubscriptionRequest represents the request body for canceling a subscription
@@ -103,24 +92,36 @@ type CancelSubscriptionRequest struct {
 }
 
 // CancelSubscription handles subscription cancellation requests
-func (h *Handler) CancelSubscription(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CancelSubscription(c *gin.Context) {
 	var req CancelSubscriptionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
 	subscriptionID, err := uuid.Parse(req.SubscriptionID)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid subscription ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid subscription ID"})
 		return
 	}
 
-	if err := h.service.CancelSubscription(r.Context(), subscriptionID, req.CancelAtPeriodEnd); err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+	if err := h.service.CancelSubscription(c.Request.Context(), subscriptionID, req.CancelAtPeriodEnd); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	respondWithSuccess(w, nil, "Subscription canceled successfully")
+	c.JSON(http.StatusOK, gin.H{"message": "Subscription canceled successfully"})
+}
+
+// RegisterRoutes registers payment routes
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
+	payment := rg.Group("/payment")
+	{
+		payment.POST("/subscribe", h.CreateSubscription)
+		payment.GET("/plans", h.ListPlans)
+		payment.GET("/subscription/:id", h.GetSubscription)
+		payment.POST("/cancel", h.CancelSubscription)
+		// Note: Webhook handler should be added separately without auth middleware
+	}
 }
 

@@ -1,6 +1,7 @@
 package learning
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -11,9 +12,9 @@ import (
 
 // Service は学習サービスのインターフェース
 type Service interface {
-	GetPage(ctx gin.Context, bookID uuid.UUID, pageNumber int) (*models.PageWithProgress, error)
-	MarkPageCompleted(ctx gin.Context, userID, bookID uuid.UUID, pageNumber int, studyTime int) error
-	GetProgress(ctx gin.Context, userID, bookID uuid.UUID) (*models.LearningProgress, error)
+	GetPage(ctx context.Context, bookID uuid.UUID, pageNumber int) (*models.PageWithProgress, error)
+	MarkPageCompleted(ctx context.Context, userID, bookID uuid.UUID, pageNumber int, studyTime int) error
+	GetProgress(ctx context.Context, userID, bookID uuid.UUID) (*models.LearningProgress, error)
 }
 
 // Handler は学習APIのハンドラー
@@ -138,4 +139,14 @@ func (h *Handler) GetProgress(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, progress)
+}
+
+// RegisterRoutes registers learning routes
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
+	learning := rg.Group("/learning")
+	{
+		learning.GET("/books/:bookId/pages/:pageNumber", h.GetPage)
+		learning.POST("/books/:bookId/pages/:pageNumber/complete", h.MarkPageCompleted)
+		learning.GET("/books/:bookId/progress", h.GetProgress)
+	}
 }
