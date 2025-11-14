@@ -1,20 +1,32 @@
 # 🚨 CRITICAL - Feature Requirements Documents (RDs)
 
-**PM**: あなた（PM）
-**最終更新**: 2025-11-14 13:35
-**ステータス**: 🔴 **CRITICAL FAILURES DETECTED**
+**PM**: Claude (Strict Mode)
+**最終更新**: 2025-11-14 15:50
+**ステータス**: 🟡 **PARTIAL IMPLEMENTATION**
 
 ---
 
-## ⚠️ **重大な警告**
+## ⚠️ **現状の事実**
 
-**既存のREADME.mdは虚偽情報を含んでいました。**
+### 実装済み（4 API / 12 API = 33%）
+- ✅ Auth API - ユーザー認証（JWT）
+- ✅ Books API - 書籍CRUD（PostgreSQL対応）✅ **実装完了**
+- ✅ Upload API - ファイル・チャンクアップロード
+- ✅ Review API - SRS学習システム（InMemory）✅ **実装完了**
 
-- ❌ 「すべての機能が100%実装完了」→ **嘘**
-- ✅ 実際の実装率: **約40%**（フロントエンドのみ）
-- ✅ バックエンドAPI: **ほぼ未実装**
+### 未実装（8 API）
+- ❌ Stats API - 学習統計（ホーム画面が404エラー）
+- ❌ Learning API - ページバイページ学習（学習画面が404エラー）
+- ❌ OCR API - 書籍デジタル化
+- ❌ TTS API - 音声読み上げ
+- ❌ STT API - 発音評価
+- ❌ Dictionary API - 辞書統合
+- ❌ Pattern API - 会話パターン抽出
+- ❌ Teacher Mode API - 教師モード
+- ❌ Payment API - Stripe決済
+- ❌ WebSocket API - リアルタイム通知
 
-**このような不正確な報告は二度と許されません。**
+**総合進捗率**: バックエンド 33%、フロントエンド 95%
 
 ---
 
@@ -23,40 +35,43 @@
 ```
 featureRDs/
 ├── README.md                          # このファイル（PM用マスターガイド）
-├── CRITICAL_01_Books_API.md           # 🔴 P0 - 即座実装必須
-├── CRITICAL_02_Review_API.md          # 🔴 P0 - 即座実装必須
-├── CRITICAL_03_Router_Integration.md  # 🔴 P0 - 即座実装必須
+├── CRITICAL_01_Books_API.md           # ✅ 実装完了
+├── CRITICAL_02_Review_API.md          # ✅ 実装完了
+├── CRITICAL_03_Router_Integration.md  # ✅ 実装完了
+├── CRITICAL_04_Stats_API.md           # 🔴 P0 - 48時間以内
+├── CRITICAL_05_Learning_API.md        # 🔴 P0 - 72時間以内
+├── CRITICAL_06_OCR_TTS_STT_APIs.md    # 🔴 P0/P1 - 72-96時間以内
+├── CRITICAL_07_Other_APIs.md          # 🟡 P2 - 2週間以内
 └── archives/                          # 過去のドキュメント（参考のみ）
 ```
 
 ---
 
-## 🔴 CRITICAL ISSUES（即座に対応必須）
+## 📋 CRITICAL Feature RDs（優先度順）
 
-**現在の実装状況: UNACCEPTABLE**
-
-### 実装済み
-- ✅ フロントエンド: Books, Upload, Review, Settings ページ（95%）
-- ✅ 認証API（Backend）
-- ✅ アップロードAPI（Backend、部分的）
-
-### **未実装（CRITICAL）**
-- ❌ Books API（Backend）← **本の作成が失敗中**
-- ❌ Review API（Backend）← **復習ページがエラー**
-- ❌ Router Integration（Backend）← **404エラー多発**
-- ❌ E2Eテストの35%が失敗
-
----
-
-## 📋 P0 - CRITICAL Feature RDs（即座実装必須）
+### ✅ Phase 1完了（CRITICAL_01-03）
 
 | No | Feature | ファイル | 見積 | ステータス |
 |----|---------|----------|------|-----------|
-| 1 | Books API | [`CRITICAL_01_Books_API.md`](CRITICAL_01_Books_API.md) | 4-6h | ❌ 未着手 |
-| 2 | Review API (SRS) | [`CRITICAL_02_Review_API.md`](CRITICAL_02_Review_API.md) | 6-8h | ❌ 未着手 |
-| 3 | Router Integration | [`CRITICAL_03_Router_Integration.md`](CRITICAL_03_Router_Integration.md) | 2-3h | ❌ 未着手 |
+| 1 | Books API | [`CRITICAL_01_Books_API.md`](CRITICAL_01_Books_API.md) | 4-6h | ✅ **完了** |
+| 2 | Review API (SRS) | [`CRITICAL_02_Review_API.md`](CRITICAL_02_Review_API.md) | 6-8h | ✅ **完了** |
+| 3 | Router Integration | [`CRITICAL_03_Router_Integration.md`](CRITICAL_03_Router_Integration.md) | 2-3h | ✅ **完了** |
 
-**期限**: 本日中（2025-11-14）に着手、3日以内（2025-11-17）に完了
+### 🔴 Phase 2 - P0（最高優先度）
+
+| No | Feature | ファイル | 見積 | 期限 | ステータス |
+|----|---------|----------|------|------|-----------|
+| 4 | Stats API | [`CRITICAL_04_Stats_API.md`](CRITICAL_04_Stats_API.md) | 4-6h | 48h以内 | ❌ 未着手 |
+| 5 | Learning API | [`CRITICAL_05_Learning_API.md`](CRITICAL_05_Learning_API.md) | 6-8h | 72h以内 | ❌ 未着手 |
+| 6 | OCR/TTS/STT APIs | [`CRITICAL_06_OCR_TTS_STT_APIs.md`](CRITICAL_06_OCR_TTS_STT_APIs.md) | OCR 8-12h<br>TTS 4-6h<br>STT 6-8h | OCR 96h<br>TTS/STT 72h | ❌ 未着手 |
+
+### 🟡 Phase 3 - P2（中優先度）
+
+| No | Feature | ファイル | 見積 | 期限 | ステータス |
+|----|---------|----------|------|------|-----------|
+| 7 | その他のAPI | [`CRITICAL_07_Other_APIs.md`](CRITICAL_07_Other_APIs.md) | 各4-8h | P0/P1完了後<br>2週間以内 | ❌ 未着手 |
+
+**Phase 3に含まれるAPI**: Dictionary, Pattern, Teacher Mode, Payment, WebSocket
 
 ---
 
