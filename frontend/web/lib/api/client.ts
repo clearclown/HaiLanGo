@@ -1,4 +1,7 @@
 import type { NotificationSettings, Plan, UserProfile, UserSettings } from '@/types/settings';
+import type { Book, BookMetadata } from '@/types/book';
+import type { UploadMetadata } from '@/types/upload';
+import type { ReviewItem, ReviewStats, ReviewResult } from '@/types/review';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -67,6 +70,104 @@ class APIClient {
     logout: async (): Promise<{ success: boolean }> => {
       return this.fetch<{ success: boolean }>('/api/v1/auth/logout', {
         method: 'POST',
+      });
+    },
+  };
+
+  books = {
+    list: async (): Promise<{ books: Book[] }> => {
+      return this.fetch<{ books: Book[] }>('/api/v1/books');
+    },
+
+    get: async (bookId: string): Promise<Book> => {
+      return this.fetch<Book>(`/api/v1/books/${bookId}`);
+    },
+
+    create: async (metadata: BookMetadata): Promise<{ book: Book }> => {
+      return this.fetch<{ book: Book }>('/api/v1/books', {
+        method: 'POST',
+        body: JSON.stringify(metadata),
+      });
+    },
+
+    delete: async (bookId: string): Promise<{ success: boolean }> => {
+      return this.fetch<{ success: boolean }>(`/api/v1/books/${bookId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    update: async (bookId: string, metadata: Partial<BookMetadata>): Promise<{ success: boolean }> => {
+      return this.fetch<{ success: boolean }>(`/api/v1/books/${bookId}`, {
+        method: 'PUT',
+        body: JSON.stringify(metadata),
+      });
+    },
+  };
+
+  upload = {
+    createBook: async (metadata: Omit<UploadMetadata, 'book_id'>): Promise<{ book_id: string }> => {
+      return this.fetch<{ book_id: string }>('/api/v1/upload/create', {
+        method: 'POST',
+        body: JSON.stringify(metadata),
+      });
+    },
+
+    uploadFile: async (
+      bookId: string,
+      file: File,
+      onProgress?: (progress: number) => void
+    ): Promise<{ success: boolean; file_id: string }> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('book_id', bookId);
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable && onProgress) {
+            const progress = (e.loaded / e.total) * 100;
+            onProgress(progress);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error(`Upload failed: ${xhr.statusText}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+
+        xhr.open('POST', `${API_BASE_URL}/api/v1/upload/file`);
+        xhr.send(formData);
+      });
+    },
+
+    complete: async (bookId: string): Promise<{ success: boolean }> => {
+      return this.fetch<{ success: boolean }>('/api/v1/upload/complete', {
+        method: 'POST',
+        body: JSON.stringify({ book_id: bookId }),
+      });
+    },
+  };
+
+  review = {
+    getStats: async (): Promise<ReviewStats> => {
+      return this.fetch<ReviewStats>('/api/v1/review/stats');
+    },
+
+    getItems: async (priority?: 'urgent' | 'recommended' | 'optional'): Promise<{ items: ReviewItem[] }> => {
+      const query = priority ? `?priority=${priority}` : '';
+      return this.fetch<{ items: ReviewItem[] }>(`/api/v1/review/items${query}`);
+    },
+
+    submit: async (result: ReviewResult): Promise<{ success: boolean; next_review: string }> => {
+      return this.fetch<{ success: boolean; next_review: string }>('/api/v1/review/submit', {
+        method: 'POST',
+        body: JSON.stringify(result),
       });
     },
   };

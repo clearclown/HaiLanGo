@@ -9,7 +9,7 @@ interface AudioPlayerProps {
  * 音声プレイヤーコンポーネント
  */
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
-  const { playing, currentTime, duration, speed, play, pause, setSpeed, togglePlayPause } =
+  const { playing, currentTime, duration, speed, setSpeed, togglePlayPause } =
     useAudioPlayer({ audioUrl });
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
