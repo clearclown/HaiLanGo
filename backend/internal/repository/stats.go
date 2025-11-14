@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/clearclown/HaiLanGo/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/google/uuid"
 )
 
@@ -147,7 +147,7 @@ func (r *StatsRepository) GetPhraseProgress(ctx context.Context, userID uuid.UUI
 }
 
 // GetPronunciationScores retrieves pronunciation scores within a date range
-func (r *StatsRepository) GetPronunciationScores(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]models.PronunciationScore, error) {
+func (r *StatsRepository) GetPronunciationScores(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]models.PronunciationScoreRecord, error) {
 	query := `
 		SELECT id, user_id, text, language, score, accuracy, fluency, created_at
 		FROM pronunciation_scores
@@ -161,9 +161,9 @@ func (r *StatsRepository) GetPronunciationScores(ctx context.Context, userID uui
 	}
 	defer rows.Close()
 
-	var scores []models.PronunciationScore
+	var scores []models.PronunciationScoreRecord
 	for rows.Next() {
-		var score models.PronunciationScore
+		var score models.PronunciationScoreRecord
 		err := rows.Scan(
 			&score.ID,
 			&score.UserID,

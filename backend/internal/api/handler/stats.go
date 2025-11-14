@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
-	"github.com/clearclown/HaiLanGo/internal/service/stats"
+	"github.com/clearclown/HaiLanGo/backend/internal/service/stats"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
@@ -22,190 +22,223 @@ func NewStatsHandler(service *stats.Service) *StatsHandler {
 }
 
 // GetDashboard handles GET /api/v1/stats/dashboard
-func (h *StatsHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
-	// Get user ID from context (assuming authentication middleware sets this)
-	userIDStr := r.Context().Value("user_id").(string)
-	userID, err := uuid.Parse(userIDStr)
+func (h *StatsHandler) GetDashboard(c *gin.Context) {
+	// Get user ID from context
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Get dashboard stats
-	dashboard, err := h.service.GetDashboardStats(r.Context(), userID)
+	dashboard, err := h.service.GetDashboardStats(c.Request.Context(), userID)
 	if err != nil {
-		http.Error(w, "Failed to get dashboard stats", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get dashboard stats"})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(dashboard)
+	c.JSON(http.StatusOK, dashboard)
 }
 
 // GetLearningTime handles GET /api/v1/stats/learning-time
-func (h *StatsHandler) GetLearningTime(w http.ResponseWriter, r *http.Request) {
+func (h *StatsHandler) GetLearningTime(c *gin.Context) {
 	// Get user ID from context
-	userIDStr := r.Context().Value("user_id").(string)
-	userID, err := uuid.Parse(userIDStr)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Get learning time stats
-	learningTime, err := h.service.GetLearningTimeStats(r.Context(), userID)
+	learningTime, err := h.service.GetLearningTimeStats(c.Request.Context(), userID)
 	if err != nil {
-		http.Error(w, "Failed to get learning time stats", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get learning time stats"})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(learningTime)
+	c.JSON(http.StatusOK, learningTime)
 }
 
 // GetProgress handles GET /api/v1/stats/progress
-func (h *StatsHandler) GetProgress(w http.ResponseWriter, r *http.Request) {
+func (h *StatsHandler) GetProgress(c *gin.Context) {
 	// Get user ID from context
-	userIDStr := r.Context().Value("user_id").(string)
-	userID, err := uuid.Parse(userIDStr)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Get progress stats
-	progress, err := h.service.GetProgressStats(r.Context(), userID)
+	progress, err := h.service.GetProgressStats(c.Request.Context(), userID)
 	if err != nil {
-		http.Error(w, "Failed to get progress stats", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get progress stats"})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(progress)
+	c.JSON(http.StatusOK, progress)
 }
 
 // GetStreak handles GET /api/v1/stats/streak
-func (h *StatsHandler) GetStreak(w http.ResponseWriter, r *http.Request) {
+func (h *StatsHandler) GetStreak(c *gin.Context) {
 	// Get user ID from context
-	userIDStr := r.Context().Value("user_id").(string)
-	userID, err := uuid.Parse(userIDStr)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Get streak stats
-	streak, err := h.service.GetStreakStats(r.Context(), userID)
+	streak, err := h.service.GetStreakStats(c.Request.Context(), userID)
 	if err != nil {
-		http.Error(w, "Failed to get streak stats", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get streak stats"})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(streak)
+	c.JSON(http.StatusOK, streak)
 }
 
 // GetLearningTimeChart handles GET /api/v1/stats/learning-time-chart?days=7
-func (h *StatsHandler) GetLearningTimeChart(w http.ResponseWriter, r *http.Request) {
+func (h *StatsHandler) GetLearningTimeChart(c *gin.Context) {
 	// Get user ID from context
-	userIDStr := r.Context().Value("user_id").(string)
-	userID, err := uuid.Parse(userIDStr)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Get days parameter (default: 7)
-	daysStr := r.URL.Query().Get("days")
+	daysStr := c.Query("days")
 	days := 7
 	if daysStr != "" {
 		days, err = strconv.Atoi(daysStr)
 		if err != nil || days < 1 || days > 365 {
-			http.Error(w, "Invalid days parameter", http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid days parameter"})
 			return
 		}
 	}
 
 	// Get learning time chart
-	chart, err := h.service.GetLearningTimeChart(r.Context(), userID, days)
+	chart, err := h.service.GetLearningTimeChart(c.Request.Context(), userID, days)
 	if err != nil {
-		http.Error(w, "Failed to get learning time chart", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get learning time chart"})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(chart)
+	c.JSON(http.StatusOK, chart)
 }
 
 // GetProgressChart handles GET /api/v1/stats/progress-chart?days=30
-func (h *StatsHandler) GetProgressChart(w http.ResponseWriter, r *http.Request) {
+func (h *StatsHandler) GetProgressChart(c *gin.Context) {
 	// Get user ID from context
-	userIDStr := r.Context().Value("user_id").(string)
-	userID, err := uuid.Parse(userIDStr)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Get days parameter (default: 30)
-	daysStr := r.URL.Query().Get("days")
+	daysStr := c.Query("days")
 	days := 30
 	if daysStr != "" {
 		days, err = strconv.Atoi(daysStr)
 		if err != nil || days < 1 || days > 365 {
-			http.Error(w, "Invalid days parameter", http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid days parameter"})
 			return
 		}
 	}
 
 	// Get progress chart
-	chart, err := h.service.GetProgressChart(r.Context(), userID, days)
+	chart, err := h.service.GetProgressChart(c.Request.Context(), userID, days)
 	if err != nil {
-		http.Error(w, "Failed to get progress chart", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get progress chart"})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(chart)
+	c.JSON(http.StatusOK, chart)
 }
 
 // GetWeakWords handles GET /api/v1/stats/weak-words?limit=10
-func (h *StatsHandler) GetWeakWords(w http.ResponseWriter, r *http.Request) {
+func (h *StatsHandler) GetWeakWords(c *gin.Context) {
 	// Get user ID from context
-	userIDStr := r.Context().Value("user_id").(string)
-	userID, err := uuid.Parse(userIDStr)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Get limit parameter (default: 10)
-	limitStr := r.URL.Query().Get("limit")
+	limitStr := c.Query("limit")
 	limit := 10
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil || limit < 1 || limit > 100 {
-			http.Error(w, "Invalid limit parameter", http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit parameter"})
 			return
 		}
 	}
 
 	// Get weak words
-	weakWords, err := h.service.GetWeakWords(r.Context(), userID, limit)
+	weakWords, err := h.service.GetWeakWords(c.Request.Context(), userID, limit)
 	if err != nil {
-		http.Error(w, "Failed to get weak words", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get weak words"})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"weak_words": weakWords,
-	})
+	c.JSON(http.StatusOK, gin.H{"weak_words": weakWords})
+}
+
+// RegisterRoutes registers stats routes
+func (h *StatsHandler) RegisterRoutes(rg *gin.RouterGroup) {
+	stats := rg.Group("/stats")
+	{
+		stats.GET("/dashboard", h.GetDashboard)
+		stats.GET("/learning-time", h.GetLearningTime)
+		stats.GET("/progress", h.GetProgress)
+		stats.GET("/streak", h.GetStreak)
+		stats.GET("/learning-time-chart", h.GetLearningTimeChart)
+		stats.GET("/progress-chart", h.GetProgressChart)
+		stats.GET("/weak-words", h.GetWeakWords)
+	}
 }

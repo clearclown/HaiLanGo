@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/clearclown/HaiLanGo/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )

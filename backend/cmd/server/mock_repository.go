@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/clearclown/HaiLanGo/internal/models"
-	"github.com/clearclown/HaiLanGo/internal/service/learning"
+	"github.com/clearclown/HaiLanGo/backend/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/internal/service/learning"
 	"github.com/google/uuid"
 )
 
@@ -40,18 +40,20 @@ func (r *MockRepository) initSampleData() {
 		pageID := uuid.New()
 		key := fmt.Sprintf("%s-%d", bookID.String(), i)
 
+		page := &models.Page{
+			ID:            pageID,
+			BookID:        bookID,
+			PageNumber:    i,
+			ImageURL:      fmt.Sprintf("https://example.com/page%d.png", i),
+			OCRText:       fmt.Sprintf("Здравствуйте! Это страница %d.", i),
+			OCRConfidence: 0.95,
+			DetectedLang:  "ru",
+			OCRStatus:     models.OCRStatusCompleted,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		}
 		r.pages[key] = &models.PageWithProgress{
-			Page: models.Page{
-				ID:          pageID,
-				BookID:      bookID,
-				PageNumber:  i,
-				ImageURL:    fmt.Sprintf("https://example.com/page%d.png", i),
-				OCRText:     fmt.Sprintf("Здравствуйте! Это страница %d.", i),
-				Translation: fmt.Sprintf("こんにちは！これはページ%dです。", i),
-				AudioURL:    fmt.Sprintf("https://example.com/audio%d.mp3", i),
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-			},
+			Page:        page,
 			IsCompleted: false,
 			CompletedAt: nil,
 		}

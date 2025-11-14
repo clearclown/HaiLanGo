@@ -112,3 +112,11 @@ type OCRJob struct {
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
 }
+
+// PageWithProgress はページ情報と学習進捗を含む
+type PageWithProgress struct {
+	*Page
+	IsCompleted bool       `json:"is_completed"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	StudyTime   int        `json:"study_time"` // 秒単位
+}

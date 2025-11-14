@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/clearclown/HaiLanGo/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/google/uuid"
 )
 

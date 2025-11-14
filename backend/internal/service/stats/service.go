@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/clearclown/HaiLanGo/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/google/uuid"
 )
 
@@ -14,7 +14,7 @@ type StatsRepository interface {
 	GetLearningSessions(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]models.LearningSession, error)
 	GetVocabularyProgress(ctx context.Context, userID uuid.UUID) ([]models.VocabularyProgress, error)
 	GetPhraseProgress(ctx context.Context, userID uuid.UUID) ([]models.PhraseProgress, error)
-	GetPronunciationScores(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]models.PronunciationScore, error)
+	GetPronunciationScores(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]models.PronunciationScoreRecord, error)
 	GetCurrentStreak(ctx context.Context, userID uuid.UUID) (int, error)
 	GetLongestStreak(ctx context.Context, userID uuid.UUID) (int, error)
 	GetCompletedPagesCount(ctx context.Context, userID uuid.UUID) (int, error)
