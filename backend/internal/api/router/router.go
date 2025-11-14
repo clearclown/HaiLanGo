@@ -31,7 +31,7 @@ func SetupRouter(
 	// ========================================
 	// リポジトリの初期化
 	// ========================================
-	bookRepo := repository.NewInMemoryBookRepository()  // TODO: PostgreSQL実装に置き換え
+	bookRepo := repository.NewBookRepositoryPostgres(db)  // PostgreSQL実装
 	reviewRepo := repository.NewInMemoryReviewRepository() // InMemory実装
 	// statsRepo := repository.NewStatsRepository(db) // TODO: 実装必要
 
