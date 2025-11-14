@@ -31,9 +31,10 @@ func SetupRouter(
 	// ========================================
 	// リポジトリの初期化
 	// ========================================
-	bookRepo := repository.NewBookRepositoryPostgres(db)  // PostgreSQL実装
-	reviewRepo := repository.NewInMemoryReviewRepository() // InMemory実装
-	// statsRepo := repository.NewStatsRepository(db) // TODO: 実装必要
+	bookRepo := repository.NewBookRepositoryPostgres(db)     // PostgreSQL実装
+	reviewRepo := repository.NewInMemoryReviewRepository()   // InMemory実装
+	statsRepo := repository.NewInMemoryStatsRepository()     // InMemory実装
+	learningRepo := repository.NewInMemoryLearningRepository() // InMemory実装
 
 	// ========================================
 	// サービスの初期化
@@ -49,11 +50,11 @@ func SetupRouter(
 	uploadHandler := handler.NewUploadHandler(uploadService)
 	booksHandler := handler.NewBooksHandler(bookRepo)
 	reviewHandler := handler.NewReviewHandler(reviewRepo)
-	// statsHandler := handler.NewStatsHandler(statsService) // TODO: 実装必要
+	statsHandler := handler.NewStatsHandler(statsRepo)
+	learningHandler := handler.NewLearningHandler(learningRepo)
 	// dictionaryHandler := handler.NewDictionaryHandler() // TODO: 実装必要
 	// patternHandler := handler.NewPatternHandler() // TODO: 実装必要
 	// ocrHandler := ocr.NewOCRHandler(ocrService) // TODO: 実装必要
-	// learningHandler := learning.NewLearningHandler() // TODO: 実装必要
 	// paymentHandler := payment.NewPaymentHandler() // TODO: 実装必要
 	// teacherModeHandler := teachermode.NewTeacherModeHandler() // TODO: 実装必要
 
@@ -101,13 +102,13 @@ func SetupRouter(
 			reviewHandler.RegisterRoutes(authenticated)
 
 			// Stats API
-			// statsHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+			statsHandler.RegisterRoutes(authenticated)
+
+			// Learning API
+			learningHandler.RegisterRoutes(authenticated)
 
 			// OCR API
 			// ocrHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
-
-			// Learning API
-			// learningHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
 
 			// Pattern API
 			// patternHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented

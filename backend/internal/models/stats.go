@@ -104,3 +104,84 @@ type ProgressDataPoint struct {
 	Phrases int      `json:"phrases"`
 	Pages  int       `json:"pages"`
 }
+
+// DashboardStatsFlat はフロントエンドのAPIレスポンス用のフラットな構造
+type DashboardStatsFlat struct {
+	LearningTimeToday         int     `json:"learning_time_today"`
+	LearningTimeThisWeek      int     `json:"learning_time_this_week"`
+	TotalLearningTime         int     `json:"total_learning_time"`
+	CurrentStreak             int     `json:"current_streak"`
+	LongestStreak             int     `json:"longest_streak"`
+	CompletedPages            int     `json:"completed_pages"`
+	TotalPages                int     `json:"total_pages"`
+	MasteredWords             int     `json:"mastered_words"`
+	MasteredPhrases           int     `json:"mastered_phrases"`
+	CompletedBooks            int     `json:"completed_books"`
+	TotalBooks                int     `json:"total_books"`
+	AveragePronunciationScore float64 `json:"average_pronunciation_score"`
+}
+
+// LearningTimeData は学習時間データ
+type LearningTimeData struct {
+	Period         string              `json:"period"`
+	Data           []DailyLearningTime `json:"data"`
+	TotalMinutes   int                 `json:"total_minutes"`
+	AverageMinutes float64             `json:"average_minutes"`
+}
+
+type DailyLearningTime struct {
+	Date    string `json:"date"`
+	Minutes int    `json:"minutes"`
+}
+
+// ProgressData は進捗データ
+type ProgressData struct {
+	Period  string           `json:"period"`
+	Words   []TimeSeriesData `json:"words"`
+	Phrases []TimeSeriesData `json:"phrases"`
+	Pages   []TimeSeriesData `json:"pages"`
+}
+
+type TimeSeriesData struct {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
+}
+
+// WeakPointsData は弱点分析データ
+type WeakPointsData struct {
+	WeakWords   []WeakItem `json:"weak_words"`
+	WeakPhrases []WeakItem `json:"weak_phrases"`
+}
+
+type WeakItem struct {
+	Word         string    `json:"word,omitempty"`
+	Phrase       string    `json:"phrase,omitempty"`
+	Language     string    `json:"language"`
+	Attempts     int       `json:"attempts"`
+	AverageScore float64   `json:"average_score"`
+	LastAttempt  time.Time `json:"last_attempt"`
+}
+
+// UserProgressDaily はユーザーの日次進捗
+type UserProgressDaily struct {
+	ID                      uuid.UUID `json:"id"`
+	UserID                  uuid.UUID `json:"user_id"`
+	Date                    time.Time `json:"date"`
+	CompletedPages          int       `json:"completed_pages"`
+	MasteredWords           int       `json:"mastered_words"`
+	MasteredPhrases         int       `json:"mastered_phrases"`
+	LearningMinutes         int       `json:"learning_minutes"`
+	PronunciationAttempts   int       `json:"pronunciation_attempts"`
+	PronunciationTotalScore int       `json:"pronunciation_total_score"`
+	UpdatedAt               time.Time `json:"updated_at"`
+}
+
+// LearningStreakRecord はストリーク情報
+type LearningStreakRecord struct {
+	ID               uuid.UUID `json:"id"`
+	UserID           uuid.UUID `json:"user_id"`
+	CurrentStreak    int       `json:"current_streak"`
+	LongestStreak    int       `json:"longest_streak"`
+	LastActivityDate time.Time `json:"last_activity_date"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
