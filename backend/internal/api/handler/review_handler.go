@@ -4,223 +4,230 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/clearclown/HaiLanGo/backend/internal/service/srs"
+	"github.com/clearclown/HaiLanGo/backend/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/internal/repository"
+	"github.com/clearclown/HaiLanGo/backend/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
-// ReviewHandler は復習APIのハンドラー
 type ReviewHandler struct {
-	srsService *srs.SRSService
+	repo    repository.ReviewRepository
+	srsAlgo *service.SM2Algorithm
 }
 
-// NewReviewHandler は新しいReviewHandlerを作成
-func NewReviewHandler(srsService *srs.SRSService) *ReviewHandler {
+func NewReviewHandler(repo repository.ReviewRepository) *ReviewHandler {
 	return &ReviewHandler{
-		srsService: srsService,
+		repo:    repo,
+		srsAlgo: service.NewSM2Algorithm(),
 	}
 }
 
-// GetReviewItemsRequest は復習項目取得のリクエスト
-type GetReviewItemsRequest struct {
-	UserID string `uri:"user_id" binding:"required,uuid"`
-}
-
-// GetReviewItemsResponse は復習項目取得のレスポンス
-type GetReviewItemsResponse struct {
-	UrgentItems      []ReviewItemResponse `json:"urgent_items"`
-	RecommendedItems []ReviewItemResponse `json:"recommended_items"`
-	RelaxedItems     []ReviewItemResponse `json:"relaxed_items"`
-}
-
-// ReviewItemResponse は復習項目のレスポンス
-type ReviewItemResponse struct {
-	ID             string     `json:"id"`
-	BookID         string     `json:"book_id"`
-	PageNumber     int        `json:"page_number"`
-	ItemType       string     `json:"item_type"`
-	Content        string     `json:"content"`
-	Translation    string     `json:"translation"`
-	ReviewCount    int        `json:"review_count"`
-	LastReviewDate *time.Time `json:"last_review_date"`
-	NextReviewDate *time.Time `json:"next_review_date"`
-	LastScore      int        `json:"last_score"`
-}
-
-// CompleteReviewRequest は復習完了のリクエスト
-type CompleteReviewRequest struct {
-	ItemID       string `uri:"item_id" binding:"required,uuid"`
-	Score        int    `json:"score" binding:"required,min=0,max=100"`
-	TimeSpentSec int    `json:"time_spent_sec" binding:"min=0"`
-}
-
-// CompleteReviewResponse は復習完了のレスポンス
-type CompleteReviewResponse struct {
-	Success        bool       `json:"success"`
-	NextReviewDate *time.Time `json:"next_review_date"`
-}
-
-// GetStatsRequest は統計取得のリクエスト
-type GetStatsRequest struct {
-	UserID string `uri:"user_id" binding:"required,uuid"`
-}
-
-// GetStatsResponse は統計取得のレスポンス
-type GetStatsResponse struct {
-	TotalReviewItems int     `json:"total_review_items"`
-	UrgentItems      int     `json:"urgent_items"`
-	RecommendedItems int     `json:"recommended_items"`
-	RelaxedItems     int     `json:"relaxed_items"`
-	WeeklyReviewCount int    `json:"weekly_review_count"`
-	CurrentStreak    int     `json:"current_streak"`
-	LongestStreak    int     `json:"longest_streak"`
-	AverageScore     float64 `json:"average_score"`
-}
-
-// GetReviewItems は復習項目を取得（優先度別）
-// GET /api/v1/review/items/:user_id
-func (h *ReviewHandler) GetReviewItems(c *gin.Context) {
-	var req GetReviewItemsRequest
-	if err := c.ShouldBindUri(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// GetStats godoc
+// @Summary Get review statistics
+// @Tags review
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.ReviewStats
+// @Router /api/v1/review/stats [get]
+func (h *ReviewHandler) GetStats(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	userID, err := uuid.Parse(req.UserID)
+	userID := userIDStr.(string)
+
+	// 今日の開始時刻
+	todayStart := time.Now().Truncate(24 * time.Hour)
+
+	// すべての復習アイテムを取得
+	items, err := h.repo.FindByUserID(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch review items"})
 		return
 	}
 
-	now := time.Now()
-	items, err := h.srsService.GetReviewItems(c.Request.Context(), userID, now)
+	stats := models.ReviewStats{
+		UrgentCount:      0,
+		RecommendedCount: 0,
+		OptionalCount:    0,
+	}
+
+	// 優先度別にカウント
+	for _, item := range items {
+		priority := h.srsAlgo.CalculatePriority(item.NextReview)
+		switch priority {
+		case "urgent":
+			stats.UrgentCount++
+		case "recommended":
+			stats.RecommendedCount++
+		case "optional":
+			stats.OptionalCount++
+		}
+	}
+
+	// 今日完了した復習数を取得
+	stats.TotalCompletedToday, err = h.repo.CountCompletedToday(c.Request.Context(), userID, todayStart)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		stats.TotalCompletedToday = 0
+	}
+
+	// 今週の完了率を計算
+	weekStart := todayStart.Add(-7 * 24 * time.Hour)
+	weeklyCompleted, _ := h.repo.CountCompletedSince(c.Request.Context(), userID, weekStart)
+	weeklyTarget := len(items) * 7 // 1日1回 × 7日
+	if weeklyTarget > 0 {
+		stats.WeeklyCompletionRate = float64(weeklyCompleted) / float64(weeklyTarget) * 100
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
+// GetItems godoc
+// @Summary Get review items by priority
+// @Tags review
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param priority query string false "Priority filter (urgent, recommended, optional)"
+// @Success 200 {object} map[string][]models.ReviewItem
+// @Router /api/v1/review/items [get]
+func (h *ReviewHandler) GetItems(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	response := &GetReviewItemsResponse{
-		UrgentItems:      make([]ReviewItemResponse, 0),
-		RecommendedItems: make([]ReviewItemResponse, 0),
-		RelaxedItems:     make([]ReviewItemResponse, 0),
+	userID := userIDStr.(string)
+	priorityFilter := c.Query("priority")
+
+	items, err := h.repo.FindByUserID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch review items"})
+		return
 	}
 
-	// 緊急項目
-	for _, item := range items.UrgentItems {
-		response.UrgentItems = append(response.UrgentItems, ReviewItemResponse{
-			ID:             item.ID.String(),
-			BookID:         item.BookID.String(),
-			PageNumber:     item.PageNumber,
-			ItemType:       item.ItemType,
-			Content:        item.Content,
-			Translation:    item.Translation,
-			ReviewCount:    item.ReviewCount,
-			LastReviewDate: item.LastReviewDate,
-			NextReviewDate: item.NextReviewDate,
-			LastScore:      item.LastScore,
+	// 優先度でフィルタリング
+	var filteredItems []*models.ReviewItem
+	for _, item := range items {
+		priority := h.srsAlgo.CalculatePriority(item.NextReview)
+		item.Priority = priority
+
+		if priorityFilter == "" || priority == priorityFilter {
+			filteredItems = append(filteredItems, item)
+		}
+	}
+
+	if filteredItems == nil {
+		filteredItems = []*models.ReviewItem{}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"items": filteredItems})
+}
+
+// SubmitReview godoc
+// @Summary Submit review result
+// @Tags review
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param result body models.ReviewResult true "Review result"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/review/submit [post]
+func (h *ReviewHandler) SubmitReview(c *gin.Context) {
+	var result models.ReviewResult
+	if err := c.ShouldBindJSON(&result); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID := userIDStr.(string)
+
+	// 復習アイテムを取得
+	item, err := h.repo.FindByID(c.Request.Context(), result.ItemID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Review item not found"})
+		return
+	}
+
+	// 所有権チェック
+	if item.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}
+
+	// SRSアルゴリズムで次の復習日時を計算
+	nextInterval, nextEaseFactor, nextReview := h.srsAlgo.CalculateNextReview(
+		item.EaseFactor,
+		item.IntervalDays,
+		result.Score,
+	)
+
+	// 習熟度を更新
+	newMasteryLevel := item.MasteryLevel
+	if result.Score >= 70 {
+		newMasteryLevel += 10
+		if newMasteryLevel > 100 {
+			newMasteryLevel = 100
+		}
+	} else if result.Score < 50 {
+		newMasteryLevel -= 5
+		if newMasteryLevel < 0 {
+			newMasteryLevel = 0
+		}
+	}
+
+	// アイテムを更新
+	item.MasteryLevel = newMasteryLevel
+	item.IntervalDays = nextInterval
+	item.EaseFactor = nextEaseFactor
+	item.LastReviewed = time.Now()
+	item.NextReview = nextReview
+	item.ReviewCount++
+
+	if err := h.repo.Update(c.Request.Context(), item); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update review item"})
+		return
+	}
+
+	// 履歴を保存
+	history := &models.ReviewHistory{
+		ReviewItemID: item.ID,
+		UserID:       userID,
+		Score:        result.Score,
+		ReviewedAt:   time.Now(),
+	}
+
+	if err := h.repo.SaveHistory(c.Request.Context(), history); err != nil {
+		// エラーログは出すが、レスポンスは成功を返す
+		c.JSON(http.StatusOK, gin.H{
+			"success":     true,
+			"next_review": nextReview.Format(time.RFC3339),
 		})
-	}
-
-	// 推奨項目
-	for _, item := range items.RecommendedItems {
-		response.RecommendedItems = append(response.RecommendedItems, ReviewItemResponse{
-			ID:             item.ID.String(),
-			BookID:         item.BookID.String(),
-			PageNumber:     item.PageNumber,
-			ItemType:       item.ItemType,
-			Content:        item.Content,
-			Translation:    item.Translation,
-			ReviewCount:    item.ReviewCount,
-			LastReviewDate: item.LastReviewDate,
-			NextReviewDate: item.NextReviewDate,
-			LastScore:      item.LastScore,
-		})
-	}
-
-	// 余裕あり項目
-	for _, item := range items.RelaxedItems {
-		response.RelaxedItems = append(response.RelaxedItems, ReviewItemResponse{
-			ID:             item.ID.String(),
-			BookID:         item.BookID.String(),
-			PageNumber:     item.PageNumber,
-			ItemType:       item.ItemType,
-			Content:        item.Content,
-			Translation:    item.Translation,
-			ReviewCount:    item.ReviewCount,
-			LastReviewDate: item.LastReviewDate,
-			NextReviewDate: item.NextReviewDate,
-			LastScore:      item.LastScore,
-		})
-	}
-
-	c.JSON(http.StatusOK, response)
-}
-
-// CompleteReview は復習完了処理
-// POST /api/v1/review/items/:item_id/complete
-func (h *ReviewHandler) CompleteReview(c *gin.Context) {
-	var req CompleteReviewRequest
-	if err := c.ShouldBindUri(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	itemID, err := uuid.Parse(req.ItemID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid item ID"})
-		return
-	}
-
-	err = h.srsService.CompleteReview(c.Request.Context(), itemID, req.Score, req.TimeSpentSec)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// 更新後の復習項目を取得して次回復習日を返す
-	// （実装簡略化のため、ここでは成功レスポンスのみ）
-	c.JSON(http.StatusOK, &CompleteReviewResponse{
-		Success: true,
+	c.JSON(http.StatusOK, gin.H{
+		"success":     true,
+		"next_review": nextReview.Format(time.RFC3339),
 	})
 }
 
-// GetStats は統計情報を取得
-// GET /api/v1/review/stats/:user_id
-func (h *ReviewHandler) GetStats(c *gin.Context) {
-	var req GetStatsRequest
-	if err := c.ShouldBindUri(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+// RegisterRoutes registers review routes
+func (h *ReviewHandler) RegisterRoutes(rg *gin.RouterGroup) {
+	review := rg.Group("/review")
+	{
+		review.GET("/stats", h.GetStats)
+		review.GET("/items", h.GetItems)
+		review.POST("/submit", h.SubmitReview)
 	}
-
-	userID, err := uuid.Parse(req.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	now := time.Now()
-	stats, err := h.srsService.GetStats(c.Request.Context(), userID, now)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	response := &GetStatsResponse{
-		TotalReviewItems:  stats.TotalReviewItems,
-		UrgentItems:       stats.UrgentItems,
-		RecommendedItems:  stats.RecommendedItems,
-		RelaxedItems:      stats.RelaxedItems,
-		WeeklyReviewCount: stats.WeeklyReviewCount,
-		CurrentStreak:     stats.CurrentStreak,
-		LongestStreak:     stats.LongestStreak,
-		AverageScore:      stats.AverageScore,
-	}
-
-	c.JSON(http.StatusOK, response)
 }
