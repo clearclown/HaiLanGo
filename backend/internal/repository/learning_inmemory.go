@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync"
 	"time"
@@ -306,6 +307,263 @@ func (r *InMemoryLearningRepository) GetBookProgress(ctx context.Context, userID
 		AverageTimePerPage:   averageTimePerPage,
 		CurrentPage:          currentPage,
 		LastStudiedAt:        lastStudiedAt,
+		Pages:                pages,
+	}, nil
+}
+
+// PostgreSQL Implementation
+
+type LearningRepositoryPostgres struct {
+	db *sql.DB
+}
+
+func NewLearningRepositoryPostgres(db *sql.DB) LearningRepositoryInterface {
+	return &LearningRepositoryPostgres{db: db}
+}
+
+func (r *LearningRepositoryPostgres) GetPageLearning(ctx context.Context, userID, bookID uuid.UUID, pageNumber int) (*models.PageLearning, error) {
+	// Get page data
+	page := &models.PageWithOCR{}
+	err := r.db.QueryRowContext(ctx, `
+		SELECT id, book_id, page_number, image_url, ocr_text, translation, language, has_audio, audio_url
+		FROM pages
+		WHERE book_id = $1 AND page_number = $2
+	`, bookID, pageNumber).Scan(
+		&page.ID, &page.BookID, &page.PageNumber, &page.ImageURL,
+		&page.OCRText, &page.Translation, &page.Language, &page.HasAudio, &page.AudioURL,
+	)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("page not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Get progress data
+	progressDetail := models.PageProgressDetail{}
+	var studyTime sql.NullInt64
+	var reviewCount sql.NullInt64
+	var completedAt, lastStudiedAt sql.NullTime
+
+	err = r.db.QueryRowContext(ctx, `
+		SELECT
+			COALESCE(SUM(duration_seconds), 0) as study_time,
+			COUNT(*) as review_count,
+			MAX(CASE WHEN completed THEN created_at END) as completed_at,
+			MAX(created_at) as last_studied_at
+		FROM learning_sessions
+		WHERE user_id = $1 AND book_id = $2 AND page_number = $3
+	`, userID, bookID, pageNumber).Scan(&studyTime, &reviewCount, &completedAt, &lastStudiedAt)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	progressDetail.StudyTime = int(studyTime.Int64)
+	progressDetail.ReviewCount = int(reviewCount.Int64)
+	if completedAt.Valid {
+		progressDetail.IsCompleted = true
+		progressDetail.CompletedAt = &completedAt.Time
+	}
+	if lastStudiedAt.Valid {
+		progressDetail.LastStudiedAt = &lastStudiedAt.Time
+	}
+
+	// Get phrases (mock for now)
+	phrases := []models.Phrase{}
+
+	// Get vocabulary (mock for now)
+	vocabulary := []models.VocabularyItem{}
+
+	// Navigation info
+	var totalPages int
+	r.db.QueryRowContext(ctx, "SELECT total_pages FROM books WHERE id = $1", bookID).Scan(&totalPages)
+
+	navigation := models.NavigationInfo{
+		HasPrevious: pageNumber > 1,
+		HasNext:     pageNumber < totalPages,
+		TotalPages:  totalPages,
+		CurrentPage: pageNumber,
+	}
+
+	return &models.PageLearning{
+		Page:       *page,
+		Progress:   progressDetail,
+		Phrases:    phrases,
+		Vocabulary: vocabulary,
+		Navigation: navigation,
+	}, nil
+}
+
+func (r *LearningRepositoryPostgres) CompletePage(ctx context.Context, userID, bookID uuid.UUID, pageNumber int, req *models.CompletePageRequest) (*models.PageProgressDetail, error) {
+	// Insert completion record
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO page_completions (user_id, book_id, page_number)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, book_id, page_number) DO NOTHING
+	`, userID, bookID, pageNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	// Insert learning session
+	_, err = r.db.ExecContext(ctx, `
+		INSERT INTO learning_sessions (user_id, book_id, page_number, duration_seconds, completed)
+		VALUES ($1, $2, $3, $4, true)
+	`, userID, bookID, pageNumber, req.StudyTime)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update book progress
+	_, err = r.db.ExecContext(ctx, `
+		INSERT INTO book_progress (user_id, book_id, total_pages, completed_pages, last_page_number, total_time_seconds)
+		VALUES ($1, $2,
+			(SELECT total_pages FROM books WHERE id = $2),
+			(SELECT COUNT(*) FROM page_completions WHERE user_id = $1 AND book_id = $2),
+			$3,
+			$4)
+		ON CONFLICT (user_id, book_id)
+		DO UPDATE SET
+			completed_pages = (SELECT COUNT(*) FROM page_completions WHERE user_id = $1 AND book_id = $2),
+			last_page_number = $3,
+			total_time_seconds = book_progress.total_time_seconds + $4,
+			updated_at = NOW()
+	`, userID, bookID, pageNumber, req.StudyTime)
+	if err != nil {
+		return nil, err
+	}
+
+	// Retrieve updated progress
+	var studyTime, reviewCount int
+	var completedAt, lastStudiedAt sql.NullTime
+
+	err = r.db.QueryRowContext(ctx, `
+		SELECT
+			COALESCE(SUM(duration_seconds), 0) as study_time,
+			COUNT(*) as review_count,
+			MAX(CASE WHEN completed THEN created_at END) as completed_at,
+			MAX(created_at) as last_studied_at
+		FROM learning_sessions
+		WHERE user_id = $1 AND book_id = $2 AND page_number = $3
+	`, userID, bookID, pageNumber).Scan(&studyTime, &reviewCount, &completedAt, &lastStudiedAt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	progressDetail := &models.PageProgressDetail{
+		IsCompleted: true,
+		StudyTime:   studyTime,
+		ReviewCount: reviewCount,
+	}
+	if completedAt.Valid {
+		progressDetail.CompletedAt = &completedAt.Time
+	}
+	if lastStudiedAt.Valid {
+		progressDetail.LastStudiedAt = &lastStudiedAt.Time
+	}
+
+	return progressDetail, nil
+}
+
+func (r *LearningRepositoryPostgres) RecordSession(ctx context.Context, userID, bookID uuid.UUID, pageNumber int, req *models.SessionRequest) (*models.SessionResponse, error) {
+	sessionID := uuid.New().String()
+
+	if req.Action == "start" {
+		return &models.SessionResponse{
+			SessionID: sessionID,
+			StartedAt: req.Timestamp,
+			EndedAt:   nil,
+		}, nil
+	}
+
+	// end action
+	return &models.SessionResponse{
+		SessionID: sessionID,
+		StartedAt: req.Timestamp.Add(-5 * time.Minute),
+		EndedAt:   &req.Timestamp,
+	}, nil
+}
+
+func (r *LearningRepositoryPostgres) GetBookProgress(ctx context.Context, userID, bookID uuid.UUID) (*models.BookProgressSummary, error) {
+	var totalPages, completedPages, totalStudyTime, currentPage int
+	var lastStudiedAt sql.NullTime
+
+	err := r.db.QueryRowContext(ctx, `
+		SELECT
+			bp.total_pages,
+			bp.completed_pages,
+			bp.last_page_number,
+			bp.total_time_seconds,
+			(SELECT MAX(created_at) FROM learning_sessions WHERE user_id = $1 AND book_id = $2) as last_studied_at
+		FROM book_progress bp
+		WHERE bp.user_id = $1 AND bp.book_id = $2
+	`, userID, bookID).Scan(&totalPages, &completedPages, &currentPage, &totalStudyTime, &lastStudiedAt)
+
+	if err == sql.ErrNoRows {
+		// No progress yet, get total pages from book
+		r.db.QueryRowContext(ctx, "SELECT total_pages FROM books WHERE id = $1", bookID).Scan(&totalPages)
+		return &models.BookProgressSummary{
+			BookID:               bookID.String(),
+			TotalPages:           totalPages,
+			CompletedPages:       0,
+			CompletionPercentage: 0,
+			TotalStudyTime:       0,
+			AverageTimePerPage:   0,
+			CurrentPage:          1,
+			LastStudiedAt:        nil,
+			Pages:                []models.PageProgressSummaryItem{},
+		}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	completionPercentage := float64(completedPages) / float64(totalPages) * 100
+	averageTimePerPage := 0.0
+	if completedPages > 0 {
+		averageTimePerPage = float64(totalStudyTime) / float64(completedPages)
+	}
+
+	// Get per-page progress
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			ls.page_number,
+			EXISTS(SELECT 1 FROM page_completions pc WHERE pc.user_id = $1 AND pc.book_id = $2 AND pc.page_number = ls.page_number) as is_completed,
+			COALESCE(SUM(ls.duration_seconds), 0) as study_time,
+			COUNT(*) as review_count
+		FROM learning_sessions ls
+		WHERE ls.user_id = $1 AND ls.book_id = $2
+		GROUP BY ls.page_number
+		ORDER BY ls.page_number
+	`, userID, bookID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	pages := []models.PageProgressSummaryItem{}
+	for rows.Next() {
+		var item models.PageProgressSummaryItem
+		rows.Scan(&item.PageNumber, &item.IsCompleted, &item.StudyTime, &item.ReviewCount)
+		pages = append(pages, item)
+	}
+
+	var lastStudied *time.Time
+	if lastStudiedAt.Valid {
+		lastStudied = &lastStudiedAt.Time
+	}
+
+	return &models.BookProgressSummary{
+		BookID:               bookID.String(),
+		TotalPages:           totalPages,
+		CompletedPages:       completedPages,
+		CompletionPercentage: completionPercentage,
+		TotalStudyTime:       totalStudyTime,
+		AverageTimePerPage:   averageTimePerPage,
+		CurrentPage:          currentPage,
+		LastStudiedAt:        lastStudied,
 		Pages:                pages,
 	}, nil
 }

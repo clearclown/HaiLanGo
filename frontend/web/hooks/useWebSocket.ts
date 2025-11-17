@@ -1,201 +1,214 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  ErrorData,
-  LearningUpdateData,
-  Notification,
-  OCRProgressData,
-  TTSProgressData,
-} from "@/lib/types/notification";
+import { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  getWebSocketClient,
+  type MessageType,
+  type MessageHandler,
+  type WebSocketConfig,
+  type OCRProgressPayload,
+  type BookReadyPayload,
+  type ReviewReminderPayload,
+  type LearningUpdatePayload,
+  type NotificationPayload,
+  type ErrorPayload,
+} from '@/lib/websocket';
 
-export interface WebSocketOptions {
-  url: string;
-  userId: string;
-  onOCRProgress?: (data: OCRProgressData) => void;
-  onTTSProgress?: (data: TTSProgressData) => void;
-  onLearningUpdate?: (data: LearningUpdateData) => void;
-  onError?: (data: ErrorData) => void;
-  reconnectAttempts?: number;
-  reconnectInterval?: number;
+interface UseWebSocketOptions {
+  config?: WebSocketConfig;
+  autoConnect?: boolean;
 }
 
-export interface WebSocketState {
-  isConnected: boolean;
-  isConnecting: boolean;
-  error: Error | null;
+interface UseWebSocketReturn {
+  connected: boolean;
+  connect: (token: string) => void;
+  disconnect: () => void;
+  subscribe: <T = unknown>(type: MessageType, handler: MessageHandler<T>) => () => void;
 }
 
-export function useWebSocket(options: WebSocketOptions) {
-  const {
-    url,
-    userId,
-    onOCRProgress,
-    onTTSProgress,
-    onLearningUpdate,
-    onError,
-    reconnectAttempts = 5,
-    reconnectInterval = 3000,
-  } = options;
+/**
+ * WebSocket接続を管理するReactフック
+ * @param options WebSocketオプション
+ * @returns WebSocket接続の状態と制御関数
+ */
+export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketReturn {
+  const { config, autoConnect = false } = options;
+  const [connected, setConnected] = useState(false);
+  const clientRef = useRef(getWebSocketClient(config));
+  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const subscribersRef = useRef<Map<MessageType, Set<MessageHandler>>>(new Map());
 
-  const [state, setState] = useState<WebSocketState>({
-    isConnected: false,
-    isConnecting: false,
-    error: null,
-  });
-
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectCountRef = useRef(0);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return;
+  // 接続状態を定期的にチェック
+  const startConnectionCheck = useCallback(() => {
+    if (checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current);
     }
 
-    setState((prev) => ({ ...prev, isConnecting: true, error: null }));
+    checkIntervalRef.current = setInterval(() => {
+      const isConnected = clientRef.current.isConnected();
+      setConnected(isConnected);
+    }, 1000);
+  }, []);
 
+  const stopConnectionCheck = useCallback(() => {
+    if (checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current);
+      checkIntervalRef.current = null;
+    }
+  }, []);
+
+  // WebSocket接続
+  const connect = useCallback((token: string) => {
     try {
-      const wsUrl = `${url}?user_id=${userId}`;
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log("WebSocket connected");
-        setState({ isConnected: true, isConnecting: false, error: null });
-        reconnectCountRef.current = 0;
-
-        // Send initial ping
-        ws.send(
-          JSON.stringify({
-            type: "ping",
-            data: null,
-            timestamp: new Date().toISOString(),
-          }),
-        );
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const notification = JSON.parse(event.data) as Notification;
-
-          switch (notification.type) {
-            case "ocr_progress":
-              onOCRProgress?.(notification.data as OCRProgressData);
-              break;
-            case "tts_progress":
-              onTTSProgress?.(notification.data as TTSProgressData);
-              break;
-            case "learning_update":
-              onLearningUpdate?.(notification.data as LearningUpdateData);
-              break;
-            case "error":
-              onError?.(notification.data as ErrorData);
-              break;
-            case "pong":
-              // Handle pong response
-              break;
-          }
-        } catch (error) {
-          console.error("Failed to parse WebSocket message:", error);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        setState((prev) => ({
-          ...prev,
-          error: new Error("WebSocket connection error"),
-        }));
-      };
-
-      ws.onclose = () => {
-        console.log("WebSocket disconnected");
-        setState({ isConnected: false, isConnecting: false, error: null });
-        wsRef.current = null;
-
-        // Attempt to reconnect
-        if (reconnectCountRef.current < reconnectAttempts) {
-          reconnectCountRef.current += 1;
-          console.log(
-            `Attempting to reconnect (${reconnectCountRef.current}/${reconnectAttempts})...`,
-          );
-
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
-          }, reconnectInterval);
-        } else {
-          setState((prev) => ({
-            ...prev,
-            error: new Error("Max reconnection attempts reached"),
-          }));
-        }
-      };
-
-      wsRef.current = ws;
+      clientRef.current.connect(token);
+      startConnectionCheck();
     } catch (error) {
-      console.error("Failed to create WebSocket:", error);
-      setState((prev) => ({
-        ...prev,
-        isConnecting: false,
-        error: error instanceof Error ? error : new Error("Unknown error"),
-      }));
+      console.error('Failed to connect WebSocket:', error);
     }
-  }, [
-    url,
-    userId,
-    onOCRProgress,
-    onTTSProgress,
-    onLearningUpdate,
-    onError,
-    reconnectAttempts,
-    reconnectInterval,
-  ]);
+  }, [startConnectionCheck]);
 
+  // WebSocket切断
   const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
+    clientRef.current.disconnect();
+    stopConnectionCheck();
+    setConnected(false);
+  }, [stopConnectionCheck]);
 
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
+  // メッセージハンドラーを購読
+  const subscribe = useCallback(<T = unknown>(
+    type: MessageType,
+    handler: MessageHandler<T>
+  ): (() => void) => {
+    // 購読者を追跡
+    if (!subscribersRef.current.has(type)) {
+      subscribersRef.current.set(type, new Set());
     }
+    subscribersRef.current.get(type)!.add(handler as MessageHandler);
 
-    reconnectCountRef.current = 0;
-    setState({ isConnected: false, isConnecting: false, error: null });
+    // WebSocketクライアントに登録
+    clientRef.current.on(type, handler);
+
+    // クリーンアップ関数を返す
+    return () => {
+      const subscribers = subscribersRef.current.get(type);
+      if (subscribers) {
+        subscribers.delete(handler as MessageHandler);
+      }
+      clientRef.current.off(type, handler);
+    };
   }, []);
 
-  const sendPing = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: "ping",
-          data: null,
-          timestamp: new Date().toISOString(),
-        }),
-      );
-    }
-  }, []);
-
+  // 自動接続
   useEffect(() => {
-    connect();
-
-    // Send ping every 30 seconds to keep connection alive
-    const pingInterval = setInterval(() => {
-      sendPing();
-    }, 30000);
+    if (autoConnect && typeof window !== 'undefined') {
+      // トークンを取得（localStorage, cookie, etc.から）
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        connect(token);
+      }
+    }
 
     return () => {
-      clearInterval(pingInterval);
-      disconnect();
+      // コンポーネントのアンマウント時にクリーンアップ
+      stopConnectionCheck();
+
+      // 全ての購読を解除
+      subscribersRef.current.forEach((handlers, type) => {
+        handlers.forEach(handler => {
+          clientRef.current.off(type, handler);
+        });
+      });
+      subscribersRef.current.clear();
     };
-  }, [connect, disconnect, sendPing]);
+  }, [autoConnect, connect, stopConnectionCheck]);
 
   return {
-    ...state,
+    connected,
     connect,
     disconnect,
-    sendPing,
+    subscribe,
   };
+}
+
+/**
+ * 特定のメッセージタイプを購読する簡易フック
+ * @param type メッセージタイプ
+ * @param handler ハンドラー関数
+ */
+export function useWebSocketSubscription<T = unknown>(
+  type: MessageType,
+  handler: MessageHandler<T>
+): void {
+  const { subscribe } = useWebSocket();
+
+  useEffect(() => {
+    const unsubscribe = subscribe(type, handler);
+    return unsubscribe;
+  }, [type, handler, subscribe]);
+}
+
+/**
+ * 複数のメッセージタイプを購読する簡易フック
+ * @param subscriptions メッセージタイプとハンドラーのマップ
+ */
+export function useWebSocketSubscriptions(
+  subscriptions: Record<MessageType, MessageHandler>
+): void {
+  const { subscribe } = useWebSocket();
+
+  useEffect(() => {
+    const unsubscribers = Object.entries(subscriptions).map(([type, handler]) =>
+      subscribe(type as MessageType, handler)
+    );
+
+    return () => {
+      unsubscribers.forEach(unsubscribe => unsubscribe());
+    };
+  }, [subscriptions, subscribe]);
+}
+
+// ========================================
+// Typed hooks for specific message types
+// ========================================
+
+/**
+ * OCR進捗通知を購読するフック
+ */
+export function useOCRProgress(handler: MessageHandler<OCRProgressPayload>): void {
+  useWebSocketSubscription('ocr_progress', handler);
+}
+
+/**
+ * 書籍準備完了通知を購読するフック
+ */
+export function useBookReady(handler: MessageHandler<BookReadyPayload>): void {
+  useWebSocketSubscription('book_ready', handler);
+}
+
+/**
+ * 復習リマインダー通知を購読するフック
+ */
+export function useReviewReminder(handler: MessageHandler<ReviewReminderPayload>): void {
+  useWebSocketSubscription('review_reminder', handler);
+}
+
+/**
+ * 学習更新通知を購読するフック
+ */
+export function useLearningUpdate(handler: MessageHandler<LearningUpdatePayload>): void {
+  useWebSocketSubscription('learning_update', handler);
+}
+
+/**
+ * 一般通知を購読するフック
+ */
+export function useNotification(handler: MessageHandler<NotificationPayload>): void {
+  useWebSocketSubscription('notification', handler);
+}
+
+/**
+ * エラー通知を購読するフック
+ */
+export function useErrorNotification(handler: MessageHandler<ErrorPayload>): void {
+  useWebSocketSubscription('error', handler);
 }

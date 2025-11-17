@@ -8,8 +8,8 @@ import type {
   TeacherModePlaylist,
   PlaybackState,
   TeacherModeSettings,
-  DEFAULT_TEACHER_MODE_SETTINGS,
 } from '@/types/teacher-mode';
+import { DEFAULT_TEACHER_MODE_SETTINGS } from '@/types/teacher-mode';
 
 /** useTeacherModeの戻り値 */
 export interface UseTeacherModeReturn {
@@ -100,7 +100,7 @@ export function useTeacherMode(
   /**
    * 音声を再生
    */
-  const playAudio = useCallback((audioUrl: string, duration: number) => {
+  const playAudio = useCallback((audioUrl: string, _duration: number) => {
     if (audioRef.current) {
       audioRef.current.pause();
     }

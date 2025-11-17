@@ -2,6 +2,7 @@ import type { NotificationSettings, Plan, UserProfile, UserSettings } from '@/ty
 import type { Book, BookMetadata } from '@/types/book';
 import type { UploadMetadata } from '@/types/upload';
 import type { ReviewItem, ReviewStats, ReviewResult } from '@/types/review';
+import type { DashboardStats, LearningTimeData, ProgressData, WeakPointsData } from '@/types/stats';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -169,6 +170,24 @@ class APIClient {
         method: 'POST',
         body: JSON.stringify(result),
       });
+    },
+  };
+
+  stats = {
+    getDashboard: async (): Promise<DashboardStats> => {
+      return this.fetch<DashboardStats>('/api/v1/stats/dashboard');
+    },
+
+    getLearningTime: async (period: 'week' | 'month' | 'year' = 'week'): Promise<LearningTimeData> => {
+      return this.fetch<LearningTimeData>(`/api/v1/stats/learning-time?period=${period}`);
+    },
+
+    getProgress: async (period: 'week' | 'month' | 'year' = 'week'): Promise<ProgressData> => {
+      return this.fetch<ProgressData>(`/api/v1/stats/progress?period=${period}`);
+    },
+
+    getWeakPoints: async (limit = 10): Promise<WeakPointsData> => {
+      return this.fetch<WeakPointsData>(`/api/v1/stats/weak-points?limit=${limit}`);
     },
   };
 }

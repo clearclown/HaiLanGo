@@ -11,6 +11,7 @@ import (
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
+	"github.com/clearclown/HaiLanGo/backend/internal/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +21,11 @@ func setupReviewTestRouter() (*gin.Engine, *repository.InMemoryReviewRepository)
 	r := gin.New()
 
 	repo := repository.NewInMemoryReviewRepository()
-	handler := NewReviewHandler(repo)
+
+	// WebSocketハブのセットアップ
+	wsHub := websocket.NewHub()
+
+	handler := NewReviewHandler(repo, wsHub)
 
 	// テスト用のミドルウェア：user_idを設定
 	r.Use(func(c *gin.Context) {
@@ -239,7 +244,8 @@ func TestSubmitReview_Unauthorized(t *testing.T) {
 	r := gin.New()
 
 	repo := repository.NewInMemoryReviewRepository()
-	handler := NewReviewHandler(repo)
+	wsHub := websocket.NewHub()
+	handler := NewReviewHandler(repo, wsHub)
 
 	// 異なるユーザーIDを設定
 	r.Use(func(c *gin.Context) {

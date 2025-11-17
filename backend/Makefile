@@ -1,4 +1,4 @@
-.PHONY: help run build test lint clean
+.PHONY: help run build test lint clean db-up db-down db-logs migrate-up migrate-down migrate-version setup
 
 help: ## ヘルプを表示
 	@echo "使用可能なコマンド:"
@@ -26,3 +26,36 @@ clean: ## ビルド成果物を削除
 deps: ## 依存関係をインストール
 	go mod download
 	go mod tidy
+
+db-up: ## PostgreSQL/Redisを起動
+	podman-compose up -d
+	@echo "✓ データベースコンテナを起動しました"
+	@echo "PostgreSQLの準備ができるまで待機中..."
+	@sleep 5
+
+db-down: ## PostgreSQL/Redisを停止
+	podman-compose down
+	@echo "✓ データベースコンテナを停止しました"
+
+db-logs: ## PostgreSQLのログを表示
+	podman-compose logs -f postgres
+
+migrate-up: ## マイグレーションを実行
+	@echo "マイグレーションを実行中..."
+	go run cmd/migrate/main.go -command=up
+
+migrate-down: ## マイグレーションをロールバック
+	@echo "⚠  警告: 全テーブルとデータが削除されます!"
+	@read -p "本当に実行しますか? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		go run cmd/migrate/main.go -command=down; \
+	else \
+		echo "キャンセルしました"; \
+	fi
+
+migrate-version: ## マイグレーションバージョンを表示
+	go run cmd/migrate/main.go -command=version
+
+setup: db-up migrate-up ## データベースセットアップ（起動+マイグレーション）
+	@echo "✓ セットアップ完了！データベースの準備ができました"

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"sync"
 	"time"
 
@@ -212,4 +213,180 @@ func (r *InMemoryReviewRepository) SaveHistory(ctx context.Context, history *mod
 
 	r.histories[history.ID] = history
 	return nil
+}
+
+// PostgreSQL Implementation
+
+type reviewRepositoryPostgres struct {
+	db *sql.DB
+}
+
+func NewReviewRepositoryPostgres(db *sql.DB) ReviewRepository {
+	return &reviewRepositoryPostgres{db: db}
+}
+
+func (r *reviewRepositoryPostgres) Create(ctx context.Context, item *models.ReviewItem) error {
+	query := `
+		INSERT INTO review_items (
+			id, user_id, book_id, page_number, item_type, content, translation, context,
+			ease_factor, interval, repetitions, next_review_date, last_reviewed_at,
+			correct_count, incorrect_count, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
+	`
+
+	if item.ID == "" {
+		item.ID = uuid.New().String()
+	}
+
+	_, err := r.db.ExecContext(ctx, query,
+		item.ID, item.UserID, item.BookID, item.PageNumber, item.Type,
+		item.Text, item.Translation, "", // context field
+		item.EaseFactor, item.IntervalDays, item.ReviewCount, item.NextReview, item.LastReviewed,
+		0, 0, // correct_count, incorrect_count
+	)
+	return err
+}
+
+func (r *reviewRepositoryPostgres) FindByID(ctx context.Context, id string) (*models.ReviewItem, error) {
+	query := `
+		SELECT id, user_id, book_id, page_number, item_type, content, translation,
+			ease_factor, interval, repetitions, next_review_date, last_reviewed_at,
+			correct_count, incorrect_count, created_at, updated_at
+		FROM review_items WHERE id = $1
+	`
+
+	item := &models.ReviewItem{}
+	var correctCount, incorrectCount int
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&item.ID, &item.UserID, &item.BookID, &item.PageNumber, &item.Type,
+		&item.Text, &item.Translation, &item.EaseFactor, &item.IntervalDays,
+		&item.ReviewCount, &item.NextReview, &item.LastReviewed,
+		&correctCount, &incorrectCount, &item.CreatedAt, &item.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, ErrReviewItemNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return item, nil
+}
+
+func (r *reviewRepositoryPostgres) FindByUserID(ctx context.Context, userID string) ([]*models.ReviewItem, error) {
+	query := `
+		SELECT id, user_id, book_id, page_number, item_type, content, translation,
+			ease_factor, interval, repetitions, next_review_date, last_reviewed_at,
+			correct_count, incorrect_count, created_at, updated_at
+		FROM review_items WHERE user_id = $1 ORDER BY next_review_date ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []*models.ReviewItem
+	for rows.Next() {
+		item := &models.ReviewItem{}
+		var correctCount, incorrectCount int
+		err := rows.Scan(
+			&item.ID, &item.UserID, &item.BookID, &item.PageNumber, &item.Type,
+			&item.Text, &item.Translation, &item.EaseFactor, &item.IntervalDays,
+			&item.ReviewCount, &item.NextReview, &item.LastReviewed,
+			&correctCount, &incorrectCount, &item.CreatedAt, &item.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+
+	return items, rows.Err()
+}
+
+func (r *reviewRepositoryPostgres) Update(ctx context.Context, item *models.ReviewItem) error {
+	query := `
+		UPDATE review_items SET
+			page_number = $2, item_type = $3, content = $4, translation = $5,
+			ease_factor = $6, interval = $7, repetitions = $8,
+			next_review_date = $9, last_reviewed_at = $10, updated_at = NOW()
+		WHERE id = $1
+	`
+
+	result, err := r.db.ExecContext(ctx, query,
+		item.ID, item.PageNumber, item.Type, item.Text, item.Translation,
+		item.EaseFactor, item.IntervalDays, item.ReviewCount,
+		item.NextReview, item.LastReviewed,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrReviewItemNotFound
+	}
+
+	return nil
+}
+
+func (r *reviewRepositoryPostgres) Delete(ctx context.Context, id string) error {
+	query := `DELETE FROM review_items WHERE id = $1`
+
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrReviewItemNotFound
+	}
+
+	return nil
+}
+
+func (r *reviewRepositoryPostgres) CountCompletedToday(ctx context.Context, userID string, since time.Time) (int, error) {
+	query := `SELECT COUNT(*) FROM review_history WHERE user_id = $1 AND reviewed_at >= $2`
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, userID, since).Scan(&count)
+	return count, err
+}
+
+func (r *reviewRepositoryPostgres) CountCompletedSince(ctx context.Context, userID string, since time.Time) (int, error) {
+	query := `SELECT COUNT(*) FROM review_history WHERE user_id = $1 AND reviewed_at >= $2`
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, userID, since).Scan(&count)
+	return count, err
+}
+
+func (r *reviewRepositoryPostgres) SaveHistory(ctx context.Context, history *models.ReviewHistory) error {
+	query := `
+		INSERT INTO review_history (id, user_id, item_id, score, time_spent_seconds, reviewed_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+
+	if history.ID == "" {
+		history.ID = uuid.New().String()
+	}
+
+	// Use default time_spent_seconds of 0 since model doesn't have this field
+	timeSpentSeconds := 0
+
+	_, err := r.db.ExecContext(ctx, query,
+		history.ID, history.UserID, history.ReviewItemID,
+		history.Score, timeSpentSeconds, history.ReviewedAt,
+	)
+	return err
 }

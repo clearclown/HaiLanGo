@@ -38,11 +38,17 @@ func main() {
 	}
 	defer db.Close()
 
-	// データベース接続テスト (InMemory使用時はスキップ可能)
+	// データベース接続テスト
+	var userRepo repository.UserRepository
 	if err := db.Ping(); err != nil {
 		log.Printf("⚠️  データベースPing失敗 (InMemoryリポジトリを使用): %v", err)
+		// InMemoryリポジトリを使用
+		userRepo = repository.NewInMemoryUserRepository()
+		log.Println("✅ InMemoryUserRepositoryを使用します")
 	} else {
 		log.Println("✅ データベースに接続しました")
+		// PostgreSQLリポジトリを使用
+		userRepo = repository.NewUserRepository(db)
 	}
 
 	// RSA鍵ペアの生成（本番環境では事前に生成した鍵を読み込むこと）
@@ -51,9 +57,6 @@ func main() {
 	}
 
 	log.Println("RSA鍵ペアを生成しました")
-
-	// リポジトリの初期化
-	userRepo := repository.NewUserRepository(db)
 
 	// サービスの初期化
 	authService := service.NewAuthService(userRepo)

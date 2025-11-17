@@ -7,18 +7,22 @@ import (
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/clearclown/HaiLanGo/backend/internal/service"
+	"github.com/clearclown/HaiLanGo/backend/internal/websocket"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type ReviewHandler struct {
 	repo    repository.ReviewRepository
 	srsAlgo *service.SM2Algorithm
+	wsHub   *websocket.Hub
 }
 
-func NewReviewHandler(repo repository.ReviewRepository) *ReviewHandler {
+func NewReviewHandler(repo repository.ReviewRepository, wsHub *websocket.Hub) *ReviewHandler {
 	return &ReviewHandler{
 		repo:    repo,
 		srsAlgo: service.NewSM2Algorithm(),
+		wsHub:   wsHub,
 	}
 }
 
@@ -80,6 +84,41 @@ func (h *ReviewHandler) GetStats(c *gin.Context) {
 	weeklyTarget := len(items) * 7 // 1日1回 × 7日
 	if weeklyTarget > 0 {
 		stats.WeeklyCompletionRate = float64(weeklyCompleted) / float64(weeklyTarget) * 100
+	}
+
+	// WebSocket通知: 緊急の復習がある場合に通知
+	if stats.UrgentCount > 0 && h.wsHub != nil {
+		userUUID, err := uuid.Parse(userID)
+		if err == nil {
+			// ReviewReminderMessageを送信
+			wsReviewItems := []websocket.ReviewItem{}
+			for _, item := range items {
+				priority := h.srsAlgo.CalculatePriority(item.NextReview)
+				if priority == "urgent" {
+					// UUIDに変換
+					itemUUID, err := uuid.Parse(item.ID)
+					if err != nil {
+						continue
+					}
+					wsItem := websocket.ReviewItem{
+						ID:          itemUUID,
+						Content:     item.Text,
+						Translation: item.Translation,
+						DueDate:     item.NextReview,
+						Priority:    priority,
+					}
+					wsReviewItems = append(wsReviewItems, wsItem)
+				}
+			}
+
+			message, err := websocket.NewReviewReminderMessage(
+				stats.UrgentCount,
+				wsReviewItems,
+			)
+			if err == nil {
+				h.wsHub.SendToUser(userUUID, message)
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, stats)

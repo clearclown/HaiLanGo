@@ -110,7 +110,7 @@ export function BookCard({ book, onDelete }: BookCardProps) {
               </Link>
             )}
             <Link
-              href={`/books/${book.id}`}
+              href={`/books/${book.id}` as any}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
             >
               詳細

@@ -1,94 +1,125 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
-	"github.com/clearclown/HaiLanGo/backend/internal/service/dictionary"
-	pkgDict "github.com/clearclown/HaiLanGo/backend/pkg/dictionary"
+	"github.com/clearclown/HaiLanGo/backend/internal/repository"
+	"github.com/gin-gonic/gin"
 )
 
-// DictionaryHandler handles dictionary-related HTTP requests
+// DictionaryHandler は辞書APIのハンドラー
 type DictionaryHandler struct {
-	service *dictionary.Service
+	repo repository.DictionaryRepositoryInterface
 }
 
-// NewDictionaryHandler creates a new dictionary handler
-func NewDictionaryHandler(service *dictionary.Service) *DictionaryHandler {
+// NewDictionaryHandler は辞書ハンドラーを作成
+func NewDictionaryHandler(repo repository.DictionaryRepositoryInterface) *DictionaryHandler {
 	return &DictionaryHandler{
-		service: service,
+		repo: repo,
 	}
 }
 
-// LookupWord handles GET /api/v1/dictionary/words/{word}
-func (h *DictionaryHandler) LookupWord(w http.ResponseWriter, r *http.Request) {
-	// Extract word from URL path
-	path := r.URL.Path
-	parts := strings.Split(path, "/")
-	if len(parts) < 6 {
-		http.Error(w, "Invalid URL format", http.StatusBadRequest)
-		return
-	}
-	word := parts[5]
-
-	// Get language from query parameter (default: en)
-	language := r.URL.Query().Get("language")
-	if language == "" {
-		language = "en"
-	}
-
-	// Lookup word
-	entry, err := h.service.LookupWord(r.Context(), word, language)
-	if err != nil {
-		if err == pkgDict.ErrWordNotFound {
-			http.Error(w, "Word not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(entry); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
+// RegisterRoutes は辞書APIのルートを登録
+func (h *DictionaryHandler) RegisterRoutes(rg *gin.RouterGroup) {
+	dictionary := rg.Group("/dictionary")
+	{
+		dictionary.GET("/words/:word", h.LookupWord)
+		dictionary.POST("/batch", h.BatchLookup)
+		dictionary.GET("/languages", h.GetSupportedLanguages)
 	}
 }
 
-// LookupWordDetails handles GET /api/v1/dictionary/words/{word}/details
-func (h *DictionaryHandler) LookupWordDetails(w http.ResponseWriter, r *http.Request) {
-	// Extract word from URL path
-	path := r.URL.Path
-	parts := strings.Split(path, "/")
-	if len(parts) < 6 {
-		http.Error(w, "Invalid URL format", http.StatusBadRequest)
+// BatchLookupRequest は複数単語検索リクエスト
+type BatchLookupRequest struct {
+	Words    []string `json:"words" binding:"required"`
+	Language string   `json:"language" binding:"required"`
+}
+
+// LookupWord は単語を検索
+// GET /api/v1/dictionary/words/:word?language=en
+func (h *DictionaryHandler) LookupWord(c *gin.Context) {
+	_, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	word := parts[5]
 
-	// Get language from query parameter (default: en)
-	language := r.URL.Query().Get("language")
-	if language == "" {
-		language = "en"
+	word := c.Param("word")
+	if word == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Word parameter is required"})
+		return
 	}
 
-	// Lookup word details
-	entry, err := h.service.LookupWordDetails(r.Context(), word, language)
+	// 言語パラメータを取得（デフォルト: en）
+	language := c.DefaultQuery("language", "en")
+	language = strings.ToLower(language)
+
+	entry, err := h.repo.LookupWord(c.Request.Context(), word, language)
 	if err != nil {
-		if err == pkgDict.ErrWordNotFound {
-			http.Error(w, "Word not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to lookup word"})
 		return
 	}
 
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(entry); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	c.JSON(http.StatusOK, entry)
+}
+
+// BatchLookup は複数の単語を検索
+// POST /api/v1/dictionary/batch
+func (h *DictionaryHandler) BatchLookup(c *gin.Context) {
+	_, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
+
+	var req BatchLookupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	if len(req.Words) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Words array cannot be empty"})
+		return
+	}
+
+	if len(req.Words) > 50 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot lookup more than 50 words at once"})
+		return
+	}
+
+	req.Language = strings.ToLower(req.Language)
+
+	entries, err := h.repo.BatchLookup(c.Request.Context(), req.Words, req.Language)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to lookup words"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"entries": entries,
+		"count":   len(entries),
+	})
+}
+
+// GetSupportedLanguages はサポートされている言語を取得
+// GET /api/v1/dictionary/languages
+func (h *DictionaryHandler) GetSupportedLanguages(c *gin.Context) {
+	_, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	languages, err := h.repo.GetSupportedLanguages(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get supported languages"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"languages": languages,
+		"count":     len(languages),
+	})
 }

@@ -4,6 +4,9 @@ import { TodayLearningCard } from "@/components/home/TodayLearningCard"
 import { WelcomeCard } from "@/components/home/WelcomeCard"
 import { fetchDashboard } from "@/lib/api"
 
+// Force dynamic rendering (no static generation at build time)
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const data = await fetchDashboard()
 

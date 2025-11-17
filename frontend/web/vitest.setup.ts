@@ -8,9 +8,12 @@ afterEach(() => {
 });
 
 // Media Session API のモック
-global.navigator.mediaSession = {
-  metadata: null,
-  playbackState: 'none',
-  setActionHandler: () => {},
-  setPositionState: () => {},
-} as any;
+Object.defineProperty(global.navigator, 'mediaSession', {
+  writable: true,
+  value: {
+    metadata: null,
+    playbackState: 'none',
+    setActionHandler: () => {},
+    setPositionState: () => {},
+  },
+});

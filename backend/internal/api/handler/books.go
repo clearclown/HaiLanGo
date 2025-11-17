@@ -1,23 +1,29 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
+	"github.com/clearclown/HaiLanGo/backend/internal/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 // BooksHandler は書籍APIのハンドラー
 type BooksHandler struct {
-	repo repository.BookRepository
+	repo  repository.BookRepository
+	wsHub *websocket.Hub
 }
 
 // NewBooksHandler は新しいBooksHandlerを作成
-func NewBooksHandler(repo repository.BookRepository) *BooksHandler {
-	return &BooksHandler{repo: repo}
+func NewBooksHandler(repo repository.BookRepository, wsHub *websocket.Hub) *BooksHandler {
+	return &BooksHandler{
+		repo:  repo,
+		wsHub: wsHub,
+	}
 }
 
 // CreateBookRequest は本の作成リクエスト
@@ -164,6 +170,18 @@ func (h *BooksHandler) CreateBook(c *gin.Context) {
 	if err := h.repo.Create(c.Request.Context(), book); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create book", "details": err.Error()})
 		return
+	}
+
+	// WebSocket通知: 書籍が作成されたことを通知
+	if h.wsHub != nil {
+		message, err := websocket.NewNotificationMessage(
+			"書籍を作成しました",
+			fmt.Sprintf("「%s」の登録が完了しました", book.Title),
+			websocket.NotificationLevel("success"),
+		)
+		if err == nil {
+			h.wsHub.SendToUser(userID, message)
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"book": book})

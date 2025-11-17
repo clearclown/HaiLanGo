@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { WebSocketProvider } from '@/components/WebSocketProvider';
+import { ToastProvider } from '@/components/notifications/ToastContainer';
+import { NotificationManager } from '@/components/notifications/NotificationManager';
 
 export const metadata: Metadata = {
   title: 'HaiLanGo - AI-Powered Language Learning',
@@ -13,7 +16,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        <ToastProvider>
+          <WebSocketProvider>
+            <NotificationManager />
+            {children}
+          </WebSocketProvider>
+        </ToastProvider>
+      </body>
     </html>
   );
 }

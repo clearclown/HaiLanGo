@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
+	"github.com/clearclown/HaiLanGo/backend/internal/websocket"
 	"github.com/clearclown/HaiLanGo/backend/pkg/cache"
 	"github.com/clearclown/HaiLanGo/backend/pkg/ocr"
 	"github.com/google/uuid"
@@ -22,6 +24,7 @@ type OCRService struct {
 	cache     cache.Cache
 	cacheTTL  time.Duration
 	pageRepo  repository.PageRepository
+	wsHub     *websocket.Hub
 }
 
 // NewOCRService は新しいOCRサービスを作成する
@@ -32,6 +35,11 @@ func NewOCRService(ocrClient ocr.OCRClient, cache cache.Cache) *OCRService {
 		cacheTTL:  7 * 24 * time.Hour, // 7日間
 		pageRepo:  repository.NewMockPageRepository(),
 	}
+}
+
+// SetWebSocketHub はWebSocketハブを設定する
+func (s *OCRService) SetWebSocketHub(hub *websocket.Hub) {
+	s.wsHub = hub
 }
 
 // SetPageRepository はページリポジトリを設定する
@@ -105,7 +113,7 @@ type ProcessBookResult struct {
 }
 
 // ProcessBook は書籍の全ページをOCR処理する（並列処理）
-func (s *OCRService) ProcessBook(ctx context.Context, bookID uuid.UUID, pages []PageData, languages []string, maxConcurrency int) (*ProcessBookResult, error) {
+func (s *OCRService) ProcessBook(ctx context.Context, bookID uuid.UUID, userID string, pages []PageData, languages []string, maxConcurrency int) (*ProcessBookResult, error) {
 	startTime := time.Now()
 
 	if maxConcurrency <= 0 {
@@ -116,6 +124,9 @@ func (s *OCRService) ProcessBook(ctx context.Context, bookID uuid.UUID, pages []
 		TotalPages: len(pages),
 		Errors:     []error{},
 	}
+
+	// 処理済みページ数をアトミックにカウント
+	var processedCount int32
 
 	// ワーカープールを作成
 	jobs := make(chan PageData, len(pages))
@@ -154,6 +165,10 @@ func (s *OCRService) ProcessBook(ctx context.Context, bookID uuid.UUID, pages []
 				}
 
 				results <- nil // 成功
+
+				// 処理済みページ数を更新してWebSocket通知を送信
+				processed := atomic.AddInt32(&processedCount, 1)
+				s.sendOCRProgress(userID, bookID.String(), len(pages), int(processed))
 			}
 		}()
 	}
@@ -184,5 +199,66 @@ func (s *OCRService) ProcessBook(ctx context.Context, bookID uuid.UUID, pages []
 
 	result.ProcessingTime = time.Since(startTime)
 
+	// 完了通知を送信
+	s.sendBookReady(userID, bookID.String(), result.ProcessedPages, result.TotalPages)
+
 	return result, nil
+}
+
+// sendOCRProgress はOCR処理の進捗をWebSocket経由で送信する
+func (s *OCRService) sendOCRProgress(userID, bookID string, totalPages, processedPages int) {
+	if s.wsHub == nil {
+		return
+	}
+
+	// UUIDに変換
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return
+	}
+	bookUUID, err := uuid.Parse(bookID)
+	if err != nil {
+		return
+	}
+
+	message, err := websocket.NewOCRProgressMessage(
+		bookUUID,
+		totalPages,
+		processedPages,
+		"processing",
+		fmt.Sprintf("Processing page %d of %d", processedPages, totalPages),
+	)
+	if err != nil {
+		return
+	}
+
+	s.wsHub.SendToUser(userUUID, message)
+}
+
+// sendBookReady は書籍処理完了をWebSocket経由で送信する
+func (s *OCRService) sendBookReady(userID, bookID string, processedPages, totalPages int) {
+	if s.wsHub == nil {
+		return
+	}
+
+	// UUIDに変換
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return
+	}
+	bookUUID, err := uuid.Parse(bookID)
+	if err != nil {
+		return
+	}
+
+	message, err := websocket.NewBookReadyMessage(
+		bookUUID,
+		"", // title - 実際の実装ではbookRepoから取得する
+		totalPages,
+	)
+	if err != nil {
+		return
+	}
+
+	s.wsHub.SendToUser(userUUID, message)
 }

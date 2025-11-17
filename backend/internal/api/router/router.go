@@ -2,11 +2,16 @@ package router
 
 import (
 	"database/sql"
+	"log"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/api/handler"
 	"github.com/clearclown/HaiLanGo/backend/internal/api/middleware"
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/clearclown/HaiLanGo/backend/internal/service"
+	ocrservice "github.com/clearclown/HaiLanGo/backend/internal/service/ocr"
+	"github.com/clearclown/HaiLanGo/backend/internal/websocket"
+	"github.com/clearclown/HaiLanGo/backend/pkg/cache"
+	"github.com/clearclown/HaiLanGo/backend/pkg/ocr"
 	"github.com/clearclown/HaiLanGo/backend/pkg/storage"
 	"github.com/gin-gonic/gin"
 )
@@ -29,39 +34,98 @@ func SetupRouter(
 	tempDir := storagePath + "/temp"
 
 	// ========================================
-	// リポジトリの初期化
+	// リポジトリの初期化（データベース接続に応じてフォールバック）
 	// ========================================
-	bookRepo := repository.NewBookRepositoryPostgres(db)     // PostgreSQL実装
-	reviewRepo := repository.NewInMemoryReviewRepository()   // InMemory実装
-	statsRepo := repository.NewInMemoryStatsRepository()     // InMemory実装
-	learningRepo := repository.NewInMemoryLearningRepository() // InMemory実装
+
+	// BookRepository: InMemory fallback対応
+	var bookRepo repository.BookRepository
+	if err := db.Ping(); err != nil {
+		log.Printf("⚠️  データベースPing失敗 (BookRepository: InMemoryを使用): %v", err)
+		bookRepo = repository.NewInMemoryBookRepository()
+		log.Println("✅ InMemoryBookRepositoryを使用します")
+	} else {
+		bookRepo = repository.NewBookRepositoryPostgres(db)
+	}
+
+	// 他のリポジトリ: InMemory fallback対応
+	var reviewRepo repository.ReviewRepository
+	var statsRepo repository.StatsRepositoryInterface
+	var learningRepo repository.LearningRepositoryInterface
+	var ocrRepo repository.OCRRepositoryInterface
+	var ttsRepo repository.TTSRepositoryInterface
+	var sttRepo repository.STTRepositoryInterface
+	var paymentRepo repository.PaymentRepositoryInterface
+	var dictionaryRepo repository.DictionaryRepositoryInterface
+	var patternRepo repository.PatternRepositoryInterface
+
+	if err := db.Ping(); err != nil {
+		log.Println("⚠️  データベース接続失敗 - すべてのリポジトリでInMemory実装を使用します")
+		reviewRepo = repository.NewInMemoryReviewRepository()
+		statsRepo = repository.NewInMemoryStatsRepository()
+		learningRepo = repository.NewInMemoryLearningRepository()
+		ocrRepo = repository.NewInMemoryOCRRepository()
+		ttsRepo = repository.NewInMemoryTTSRepository()
+		sttRepo = repository.NewInMemorySTTRepository()
+		paymentRepo = repository.NewInMemoryPaymentRepository()
+		dictionaryRepo = repository.NewInMemoryDictionaryRepository()
+		patternRepo = repository.NewInMemoryPatternRepository()
+	} else {
+		reviewRepo = repository.NewReviewRepositoryPostgres(db)
+		statsRepo = repository.NewStatsRepository(db)
+		learningRepo = repository.NewLearningRepositoryPostgres(db)
+		ocrRepo = repository.NewOCRRepositoryPostgres(db)
+		ttsRepo = repository.NewTTSRepositoryPostgres(db)
+		sttRepo = repository.NewSTTRepositoryPostgres(db)
+		paymentRepo = repository.NewPaymentRepositoryPostgres(db)
+		dictionaryRepo = repository.NewDictionaryRepositoryPostgres(db)
+		patternRepo = repository.NewPatternRepositoryPostgres(db)
+	}
+
+	// 以下はPostgreSQL実装のみ（InMemory実装なし）
+	pageRepo := repository.NewPageRepositoryPostgres(db)
+	teacherModeRepo := repository.NewTeacherModeRepositoryPostgres(db)
 
 	// ========================================
 	// サービスの初期化
 	// ========================================
 	uploadService := service.NewUploadService(localStorage, tempDir)
-	// ocrService := service.NewOCRService() // TODO: 実装必要
+	teacherModeService := service.NewTeacherModeService(teacherModeRepo, pageRepo, bookRepo, ttsRepo)
+
+	// OCRサービスの初期化
+	ocrClient, err := ocr.NewOCRClient() // 環境変数に基づいて実際のAPIまたはモックを返す
+	if err != nil {
+		panic("Failed to initialize OCR client: " + err.Error())
+	}
+	mockCache := cache.NewMockCache() // TODO: Redisキャッシュの実装
+	ocrSvc := ocrservice.NewOCRService(ocrClient, mockCache)
+	ocrSvc.SetPageRepository(pageRepo)
+
 	// statsService := stats.NewService(statsRepo) // TODO: 実装必要
 	// srsService := srs.NewSRSService(reviewRepo) // TODO: 実装必要
+
+	// WebSocketハブを初期化（先に初期化してサービスで使用できるようにする）
+	wsHub := websocket.NewHub()
+	go wsHub.Run()
+	wsHandler := handler.NewWebSocketHandler(wsHub)
+
+	// OCRサービスにWebSocketハブを設定
+	ocrSvc.SetWebSocketHub(wsHub)
 
 	// ========================================
 	// ハンドラーの初期化
 	// ========================================
 	uploadHandler := handler.NewUploadHandler(uploadService)
-	booksHandler := handler.NewBooksHandler(bookRepo)
-	reviewHandler := handler.NewReviewHandler(reviewRepo)
+	booksHandler := handler.NewBooksHandler(bookRepo, wsHub)
+	reviewHandler := handler.NewReviewHandler(reviewRepo, wsHub)
 	statsHandler := handler.NewStatsHandler(statsRepo)
 	learningHandler := handler.NewLearningHandler(learningRepo)
-	// dictionaryHandler := handler.NewDictionaryHandler() // TODO: 実装必要
-	// patternHandler := handler.NewPatternHandler() // TODO: 実装必要
-	// ocrHandler := ocr.NewOCRHandler(ocrService) // TODO: 実装必要
-	// paymentHandler := payment.NewPaymentHandler() // TODO: 実装必要
-	// teacherModeHandler := teachermode.NewTeacherModeHandler() // TODO: 実装必要
-
-	// WebSocketハブを初期化
-	// wsHub := websocket.NewHub() // TODO: 実装必要
-	// go wsHub.Run()
-	// wsHandler := websocket.NewHandler(wsHub) // TODO: 実装必要
+	ocrHandler := handler.NewOCRHandler(ocrRepo, ocrSvc, wsHub)
+	ttsHandler := handler.NewTTSHandler(ttsRepo)
+	sttHandler := handler.NewSTTHandler(sttRepo)
+	paymentHandler := handler.NewPaymentHandler(paymentRepo)
+	dictionaryHandler := handler.NewDictionaryHandler(dictionaryRepo)
+	patternHandler := handler.NewPatternHandler(patternRepo)
+	teacherModeHandler := handler.NewTeacherModeHandler(teacherModeService)
 
 	// ========================================
 	// ヘルスチェックエンドポイント
@@ -108,22 +172,31 @@ func SetupRouter(
 			learningHandler.RegisterRoutes(authenticated)
 
 			// OCR API
-			// ocrHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+			ocrHandler.RegisterRoutes(authenticated)
 
-			// Pattern API
-			// patternHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+			// TTS API
+			ttsHandler.RegisterRoutes(authenticated)
 
-			// Teacher Mode API
-			// teacherModeHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
-
-			// Dictionary API
-			// dictionaryHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+			// STT API
+			sttHandler.RegisterRoutes(authenticated)
 
 			// Payment API
-			// paymentHandler.RegisterRoutes(authenticated) // TODO: Uncomment when implemented
+			paymentHandler.RegisterRoutes(authenticated)
+
+			// Dictionary API
+			dictionaryHandler.RegisterRoutes(authenticated)
+
+			// Pattern API
+			patternHandler.RegisterRoutes(authenticated)
+
+			// Teacher Mode API
+			teacherModeHandler.RegisterRoutes(authenticated)
 
 			// WebSocket API
-			// authenticated.GET("/ws", wsHandler.HandleWebSocket) // TODO: Uncomment when implemented
+			wsHandler.RegisterRoutes(authenticated)
+
+			// WebSocket統計（デバッグ用）
+			authenticated.GET("/ws/stats", wsHandler.GetStats)
 		}
 	}
 
