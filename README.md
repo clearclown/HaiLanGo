@@ -1,328 +1,345 @@
-# HaiLanGo - AI-Powered Language Learning Platform
-
 <div align="center">
 
-📚 既存の言語学習本 × 🤖 AI技術 = 🚀 個人に最適化された能動的な学習体験
+# 📚 HaiLanGo
+
+### AI-Powered Language Learning Platform
+
+**Transform your physical language textbooks into an intelligent, interactive learning experience**
 
 [![Tests](https://github.com/clearclown/HaiLanGo/actions/workflows/test.yml/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/test.yml)
+[![Backend CI](https://github.com/clearclown/HaiLanGo/workflows/Backend%20CI/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/backend.yml)
+[![Frontend CI](https://github.com/clearclown/HaiLanGo/workflows/Frontend%20CI/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/frontend.yml)
+
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![Next.js](https://img.shields.io/badge/Next.js-14+-000000?style=flat&logo=next.js)](https://nextjs.org)
 [![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?style=flat&logo=flutter)](https://flutter.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=flat&logo=postgresql)](https://www.postgresql.org)
+[![Redis](https://img.shields.io/badge/Redis-7+-DC382D?style=flat&logo=redis)](https://redis.io)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[![Backend CI](https://github.com/clearclown/HaiLanGo/workflows/Backend%20CI/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/backend.yml)
-[![Frontend CI](https://github.com/clearclown/HaiLanGo/workflows/Frontend%20CI/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/frontend.yml)
-[![CI](https://github.com/clearclown/HaiLanGo/workflows/CI/badge.svg)](https://github.com/clearclown/HaiLanGo/actions/workflows/ci.yml)
+---
+
+### 🌍 Supported Languages
+
+| Language | TTS | STT | OCR | | Language | TTS | STT | OCR |
+|:--------:|:---:|:---:|:---:|---|:--------:|:---:|:---:|:---:|
+| 🇯🇵 Japanese | ✅ | ✅ | ✅ | | 🇪🇸 Spanish | ✅ | ✅ | ✅ |
+| 🇬🇧 English | ✅ | ✅ | ✅ | | 🇫🇷 French | ✅ | ✅ | ✅ |
+| 🇨🇳 Chinese | ✅ | ✅ | ✅ | | 🇵🇹 Portuguese | ✅ | ✅ | ✅ |
+| 🇷🇺 Russian | ✅ | ✅ | ✅ | | 🇩🇪 German | ✅ | ✅ | ✅ |
+| 🇮🇷 Persian | ✅ | ✅ | ✅ | | 🇮🇹 Italian | ✅ | ✅ | ✅ |
+| 🇮🇱 Hebrew | ✅ | ✅ | ✅ | | 🇹🇷 Turkish | ✅ | ✅ | ✅ |
+
+*Plus many more minor languages with varying accuracy*
+
+---
 
 </div>
 
-## 🎯 プロジェクト概要
+## 📸 Screenshots
 
-HaiLanGoは、手持ちの言語学習本をAI技術で最大限に活用する革新的な学習プラットフォームです。OCR、TTS、STTなどの最新AI技術を組み合わせ、24/7利用可能な「AI教師」があなたの語学学習をサポートします。
+> **Coming Soon**: UI screenshots will be added as the frontend develops
 
-### コアコンセプト
-- **既存の本を活用**: お気に入りの言語学習本を持っているなら、それが最高の教材
-- **AI教師**: 音声読み上げ、発音評価、解説生成で個別指導
-- **日常会話レベルを目指す**: 文法よりも会話パターンと単語量を重視
-- **プライバシー重視**: E2E暗号化で書籍データは完全にプライベート
+## 💡 What is HaiLanGo?
 
-## ✨ 主な機能
+HaiLanGo is an **AI-powered language learning platform** that breathes new life into your physical language textbooks. Using cutting-edge OCR, TTS, and STT technologies, it transforms static pages into an interactive, personalized learning experience available 24/7.
 
-### 📖 書籍のデジタル化
-- **AI-OCR**: 多言語対応（12言語以上）
-- **対応フォーマット**: PDF、PNG、JPG、HEIC
-- **複雑なレイアウト対応**: 表、ルビ、縦書きもOK
+**Key Features:**
+- 📖 **Digitize any language textbook** with AI-OCR (12+ languages)
+- 🎧 **AI Teacher Mode**: Automatic continuous playback with background support
+- 🗣️ **Pronunciation Evaluation**: Real-time feedback with 0-100 scoring
+- 📊 **Spaced Repetition System (SRS)**: Scientifically optimized review scheduling
+- 🔒 **Privacy-First**: E2E encryption keeps your data completely private
+- 💾 **Database-Free Development**: Full InMemory fallbacks for testing without PostgreSQL
 
-### 🎧 音声機能
-- **TTS（読み上げ）**:
-  - 主要12言語サポート
-  - 速度調整（0.5x〜2.0x）
-  - 無料版（標準品質）/ プレミアム版（高品質）
-- **STT（音声認識）**:
-  - 発音評価（0-100点スコア）
-  - 具体的な改善点提示
-  - 英会話教室のようなフィードバック
+## 🎯 Why HaiLanGo?
 
-### 🎓 教師モード（自動学習モード）
-- **ボタン一つで連続学習**: 全ページを自動で順次再生
-- **バックグラウンド再生**: 画面オフでも学習継続
-- **カスタマイズ可能**: 速度、間隔、学習内容を自由に設定
-- **オフライン対応**: 事前ダウンロードで通信不要
-- **ユースケース**: 通勤・通学、家事中、就寝前のリスニング
+### The Problem
+Traditional language learning apps force you into their curriculum. But what if you already have the perfect textbook that works for you? What if you want to learn a less common language pair that mainstream apps don't support?
 
-### 📚 インタラクティブ学習
-- **ページバイページモード**: 1ページずつ丁寧に学習
-- **フレーズ練習**: リピート、ロールプレイ
-- **発音チェック**: リアルタイムフィードバック
-- **単語帳自動生成**: 学習中の単語を自動収集
+### The Solution
+HaiLanGo lets you use **ANY language textbook** and enhances it with AI:
 
-### 📊 学習管理
-- **間隔反復学習（SRS）**: 科学的に最適化された復習タイミング
-- **進捗トラッキング**: 学習時間、完了ページ、習得単語数
-- **ストリーク機能**: 連続学習日数でモチベーション維持
-- **統計ダッシュボード**: 詳細な学習分析
+✅ **Your Book, Your Pace**: Use textbooks you trust
+✅ **AI-Powered Practice**: Get pronunciation feedback anytime
+✅ **Automated Learning**: Teacher Mode plays through pages automatically
+✅ **Offline Capable**: Download lessons for offline use
+✅ **Rare Language Pairs**: Support for Persian↔Japanese, Hebrew↔Chinese, etc.
 
-## 🌍 対応言語（主要）
+### Who It's For
+- 🎓 **Students** learning languages at school/university
+- 💼 **Professionals** preparing for business or travel
+- 🌏 **Language Enthusiasts** studying rare language pairs
+- 📚 **Self-Learners** who prefer textbooks over apps
 
-| 言語 | TTS | STT | OCR |
-|------|-----|-----|-----|
-| 日本語 | ✅ | ✅ | ✅ |
-| 英語 | ✅ | ✅ | ✅ |
-| 中国語 | ✅ | ✅ | ✅ |
-| ロシア語 | ✅ | ✅ | ✅ |
-| ペルシャ語 | ✅ | ✅ | ✅ |
-| ヘブライ語 | ✅ | ✅ | ✅ |
-| スペイン語 | ✅ | ✅ | ✅ |
-| フランス語 | ✅ | ✅ | ✅ |
-| ポルトガル語 | ✅ | ✅ | ✅ |
-| ドイツ語 | ✅ | ✅ | ✅ |
-| イタリア語 | ✅ | ✅ | ✅ |
-| トルコ語 | ✅ | ✅ | ✅ |
+## 🚀 Installation
 
-その他のマイナー言語もサポートするが正確さはわからない
+### Prerequisites
 
-## 🛠 技術スタック
-
-### バックエンド
-- **言語**: Go 1.21+
-- **フレームワーク**: Gin / Echo
-- **データベース**: PostgreSQL 15+, Redis 7+
-- **API**: RESTful + WebSocket
-
-### フロントエンド
-- **Web**: Next.js 14+ (TypeScript, React, TailwindCSS, ShadCN/UI)
-- **Mobile**: Flutter 3.0+
-- **状態管理**: React Context / Zustand (Web), Riverpod (Flutter)
-
-### AI / 外部API
-- **OCR**: Google Vision API / Azure Computer Vision / MarkPDFdown ⭐ NEW
-- **TTS**: Google Cloud TTS / Amazon Polly / ElevenLabs
-- **STT**: Google Cloud STT / Whisper API / OpenAI Realtime API ⭐ NEW
-- **リアルタイム対話**: OpenAI Realtime API / gpt-realtime ⭐ NEW
-- **翻訳**: DeepL API / Google Translate API
-- **辞書**: Oxford Dictionary API / Wiktionary API
-- **決済**: Stripe
-- **詳細**: [API統合提案書](docs/api_integration_proposal.md) を参照
-
-### インフラ
-- **初期**: オンプレミス（Podman / Docker Compose）
-- **将来**: AWS / GCP / Cloudflare
-- **IaC**: Terraform
-- **CI/CD**: GitHub Actions
-
-## 📁 プロジェクト構造
-
-```
-HaiLanGo/
-├── docs/                          # ドキュメント
-│   ├── requirements_definition.md # 要件定義書
-│   ├── ui_ux_design_document.md  # UI/UX設計書
-│   └── teacher_mode_technical_spec.md # 教師モード技術仕様書
-├── backend/                       # バックエンド（Go）
-│   ├── cmd/                       # エントリーポイント
-│   ├── internal/                  # 内部パッケージ
-│   │   ├── api/                   # APIハンドラー
-│   │   ├── service/               # ビジネスロジック
-│   │   ├── repository/            # データアクセス層
-│   │   └── models/                # データモデル
-│   ├── pkg/                       # 再利用可能なパッケージ
-│   └── go.mod
-├── frontend/                      # フロントエンド
-│   ├── web/                       # Next.js Webアプリ
-│   └── mobile/                    # Flutterモバイルアプリ
-├── infra/                         # インフラ設定
-│   ├── docker-compose.yml         # ローカル開発環境
-│   ├── terraform/                 # クラウドインフラ
-│   └── k8s/                       # Kubernetes設定（将来）
-├── scripts/                       # 各種スクリプト
-├── .env.example                   # 環境変数テンプレート
-├── CLAUDE.md                      # Claude Code設定
-└── README.md                      # このファイル
-```
-
-## 🚀 クイックスタート
-
-### 前提条件
+```bash
+# Required
 - Go 1.21+
 - Node.js 18+
-- Podman / Docker
+- pnpm 8+
+
+# Optional (for full features)
 - PostgreSQL 15+
 - Redis 7+
+- Podman or Docker
+```
 
-### 1. リポジトリのクローン
+### Quick Start
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/clearclown/HaiLanGo.git
 cd HaiLanGo
-```
 
-### 2. 環境変数の設定
-
-```bash
+# 2. Setup environment (optional - works without API keys!)
 cp .env.example .env
-# .envファイルを編集して必要なAPIキーを設定
-#
-# 重要: APIキーがなくても開発・テストは可能です！
-# USE_MOCK_APIS=true を設定すると自動的にモックが使用されます
-# 詳細は docs/mocking_strategy.md を参照してください
-```
+# Edit .env to add API keys, or leave USE_MOCK_APIS=true for testing
 
-### 3. 開発環境の起動
-
-```bash
-# Podmanを使用
-podman-compose up -d
-
-# または Docker Compose
-docker-compose up -d
-```
-
-### 4. バックエンドの起動
-
-```bash
+# 3. Start Backend
 cd backend
 go mod download
-go run cmd/server/main.go
-```
+make build
+./bin/server
 
-### 5. フロントエンド（Web）の起動
-
-```bash
+# 4. Start Frontend (in new terminal)
 cd frontend/web
 pnpm install
-pnpm run dev
+pnpm dev
+
+# 5. Open browser
+# Navigate to http://localhost:3000
 ```
 
-ブラウザで http://localhost:3000 を開く
-
-### 6. モバイルアプリの起動（オプション）
+### Development with Database (Optional)
 
 ```bash
-cd frontend/mobile
-flutter pub get
-flutter run
+# Start PostgreSQL and Redis
+podman-compose up -d
+# or
+docker-compose up -d
+
+# Run migrations
+cd backend
+go run cmd/migrate/main.go up
 ```
 
-## 📖 ドキュメント
+**Note**: The application works **fully without a database** using InMemory repositories! Perfect for quick testing and development.
 
-詳細なドキュメントは`docs/`ディレクトリを参照してください：
+## 🗑️ Uninstall
 
-- [要件定義書](docs/requirements_definition.md) - プロジェクトの全体像と機能要件
-- [UI/UX設計書](docs/ui_ux_design_document.md) - 画面設計とワイヤーフレーム
-- [教師モード技術仕様書](docs/teacher_mode_technical_spec.md) - 自動学習モードの詳細仕様
-- [モック構築戦略](docs/mocking_strategy.md) - APIキーなしでもテスト可能な仕組み
-- [API統合提案書](docs/api_integration_proposal.md) - 統合可能な外部API・ツールの包括的調査
+```bash
+# Stop all services
+podman-compose down
+# or
+docker-compose down
 
-### 機能実装RD（Feature Requirements Documents）
+# Remove project directory
+cd ..
+rm -rf HaiLanGo
 
-各機能の詳細な実装仕様は `docs/featureRDs/` を参照してください：
+# Remove Docker/Podman volumes (optional)
+podman volume prune
+# or
+docker volume prune
+```
 
-- [1. ユーザー認証](docs/featureRDs/1_ユーザー認証.md)
-- [2. 書籍アップロード](docs/featureRDs/2_書籍アップロード.md)
-- [3. OCR処理](docs/featureRDs/3_OCR処理.md)
-- [4. TTS音声読み上げ](docs/featureRDs/4_TTS音声読み上げ.md)
-- [5. STT発音評価](docs/featureRDs/5_STT発音評価.md)
-- [6. ページバイページ学習モード](docs/featureRDs/6_ページバイページ学習モード.md)
-- [7. 教師モード自動学習](docs/featureRDs/7_教師モード自動学習.md)
-- [8. 間隔反復学習SRS](docs/featureRDs/8_間隔反復学習SRS.md)
-- [9. 単語帳機能](docs/featureRDs/9_単語帳機能.md)
-- [10. 学習統計ダッシュボード](docs/featureRDs/10_学習統計ダッシュボード.md)
-- [11. 決済統合Stripe](docs/featureRDs/11_決済統合Stripe.md) ✅ **実装完了**
-- [12. 辞書API統合](docs/featureRDs/12_辞書API統合.md)
-- [13. OCR結果手動修正](docs/featureRDs/13_OCR結果手動修正.md)
-- [14. 会話パターン抽出](docs/featureRDs/14_会話パターン抽出.md)
-- [15. WebSocketリアルタイム通知](docs/featureRDs/15_WebSocketリアルタイム通知.md)
-- [16. ホーム画面実装](docs/featureRDs/16_ホーム画面実装.md)
-- [17. 設定画面実装](docs/featureRDs/17_設定画面実装.md)
-- [18. GitHub CI設定](docs/featureRDs/18_GitHub_CI設定.md)
+## 📖 Documentation
 
-## 💰 料金プラン
+### Core Documentation
+- [📋 Requirements Definition](docs/requirements_definition.md) - Project overview and functional requirements
+- [🎨 UI/UX Design Document](docs/ui_ux_design_document.md) - Screen designs and wireframes
+- [🎓 Teacher Mode Technical Spec](docs/teacher_mode_technical_spec.md) - Auto-learning mode specifications
+- [🧪 Mocking Strategy](docs/mocking_strategy.md) - Test without API keys
+- [🔌 API Integration Proposal](docs/api_integration_proposal.md) - External API/tool survey
 
-### 無料プラン
-- 1日1ページまで学習
-- 1日30分まで使用
-- 標準品質のTTS
-- 基本的な学習統計
+### Feature Requirements Documents
+Detailed implementation specs for each feature:
 
-### プレミアムプラン（$9.99/月）
-- 無制限の学習
-- 高品質TTS（ElevenLabs）
-- オフライン音声ダウンロード
-- 詳細な学習分析
-- 優先サポート
+| Phase 1 (MVP) | Phase 2 (Core) | Phase 3 (Advanced) |
+|:-------------|:---------------|:-------------------|
+| [1. User Authentication](docs/featureRDs/1_ユーザー認証.md) | [6. Page-by-Page Learning](docs/featureRDs/6_ページバイページ学習モード.md) | [12. Dictionary API Integration](docs/featureRDs/12_辞書API統合.md) |
+| [2. Book Upload](docs/featureRDs/2_書籍アップロード.md) | [7. Teacher Auto-Learning](docs/featureRDs/7_教師モード自動学習.md) | [13. OCR Manual Correction](docs/featureRDs/13_OCR結果手動修正.md) |
+| [3. OCR Processing](docs/featureRDs/3_OCR処理.md) | [8. Spaced Repetition (SRS)](docs/featureRDs/8_間隔反復学習SRS.md) | [14. Conversation Patterns](docs/featureRDs/14_会話パターン抽出.md) ✅ |
+| [4. TTS Voice Synthesis](docs/featureRDs/4_TTS音声読み上げ.md) | [9. Vocabulary Features](docs/featureRDs/9_単語帳機能.md) | [15. WebSocket Notifications](docs/featureRDs/15_WebSocketリアルタイム通知.md) ✅ |
+| [5. STT Pronunciation](docs/featureRDs/5_STT発音評価.md) ✅ | [10. Learning Analytics](docs/featureRDs/10_学習統計ダッシュボード.md) | [16. Home Screen](docs/featureRDs/16_ホーム画面実装.md) |
+| [11. Stripe Payment](docs/featureRDs/11_決済統合Stripe.md) ✅ | | [17. Settings Screen](docs/featureRDs/17_設定画面実装.md) |
+| | | [18. GitHub CI Setup](docs/featureRDs/18_GitHub_CI設定.md) |
 
-## 🗓 開発ロードマップ
+## 🤝 Contributing
 
-### Phase 1: MVP（3-4ヶ月） - 進行中
-- [ ] ユーザー認証（OAuth + Email）
-- [ ] PDFアップロード + OCR
-- [ ] TTS基本機能（主要言語5つ）
-- [ ] 簡易な単語帳機能
-- [ ] Web版のみ
-- [x] **会話パターン自動抽出** ✅
+We welcome contributions! Here's how to get started:
 
-### Phase 2: コア機能（2-3ヶ月）
-- [x] STT + 発音評価 ✅ 実装完了
-- [ ] ページバイページ学習モード
-- [ ] 間隔反復学習アルゴリズム
-- [ ] モバイルアプリ（Flutter）
-- [ ] Stripe決済統合
+### Development Workflow
 
-### Phase 3: 拡張機能（3-4ヶ月）
-- [ ] 教師モード（オフライン対応）
-- [ ] 辞書API統合
-- [ ] 学習分析ダッシュボード
-- [ ] マイナー言語対応拡大
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. **Commit** your changes: `git commit -m 'feat: Add amazing feature'`
+4. **Push** to your branch: `git push origin feature/amazing-feature`
+5. **Open** a Pull Request against `main`
 
-### Phase 4: コミュニティ（時期未定）
-- [ ] ユーザー生成コンテンツ機能
-- [ ] ブログ投稿プラットフォーム
-- [ ] コミュニティフォーラム
+### Code Style
 
-## 🤝 コントリビューション
+**Backend (Go)**
+```bash
+# Format code
+gofmt -w .
 
-コントリビューションは大歓迎です！以下の手順でお願いします：
+# Run linter
+golangci-lint run
 
-1. このリポジトリをフォーク
-2. フィーチャーブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add some amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
+# Run tests
+go test ./...
+```
 
-### コーディング規約
-- Go: `gofmt`, `golangci-lint`を使用
-- TypeScript: Biome.jsでフォーマット・リント
-- テスト: Vitest（単体・統合）、Playwright（E2E）
-- コミットメッセージ: Conventional Commits形式
+**Frontend (TypeScript)**
+```bash
+# Format & lint with Biome
+pnpm run lint
+pnpm run format
 
-### テスト戦略
-- **TDD原則**: すべての機能はテストファーストで実装
-- **モックシステム**: APIキーなしでもテスト可能（`USE_MOCK_APIS=true`）
-- **CI/CD**: GitHub Actionsで自動テスト実行
-- 詳細は [モック構築戦略](docs/mocking_strategy.md) を参照
+# Run tests
+pnpm test              # Unit & integration (Vitest)
+pnpm test:e2e          # E2E tests (Playwright)
+```
 
-## 📄 ライセンス
+### Commit Message Format
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-このプロジェクトは MIT License の下でライセンスされています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
+```
+feat: Add new feature
+fix: Bug fix
+docs: Documentation changes
+style: Code formatting
+refactor: Code refactoring
+test: Add or modify tests
+chore: Build/tool changes
+```
 
-## 🙏 謝辞
+### Testing Strategy
+- **TDD Approach**: Write tests before implementation
+- **Mock System**: Use `USE_MOCK_APIS=true` for testing without API keys
+- **CI/CD**: GitHub Actions runs tests automatically
+- See [Mocking Strategy](docs/mocking_strategy.md) for details
 
-- **abceed** - UI/UXデザインのインスピレーション
-- **Duolingo** - ゲーミフィケーションのアイデア
-- **Anki** - 間隔反復学習アルゴリズム
+## 📚 Resources
 
-## 📞 サポート・お問い合わせ
+### Official Links
+- [📖 Documentation](docs/) - Complete project documentation
+- [🐛 Issue Tracker](https://github.com/clearclown/HaiLanGo/issues) - Report bugs or request features
+- [💬 Discussions](https://github.com/clearclown/HaiLanGo/discussions) - Ask questions and share ideas
 
-- **Issue**: [GitHub Issues](https://github.com/clearclown/HaiLanGo/issues)
+### Technology Documentation
+- [Go Official Docs](https://golang.org/doc/)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Flutter Documentation](https://flutter.dev/docs)
+- [PostgreSQL Manual](https://www.postgresql.org/docs/)
+- [Redis Documentation](https://redis.io/documentation)
+
+### External APIs
+- [Google Cloud Vision](https://cloud.google.com/vision/docs) - OCR
+- [Google Cloud TTS](https://cloud.google.com/text-to-speech/docs) - Text-to-Speech
+- [Google Cloud STT](https://cloud.google.com/speech-to-text/docs) - Speech-to-Text
+- [OpenAI Realtime API](https://platform.openai.com/docs/) - Real-time voice interaction
+- [DeepL API](https://www.deepl.com/docs-api) - High-quality translation
+- [Stripe API](https://stripe.com/docs/api) - Payment processing
+
+### Inspiration
+- **abceed** - UI/UX design inspiration
+- **Duolingo** - Gamification ideas
+- **Anki** - Spaced repetition algorithm
+
+## 🗓️ Roadmap
+
+### ✅ Completed
+- [x] WebSocket real-time notifications
+- [x] InMemory repository fallbacks (database-free development)
+- [x] STT pronunciation evaluation
+- [x] Conversation pattern extraction
+- [x] Stripe payment integration
+
+### 🚧 Phase 1: MVP (In Progress)
+- [ ] User authentication (OAuth + Email)
+- [ ] PDF upload + OCR processing
+- [ ] TTS basic features (5 major languages)
+- [ ] Simple vocabulary features
+- [ ] Web version only
+
+### 📋 Phase 2: Core Features
+- [ ] Page-by-page learning mode
+- [ ] Spaced repetition algorithm
+- [ ] Mobile app (Flutter)
+- [ ] Full payment integration
+
+### 🔮 Phase 3: Advanced Features
+- [ ] Teacher Mode (offline support)
+- [ ] Dictionary API integration
+- [ ] Learning analytics dashboard
+- [ ] Expanded language support
+
+### 🌐 Phase 4: Community (TBD)
+- [ ] User-generated content
+- [ ] Blog platform
+- [ ] Community forum
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/clearclown/HaiLanGo/issues)
 - **Email**: support@HaiLanGo.com
-- **Discord**: [Community Server](https://discord.gg/HaiLanGo)
+- **Discord**: [Community Server](https://discord.gg/HaiLanGo) *(Coming Soon)*
+
+## ⚖️ Legal
+
+### License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Copyright (c) 2024 HaiLanGo Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### Third-Party Services
+
+This project uses third-party services that may have their own licenses:
+- **Google Cloud APIs**: Subject to Google Cloud Platform Terms of Service
+- **OpenAI APIs**: Subject to OpenAI Terms of Use
+- **Stripe**: Subject to Stripe Services Agreement
+- **DeepL**: Subject to DeepL API Terms
+
+See [API Integration Proposal](docs/api_integration_proposal.md) for full details.
 
 ---
 
 <div align="center">
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by [HaiLanGo Contributors](https://github.com/clearclown/HaiLanGo/graphs/contributors)
 
-⭐ このプロジェクトが気に入ったらスターをお願いします！
+⭐ **Star this project if you find it useful!**
+
+[Report Bug](https://github.com/clearclown/HaiLanGo/issues) · [Request Feature](https://github.com/clearclown/HaiLanGo/issues) · [Contribute](CONTRIBUTING.md)
 
 </div>
