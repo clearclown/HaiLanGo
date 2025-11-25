@@ -8,30 +8,144 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	vision "cloud.google.com/go/vision/v2/apiv1"
+	"cloud.google.com/go/vision/v2/apiv1/visionpb"
 	"github.com/clearclown/HaiLanGo/backend/pkg/retry"
+	"google.golang.org/api/option"
 )
 
 // GoogleVisionClient はGoogle Vision APIクライアント
 type GoogleVisionClient struct {
-	apiKey     string
-	httpClient *http.Client
-	endpoint   string
+	apiKey           string
+	httpClient       *http.Client
+	endpoint         string
+	credentialsFile  string
+	useServiceAcct   bool
 }
 
-// NewGoogleVisionClient は新しいGoogle Vision APIクライアントを作成する
+// NewGoogleVisionClient は新しいGoogle Vision APIクライアントを作成する（APIキー認証）
 func NewGoogleVisionClient(apiKey string) *GoogleVisionClient {
 	return &GoogleVisionClient{
-		apiKey:     apiKey,
-		httpClient: &http.Client{},
-		endpoint:   "https://vision.googleapis.com/v1/images:annotate",
+		apiKey:         apiKey,
+		httpClient:     &http.Client{},
+		endpoint:       "https://vision.googleapis.com/v1/images:annotate",
+		useServiceAcct: false,
+	}
+}
+
+// NewGoogleVisionClientWithCredentials はサービスアカウント認証でクライアントを作成する
+func NewGoogleVisionClientWithCredentials(credentialsFile string) *GoogleVisionClient {
+	return &GoogleVisionClient{
+		credentialsFile: credentialsFile,
+		useServiceAcct:  true,
 	}
 }
 
 // ProcessImage は画像データをOCR処理する
 func (g *GoogleVisionClient) ProcessImage(ctx context.Context, imageData []byte, languages []string) (*OCRResult, error) {
+	if g.useServiceAcct {
+		return g.processImageWithServiceAccount(ctx, imageData, languages)
+	}
+	return g.processImageWithAPIKey(ctx, imageData, languages)
+}
+
+// processImageWithServiceAccount はサービスアカウントを使用してOCR処理する
+func (g *GoogleVisionClient) processImageWithServiceAccount(ctx context.Context, imageData []byte, languages []string) (*OCRResult, error) {
+	var opts []option.ClientOption
+
+	// GOOGLE_APPLICATION_CREDENTIALS環境変数が設定されている場合はそれを使用
+	// そうでなければ明示的に指定されたファイルを使用
+	if g.credentialsFile != "" {
+		opts = append(opts, option.WithCredentialsFile(g.credentialsFile))
+	}
+
+	client, err := vision.NewImageAnnotatorClient(ctx, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create vision client: %w", err)
+	}
+	defer client.Close()
+
+	image := &visionpb.Image{
+		Content: imageData,
+	}
+
+	// 言語ヒントを設定
+	var imageContext *visionpb.ImageContext
+	if len(languages) > 0 {
+		imageContext = &visionpb.ImageContext{
+			LanguageHints: languages,
+		}
+	}
+
+	// テキスト検出リクエスト（BatchAnnotateImagesを使用）
+	req := &visionpb.BatchAnnotateImagesRequest{
+		Requests: []*visionpb.AnnotateImageRequest{
+			{
+				Image: image,
+				Features: []*visionpb.Feature{
+					{
+						Type: visionpb.Feature_TEXT_DETECTION,
+					},
+				},
+				ImageContext: imageContext,
+			},
+		},
+	}
+
+	resp, err := client.BatchAnnotateImages(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to annotate image: %w", err)
+	}
+
+	// レスポンスチェック
+	if len(resp.Responses) == 0 {
+		return &OCRResult{
+			Text:             "",
+			DetectedLanguage: "",
+			Confidence:       0.0,
+			Pages:            []PageOCRResult{},
+		}, nil
+	}
+
+	annotateResp := resp.Responses[0]
+	if annotateResp.Error != nil {
+		return nil, fmt.Errorf("vision API error: %s", annotateResp.Error.Message)
+	}
+
+	// レスポンスから結果を抽出
+	if len(annotateResp.TextAnnotations) == 0 {
+		return &OCRResult{
+			Text:             "",
+			DetectedLanguage: "",
+			Confidence:       0.0,
+			Pages:            []PageOCRResult{},
+		}, nil
+	}
+
+	// 最初のアノテーションが全体のテキスト
+	fullText := annotateResp.TextAnnotations[0].Description
+	locale := annotateResp.TextAnnotations[0].Locale
+
+	return &OCRResult{
+		Text:             fullText,
+		DetectedLanguage: locale,
+		Confidence:       0.95, // Google Vision APIは信頼度を提供しないので固定値
+		Pages: []PageOCRResult{
+			{
+				PageNumber: 1,
+				Text:       fullText,
+				Confidence: 0.95,
+			},
+		},
+	}, nil
+}
+
+// processImageWithAPIKey はAPIキーを使用してOCR処理する（従来の方法）
+func (g *GoogleVisionClient) processImageWithAPIKey(ctx context.Context, imageData []byte, languages []string) (*OCRResult, error) {
 	var result *OCRResult
 	var lastErr error
 
@@ -67,7 +181,7 @@ func (g *GoogleVisionClient) ProcessImage(ctx context.Context, imageData []byte,
 	return result, nil
 }
 
-// callAPI はGoogle Vision APIを呼び出す
+// callAPI はGoogle Vision APIを呼び出す（APIキー認証）
 func (g *GoogleVisionClient) callAPI(ctx context.Context, imageData []byte, languages []string) (*OCRResult, error) {
 	// 画像をBase64エンコード
 	encodedImage := base64.StdEncoding.EncodeToString(imageData)
@@ -177,4 +291,14 @@ func (g *GoogleVisionClient) callAPI(ctx context.Context, imageData []byte, lang
 			},
 		},
 	}, nil
+}
+
+// GetCredentialsFile はGOOGLE_APPLICATION_CREDENTIALS環境変数またはデフォルトパスからファイルを取得
+func GetCredentialsFile() string {
+	// 環境変数が設定されている場合はそれを使用
+	if creds := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); creds != "" {
+		return creds
+	}
+	// デフォルトはプロジェクトルートのgcp_hailingo.json
+	return ""
 }

@@ -3,6 +3,7 @@ import './globals.css';
 import { WebSocketProvider } from '@/components/WebSocketProvider';
 import { ToastProvider } from '@/components/notifications/ToastContainer';
 import { NotificationManager } from '@/components/notifications/NotificationManager';
+import { AuthProvider } from '@/components/AuthProvider';
 
 export const metadata: Metadata = {
   title: 'HaiLanGo - AI-Powered Language Learning',
@@ -19,8 +20,10 @@ export default function RootLayout({
       <body>
         <ToastProvider>
           <WebSocketProvider>
-            <NotificationManager />
-            {children}
+            <AuthProvider>
+              <NotificationManager />
+              {children}
+            </AuthProvider>
           </WebSocketProvider>
         </ToastProvider>
       </body>

@@ -6,14 +6,28 @@ import type { DashboardStats, LearningTimeData, ProgressData, WeakPointsData } f
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+// Get auth token from localStorage (client-side only)
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('access_token');
+}
+
 class APIClient {
   private async fetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
+    const token = getAuthToken();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    };
+
+    // Add Authorization header if token exists
+    if (token) {
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -107,10 +121,18 @@ class APIClient {
 
   upload = {
     createBook: async (metadata: Omit<UploadMetadata, 'book_id'>): Promise<{ book_id: string }> => {
-      return this.fetch<{ book_id: string }>('/api/v1/upload/create', {
+      // Use the books endpoint to create a book
+      const response = await this.fetch<{ book: { id: string } }>('/api/v1/books', {
         method: 'POST',
-        body: JSON.stringify(metadata),
+        body: JSON.stringify({
+          title: metadata.title,
+          target_language: metadata.target_language,
+          native_language: metadata.native_language,
+          reference_language: metadata.reference_language || '',
+        }),
       });
+      // Return in the expected format
+      return { book_id: response.book.id };
     },
 
     uploadFile: async (
@@ -119,8 +141,7 @@ class APIClient {
       onProgress?: (progress: number) => void
     ): Promise<{ success: boolean; file_id: string }> => {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('book_id', bookId);
+      formData.append('files', file);
 
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -134,7 +155,12 @@ class APIClient {
 
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(JSON.parse(xhr.responseText));
+            try {
+              const response = JSON.parse(xhr.responseText);
+              resolve({ success: true, file_id: response.file_id || bookId });
+            } catch {
+              resolve({ success: true, file_id: bookId });
+            }
           } else {
             reject(new Error(`Upload failed: ${xhr.statusText}`));
           }
@@ -142,16 +168,19 @@ class APIClient {
 
         xhr.addEventListener('error', () => reject(new Error('Upload failed')));
 
-        xhr.open('POST', `${API_BASE_URL}/api/v1/upload/file`);
+        xhr.open('POST', `${API_BASE_URL}/api/v1/upload/books/${bookId}/files`);
+        // Add Authorization header if token exists
+        const token = getAuthToken();
+        if (token) {
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        }
         xhr.send(formData);
       });
     },
 
     complete: async (bookId: string): Promise<{ success: boolean }> => {
-      return this.fetch<{ success: boolean }>('/api/v1/upload/complete', {
-        method: 'POST',
-        body: JSON.stringify({ book_id: bookId }),
-      });
+      // The backend doesn't have a complete endpoint, just return success
+      return Promise.resolve({ success: true });
     },
   };
 

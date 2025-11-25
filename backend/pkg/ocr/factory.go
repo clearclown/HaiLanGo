@@ -23,9 +23,19 @@ func NewOCRClient() (OCRClient, error) {
 
 	switch provider {
 	case ProviderGoogleVision:
+		// サービスアカウント認証を優先
+		credentialsFile := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+		if credentialsFile != "" {
+			// ファイルが存在するか確認
+			if _, err := os.Stat(credentialsFile); err == nil {
+				return NewGoogleVisionClientWithCredentials(credentialsFile), nil
+			}
+		}
+
+		// APIキー認証にフォールバック
 		apiKey := os.Getenv("GOOGLE_CLOUD_VISION_API_KEY")
 		if apiKey == "" {
-			// APIキーがない場合は自動的にモックを使用
+			// 認証情報がない場合は自動的にモックを使用
 			return NewMockOCRClient(), nil
 		}
 		return NewGoogleVisionClient(apiKey), nil
