@@ -68,4 +68,12 @@ coverage/
 tmp/
 temp/
 *.tmp
+
+# Development tools
 .claude/
+.playwright-mcp/
+
+# GCP credentials (never commit!)
+credentials.json
+*-credentials.json
+*.pem
