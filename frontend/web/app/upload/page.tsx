@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AppLayout } from '@/components/layout';
+import { Button, Card, CardContent, Input } from '@/components/ui';
 import { apiClient } from '@/lib/api/client';
 import type { UploadFile } from '@/types/upload';
 import { FileDropzone } from '@/components/upload/FileDropzone';
@@ -131,8 +133,8 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background-secondary">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <AppLayout title="本を追加" showBack backHref="/books">
+      <div className="container-app py-6 lg:py-8">
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -145,17 +147,17 @@ export default function UploadPage() {
                 <div key={label} className="flex-1 flex items-center">
                   <div className={`flex items-center ${index > 0 ? 'w-full' : ''}`}>
                     {index > 0 && (
-                      <div className={`flex-1 h-1 ${isActive ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                      <div className={`flex-1 h-1 transition-colors ${isActive ? 'bg-primary' : 'bg-gray-200'}`} />
                     )}
                     <div
-                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                        isActive ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600'
+                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                        isActive ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
                       }`}
                     >
                       {stepNumber}
                     </div>
                   </div>
-                  <span className={`ml-2 text-sm ${isActive ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+                  <span className={`ml-2 text-xs sm:text-sm hidden sm:block ${isActive ? 'text-primary font-medium' : 'text-gray-500'}`}>
                     {label}
                   </span>
                 </div>
@@ -166,132 +168,129 @@ export default function UploadPage() {
 
         {/* Step: Metadata */}
         {step === 'metadata' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h1 className="text-2xl font-bold mb-6">本の情報を入力</h1>
+          <Card>
+            <CardContent className="pt-6">
+              <h1 className="text-xl lg:text-2xl font-bold mb-6">本の情報を入力</h1>
 
-            <form onSubmit={handleMetadataSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium mb-2">
-                  本のタイトル *
-                </label>
-                <input
+              <form onSubmit={handleMetadataSubmit} className="space-y-6">
+                <Input
                   id="title"
+                  label="本のタイトル *"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="例: ロシア語入門"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
-              </div>
 
-              <div>
-                <label htmlFor="targetLanguage" className="block text-sm font-medium mb-2">
-                  学習先言語 *
-                </label>
-                <select
-                  id="targetLanguage"
-                  value={targetLanguage}
-                  onChange={(e) => setTargetLanguage(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">選択してください</option>
-                  {languages.map(lang => (
-                    <option key={lang.code} value={lang.code}>{lang.name}</option>
-                  ))}
-                </select>
-              </div>
+                <div>
+                  <label htmlFor="targetLanguage" className="label">
+                    学習先言語 *
+                  </label>
+                  <select
+                    id="targetLanguage"
+                    value={targetLanguage}
+                    onChange={(e) => setTargetLanguage(e.target.value)}
+                    className="input"
+                    required
+                  >
+                    <option value="">選択してください</option>
+                    {languages.map(lang => (
+                      <option key={lang.code} value={lang.code}>{lang.name}</option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label htmlFor="nativeLanguage" className="block text-sm font-medium mb-2">
-                  母国語 *
-                </label>
-                <select
-                  id="nativeLanguage"
-                  value={nativeLanguage}
-                  onChange={(e) => setNativeLanguage(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  {languages.map(lang => (
-                    <option key={lang.code} value={lang.code}>{lang.name}</option>
-                  ))}
-                </select>
-              </div>
+                <div>
+                  <label htmlFor="nativeLanguage" className="label">
+                    母国語 *
+                  </label>
+                  <select
+                    id="nativeLanguage"
+                    value={nativeLanguage}
+                    onChange={(e) => setNativeLanguage(e.target.value)}
+                    className="input"
+                    required
+                  >
+                    {languages.map(lang => (
+                      <option key={lang.code} value={lang.code}>{lang.name}</option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label htmlFor="referenceLanguage" className="block text-sm font-medium mb-2">
-                  参照言語（本に使用されている言語）
-                </label>
-                <select
-                  id="referenceLanguage"
-                  value={referenceLanguage}
-                  onChange={(e) => setReferenceLanguage(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">選択してください</option>
-                  {languages.map(lang => (
-                    <option key={lang.code} value={lang.code}>{lang.name}</option>
-                  ))}
-                </select>
-                <p className="text-sm text-gray-500 mt-1">
-                  学習先言語と異なる言語で書かれている場合のみ選択
-                </p>
-              </div>
+                <div>
+                  <label htmlFor="referenceLanguage" className="label">
+                    参照言語（本に使用されている言語）
+                  </label>
+                  <select
+                    id="referenceLanguage"
+                    value={referenceLanguage}
+                    onChange={(e) => setReferenceLanguage(e.target.value)}
+                    className="input"
+                  >
+                    <option value="">選択してください</option>
+                    {languages.map(lang => (
+                      <option key={lang.code} value={lang.code}>{lang.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    学習先言語と異なる言語で書かれている場合のみ選択
+                  </p>
+                </div>
 
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => router.push('/books')}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                >
-                  キャンセル
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                >
-                  次へ
-                </button>
-              </div>
-            </form>
-          </div>
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => router.push('/books')}
+                  >
+                    キャンセル
+                  </Button>
+                  <Button type="submit" variant="primary" className="flex-1">
+                    次へ
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         )}
 
         {/* Step: File Selection */}
         {step === 'files' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h1 className="text-2xl font-bold mb-6">ファイルを選択</h1>
-            <FileDropzone onFilesSelected={handleFilesSelected} />
-          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <h1 className="text-xl lg:text-2xl font-bold mb-6">ファイルを選択</h1>
+              <FileDropzone onFilesSelected={handleFilesSelected} />
+            </CardContent>
+          </Card>
         )}
 
         {/* Step: Uploading */}
         {step === 'uploading' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h1 className="text-2xl font-bold mb-6">アップロード中</h1>
-            <UploadProgress files={uploadFiles} onRemove={isUploading ? undefined : handleRemoveFile} />
-          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <h1 className="text-xl lg:text-2xl font-bold mb-6">アップロード中</h1>
+              <UploadProgress files={uploadFiles} onRemove={isUploading ? undefined : handleRemoveFile} />
+            </CardContent>
+          </Card>
         )}
 
         {/* Step: Completed */}
         {step === 'completed' && (
-          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <div className="text-6xl mb-4">🎉</div>
-            <h1 className="text-2xl font-bold mb-4">アップロード完了！</h1>
-            <p className="text-gray-600 mb-8">
-              OCR処理が開始されました。処理が完了したら学習を開始できます。
-            </p>
-            <button
-              onClick={handleGoToBooks}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            >
-              マイ本へ
-            </button>
-          </div>
+          <Card>
+            <CardContent className="py-12 text-center">
+              <div className="text-6xl mb-4">🎉</div>
+              <h1 className="text-xl lg:text-2xl font-bold mb-4">アップロード完了！</h1>
+              <p className="text-gray-600 mb-8">
+                OCR処理が開始されました。処理が完了したら学習を開始できます。
+              </p>
+              <Button variant="primary" onClick={handleGoToBooks}>
+                マイ本へ
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 }

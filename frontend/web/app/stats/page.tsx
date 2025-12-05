@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { AppLayout } from '@/components/layout';
+import { Button, Card, CardContent } from '@/components/ui';
 import { apiClient } from '@/lib/api/client';
 import type { DashboardStats, LearningTimeData, ProgressData, WeakPointsData } from '@/types/stats';
 
@@ -43,37 +45,41 @@ export default function StatsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-          <div className="space-y-4">
-            <div className="h-64 bg-gray-200 rounded"></div>
-            <div className="h-48 bg-gray-200 rounded"></div>
-            <div className="h-48 bg-gray-200 rounded"></div>
+      <AppLayout>
+        <div className="container-app py-6 lg:py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8" />
+            <div className="space-y-4">
+              <div className="h-64 bg-gray-200 rounded-xl" />
+              <div className="h-48 bg-gray-200 rounded-xl" />
+              <div className="h-48 bg-gray-200 rounded-xl" />
+            </div>
           </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   if (error || !dashboard || !learningTime || !progress) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p className="text-red-800 mb-4">{error || 'データの読み込みに失敗しました'}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            再読み込み
-          </button>
+      <AppLayout>
+        <div className="container-app py-6 lg:py-8">
+          <Card className="border-error-light bg-error-light/10">
+            <CardContent className="py-8 text-center">
+              <p className="text-error mb-4">{error || 'データの読み込みに失敗しました'}</p>
+              <Button variant="danger" onClick={() => window.location.reload()}>
+                再読み込み
+              </Button>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <AppLayout>
+      <div className="container-app py-6 lg:py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">学習統計</h1>
@@ -221,7 +227,8 @@ export default function StatsPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AppLayout>
   );
 }
 

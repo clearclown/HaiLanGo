@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { AppLayout } from '@/components/layout';
+import { Button, Card, CardContent, CardHeader, CardTitle, Progress } from '@/components/ui';
 import { ReviewCard } from '@/components/review/ReviewCard';
 import { ReviewSession } from '@/components/review/ReviewSession';
 import type { ReviewItem, ReviewStats } from '@/types/review';
@@ -68,45 +70,45 @@ export default function ReviewPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background-secondary flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">読み込み中...</p>
+      <AppLayout>
+        <div className="container-app py-6 lg:py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-gray-600">読み込み中...</p>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background-secondary flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <button
-            type="button"
-            onClick={loadReviewData}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-          >
-            再試行
-          </button>
+      <AppLayout>
+        <div className="container-app py-6 lg:py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <p className="text-error mb-4">{error}</p>
+            <Button variant="primary" onClick={loadReviewData}>
+              再試行
+            </Button>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-secondary">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <AppLayout>
+      <div className="container-app py-6 lg:py-8">
         {/* ヘッダー */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold">復習</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">復習</h1>
             <p className="text-gray-600 mt-1">間隔反復学習で効率的に記憶</p>
           </div>
           {stats && (
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <p className="text-sm text-gray-500">今日の復習</p>
-              <p className="text-2xl font-bold text-green-500">
+              <p className="text-2xl font-bold text-secondary">
                 {stats.total_completed_today}項目
               </p>
             </div>
@@ -115,22 +117,19 @@ export default function ReviewPage() {
 
         {/* 統計情報 */}
         {stats && (
-          <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
-            <h2 className="text-lg font-semibold mb-4">今週の進捗</h2>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 transition-all duration-300"
-                    style={{ width: `${stats.weekly_completion_rate}%` }}
-                  />
-                </div>
-              </div>
-              <span className="text-lg font-semibold">
-                {Math.round(stats.weekly_completion_rate)}%
-              </span>
-            </div>
-          </div>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">今週の進捗</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Progress
+                value={stats.weekly_completion_rate}
+                showLabel
+                color="primary"
+                size="md"
+              />
+            </CardContent>
+          </Card>
         )}
 
         {/* 復習カード */}
@@ -176,6 +175,6 @@ export default function ReviewPage() {
           onCancel={handleCancelSession}
         />
       )}
-    </div>
+    </AppLayout>
   );
 }

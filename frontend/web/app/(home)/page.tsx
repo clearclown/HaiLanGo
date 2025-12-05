@@ -1,3 +1,4 @@
+import { AppLayout } from "@/components/layout"
 import { LearningStats } from "@/components/home/LearningStats"
 import { QuickAccess } from "@/components/home/QuickAccess"
 import { TodayLearningCard } from "@/components/home/TodayLearningCard"
@@ -11,8 +12,8 @@ export default async function HomePage() {
   const data = await fetchDashboard()
 
   return (
-    <div className="min-h-screen bg-background-secondary">
-      <div className="mx-auto max-w-4xl px-4 py-8">
+    <AppLayout>
+      <div className="container-app py-6 lg:py-8">
         <WelcomeCard userName={data.user.name} />
 
         <div className="space-y-6">
@@ -28,6 +29,6 @@ export default async function HomePage() {
           <LearningStats stats={data.stats} />
         </div>
       </div>
-    </div>
+    </AppLayout>
   )
 }

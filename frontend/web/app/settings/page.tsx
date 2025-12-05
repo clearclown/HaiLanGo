@@ -1,5 +1,7 @@
 'use client';
 
+import { AppLayout } from '@/components/layout';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import AccountSettings from '@/components/settings/AccountSettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import PlanSettings from '@/components/settings/PlanSettings';
@@ -79,16 +81,21 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background-secondary flex items-center justify-center">
-        <div className="text-text-secondary">読み込み中...</div>
-      </div>
+      <AppLayout>
+        <div className="container-app py-6 lg:py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-gray-600">読み込み中...</p>
+          </div>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-secondary">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">設定</h1>
+    <AppLayout>
+      <div className="container-app py-6 lg:py-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 lg:mb-8">設定</h1>
 
         <div className="space-y-6">
           {profile && <AccountSettings profile={profile} onUpdate={handleUpdateProfile} />}
@@ -99,53 +106,59 @@ export default function SettingsPage() {
             <NotificationSettings settings={notifications} onUpdate={handleUpdateNotifications} />
           )}
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">その他</h2>
-            <div className="space-y-2">
-              <a href="/help" className="block text-primary hover:underline">
-                ヘルプ・サポート
-              </a>
-              <a href="/terms" className="block text-primary hover:underline">
-                利用規約
-              </a>
-              <a href="/privacy" className="block text-primary hover:underline">
-                プライバシーポリシー
-              </a>
-              <button
-                type="button"
-                onClick={() => setShowLogoutDialog(true)}
-                className="text-error hover:underline"
-              >
-                ログアウト
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {showLogoutDialog && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-sm">
-              <h3 className="text-lg font-semibold mb-4">ログアウトしますか？</h3>
-              <div className="flex gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>その他</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <a href="/help" className="block text-primary hover:text-primary-dark transition-colors">
+                  ヘルプ・サポート
+                </a>
+                <a href="/terms" className="block text-primary hover:text-primary-dark transition-colors">
+                  利用規約
+                </a>
+                <a href="/privacy" className="block text-primary hover:text-primary-dark transition-colors">
+                  プライバシーポリシー
+                </a>
                 <button
                   type="button"
-                  onClick={() => setShowLogoutDialog(false)}
-                  className="flex-1 bg-gray-200 text-text-primary px-4 py-2 rounded-lg"
-                >
-                  キャンセル
-                </button>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="flex-1 bg-error text-white px-4 py-2 rounded-lg"
+                  onClick={() => setShowLogoutDialog(true)}
+                  className="text-error hover:text-error-dark transition-colors"
                 >
                   ログアウト
                 </button>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {showLogoutDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-sm animate-fade-in">
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-semibold mb-4 text-center">ログアウトしますか？</h3>
+                <div className="flex gap-3">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowLogoutDialog(false)}
+                    className="flex-1"
+                  >
+                    キャンセル
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={handleLogout}
+                    className="flex-1"
+                  >
+                    ログアウト
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 }
