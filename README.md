@@ -14,6 +14,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-14+-000000?style=flat&logo=next.js)](https://nextjs.org)
 [![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?style=flat&logo=flutter)](https://flutter.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![Storybook](https://img.shields.io/badge/Storybook-10+-FF4785?style=flat&logo=storybook)](https://storybook.js.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=flat&logo=postgresql)](https://www.postgresql.org)
 [![Redis](https://img.shields.io/badge/Redis-7+-DC382D?style=flat&logo=redis)](https://redis.io)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -39,7 +40,9 @@
 
 ## 📸 Screenshots
 
-> **Coming Soon**: UI screenshots will be added as the frontend develops
+> **UI Components Available**: View our component library in [Storybook](frontend/web/.storybook/)
+>
+> Run `cd frontend/web && pnpm storybook` to browse interactive component documentation.
 
 ## 💡 What is HaiLanGo?
 
@@ -52,6 +55,7 @@ HaiLanGo is an **AI-powered language learning platform** that breathes new life 
 - 📊 **Spaced Repetition System (SRS)**: Scientifically optimized review scheduling
 - 🔒 **Privacy-First**: E2E encryption keeps your data completely private
 - 💾 **Database-Free Development**: Full InMemory fallbacks for testing without PostgreSQL
+- 🎨 **Modern UI Components**: Storybook-documented design system with ShadCN/UI
 
 ## 🎯 Why HaiLanGo?
 
@@ -81,7 +85,7 @@ HaiLanGo lets you use **ANY language textbook** and enhances it with AI:
 # Required
 - Go 1.21+
 - Node.js 18+
-- pnpm 8+
+- pnpm 10+
 
 # Optional (for full features)
 - PostgreSQL 15+
@@ -156,6 +160,7 @@ docker volume prune
 - [🎓 Teacher Mode Technical Spec](docs/teacher_mode_technical_spec.md) - Auto-learning mode specifications
 - [🧪 Mocking Strategy](docs/mocking_strategy.md) - Test without API keys
 - [🔌 API Integration Proposal](docs/api_integration_proposal.md) - External API/tool survey
+- [📚 Storybook](frontend/web/.storybook/) - Interactive UI component documentation
 
 ### Feature Requirements Documents
 Detailed implementation specs for each feature:
@@ -205,6 +210,9 @@ pnpm run format
 # Run tests
 pnpm test              # Unit & integration (Vitest)
 pnpm test:e2e          # E2E tests (Playwright)
+
+# Component development
+pnpm storybook         # Start Storybook for component development
 ```
 
 ### Commit Message Format
@@ -261,6 +269,8 @@ chore: Build/tool changes
 - [x] STT pronunciation evaluation
 - [x] Conversation pattern extraction
 - [x] Stripe payment integration
+- [x] UI Component Library with Storybook integration
+- [x] Dynamic language support system (30+ languages)
 
 ### 🚧 Phase 1: MVP (In Progress)
 - [ ] User authentication (OAuth + Email)

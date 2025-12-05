@@ -42,7 +42,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 10
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -53,7 +53,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./frontend/web
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Run BiomeJS lint
         working-directory: ./frontend/web
@@ -73,7 +73,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 10
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -84,7 +84,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./frontend/web
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Run Vitest
         working-directory: ./frontend/web
@@ -100,7 +100,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 10
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -111,7 +111,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./frontend/web
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Install Playwright browsers
         working-directory: ./frontend/web

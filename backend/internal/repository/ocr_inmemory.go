@@ -219,7 +219,18 @@ func (r *InMemoryOCRRepository) GetJob(ctx context.Context, jobID string) (*mode
 		return nil, fmt.Errorf("job not found: %s", jobID)
 	}
 
-	return job, nil
+	// Return a copy to prevent data race
+	jobCopy := *job
+	if job.Result != nil {
+		resultCopy := *job.Result
+		jobCopy.Result = &resultCopy
+	}
+	if job.CompletedAt != nil {
+		completedAtCopy := *job.CompletedAt
+		jobCopy.CompletedAt = &completedAtCopy
+	}
+
+	return &jobCopy, nil
 }
 
 func (r *InMemoryOCRRepository) UpdateJobStatus(ctx context.Context, jobID string, status models.OCRStatus, progress int) error {
