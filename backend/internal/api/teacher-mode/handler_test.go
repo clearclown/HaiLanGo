@@ -39,6 +39,7 @@ func TestGeneratePlaylistHandler(t *testing.T) {
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest("POST", "/api/v1/books/test-book/teacher-mode/generate", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer test-token")
 		rec := httptest.NewRecorder()
 
 		handler.GeneratePlaylist(rec, req)
@@ -57,6 +58,7 @@ func TestGeneratePlaylistHandler(t *testing.T) {
 
 		req := httptest.NewRequest("POST", "/api/v1/books/test-book/teacher-mode/generate", bytes.NewReader([]byte("invalid json")))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer test-token")
 		rec := httptest.NewRecorder()
 
 		handler.GeneratePlaylist(rec, req)

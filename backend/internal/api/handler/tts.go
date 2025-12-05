@@ -96,7 +96,7 @@ func (h *TTSHandler) Synthesize(c *gin.Context) {
 	// バックグラウンドでTTS処理を開始
 	go func() {
 		if inMemRepo, ok := h.repo.(*repository.InMemoryTTSRepository); ok {
-			inMemRepo.SimulateTTSProcessing(c.Request.Context(), job.ID)
+			inMemRepo.SimulateTTSProcessing(c.Request.Context(), job.ID.String())
 		}
 	}()
 
@@ -180,7 +180,7 @@ func (h *TTSHandler) BatchSynthesize(c *gin.Context) {
 	// 実際の実装では書籍のページ数とテキストを取得
 	totalPages := 100 // サンプル値
 
-	jobIDs := make([]string, 0, totalPages)
+	jobIDs := make([]uuid.UUID, 0, totalPages)
 
 	// 各ページのTTSジョブを作成
 	for i := 1; i <= totalPages; i++ {
@@ -194,16 +194,16 @@ func (h *TTSHandler) BatchSynthesize(c *gin.Context) {
 		jobIDs = append(jobIDs, job.ID)
 
 		// バックグラウンドでTTS処理を開始
-		go func(jobID string) {
+		go func(jobID uuid.UUID) {
 			if inMemRepo, ok := h.repo.(*repository.InMemoryTTSRepository); ok {
-				inMemRepo.SimulateTTSProcessing(c.Request.Context(), jobID)
+				inMemRepo.SimulateTTSProcessing(c.Request.Context(), jobID.String())
 			}
 		}(job.ID)
 	}
 
 	response := &models.TTSBatchResponse{
-		BatchID:    uuid.New().String(),
-		BookID:     bookID.String(),
+		BatchID:    uuid.New(),
+		BookID:     bookID,
 		TotalPages: totalPages,
 		JobIDs:     jobIDs,
 		CreatedAt:  time.Now(),

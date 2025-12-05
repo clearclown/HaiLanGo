@@ -41,25 +41,26 @@ const (
 
 // TTSAudioResponse はTTS音声レスポンス
 type TTSAudioResponse struct {
-	AudioID     string         `json:"audio_id"`
-	AudioURL    string         `json:"audio_url"`
-	Duration    int            `json:"duration"`     // 音声の長さ（秒）
-	Format      TTSAudioFormat `json:"format"`
-	Language    string         `json:"language"`
-	Quality     TTSQuality     `json:"quality"`
-	Speed       float64        `json:"speed"`
-	CachedAt    *time.Time     `json:"cached_at,omitempty"`
-	ExpiresAt   *time.Time     `json:"expires_at,omitempty"`
-	ProcessingTime int         `json:"processing_time"` // 処理時間（ミリ秒）
+	AudioID        uuid.UUID      `json:"audio_id"`
+	AudioURL       string         `json:"audio_url"`
+	Duration       int            `json:"duration"` // 音声の長さ（秒）
+	Format         TTSAudioFormat `json:"format"`
+	Language       string         `json:"language"`
+	Quality        TTSQuality     `json:"quality"`
+	Speed          float64        `json:"speed"`
+	CachedAt       *time.Time     `json:"cached_at,omitempty"`
+	ExpiresAt      *time.Time     `json:"expires_at,omitempty"`
+	ProcessingTime int            `json:"processing_time"` // 処理時間（ミリ秒）
 }
 
 // TTSLanguage はサポート言語情報
 type TTSLanguage struct {
-	Code        string   `json:"code"`         // 言語コード（例: "ja"）
-	Name        string   `json:"name"`         // 言語名（例: "Japanese"）
-	NativeName  string   `json:"native_name"`  // ネイティブ名（例: "日本語"）
-	Voices      []string `json:"voices"`       // 利用可能な声のID
-	IsSupported bool     `json:"is_supported"` // サポートされているか
+	Code        string   `json:"code"`                   // 言語コード（例: "ja"）
+	Name        string   `json:"name"`                   // 言語名（例: "Japanese"）
+	NativeName  string   `json:"native_name"`            // ネイティブ名（例: "日本語"）
+	Voices      []string `json:"voices"`                 // 利用可能な声のID
+	IsSupported bool     `json:"is_supported"`           // サポートされているか
+	SupportTier string   `json:"support_tier,omitempty"` // サポートレベル: verified, supported, experimental
 }
 
 // TTSBatchRequest はバッチTTS合成リクエスト
@@ -71,28 +72,28 @@ type TTSBatchRequest struct {
 
 // TTSBatchResponse はバッチTTS合成レスポンス
 type TTSBatchResponse struct {
-	BatchID    string    `json:"batch_id"`
-	BookID     string    `json:"book_id"`
-	TotalPages int       `json:"total_pages"`
-	JobIDs     []string  `json:"job_ids"`
-	CreatedAt  time.Time `json:"created_at"`
+	BatchID    uuid.UUID   `json:"batch_id"`
+	BookID     uuid.UUID   `json:"book_id"`
+	TotalPages int         `json:"total_pages"`
+	JobIDs     []uuid.UUID `json:"job_ids"`
+	CreatedAt  time.Time   `json:"created_at"`
 }
 
 // TTSJobDetail はTTS合成ジョブの詳細情報
 type TTSJobDetail struct {
-	ID          string       `json:"id"`
-	BookID      string       `json:"book_id"`
-	PageNumber  int          `json:"page_number"`
-	Text        string       `json:"text"`
-	Language    string       `json:"language"`
-	Status      TTSStatus    `json:"status"`
-	Progress    int          `json:"progress"` // 0-100
-	AudioID     string       `json:"audio_id,omitempty"`
-	AudioURL    string       `json:"audio_url,omitempty"`
-	Error       string       `json:"error,omitempty"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
-	CompletedAt *time.Time   `json:"completed_at,omitempty"`
+	ID          uuid.UUID  `json:"id"`
+	BookID      uuid.UUID  `json:"book_id"`
+	PageNumber  int        `json:"page_number"`
+	Text        string     `json:"text"`
+	Language    string     `json:"language"`
+	Status      TTSStatus  `json:"status"`
+	Progress    int        `json:"progress"` // 0-100
+	AudioID     uuid.UUID  `json:"audio_id,omitempty"`
+	AudioURL    string     `json:"audio_url,omitempty"`
+	Error       string     `json:"error,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 // TTSStatus はTTS処理ステータス
@@ -118,12 +119,12 @@ type TTSCacheStats struct {
 
 // TTSJobResponse はTTS処理ジョブレスポンス
 type TTSJobResponse struct {
-	JobID      string    `json:"job_id"`
-	BookID     string    `json:"book_id,omitempty"`
+	JobID      uuid.UUID `json:"job_id"`
+	BookID     uuid.UUID `json:"book_id,omitempty"`
 	PageNumber int       `json:"page_number,omitempty"`
 	Status     TTSStatus `json:"status"`
 	Progress   int       `json:"progress"`
-	AudioID    string    `json:"audio_id,omitempty"`
+	AudioID    uuid.UUID `json:"audio_id,omitempty"`
 	AudioURL   string    `json:"audio_url,omitempty"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`

@@ -11,8 +11,12 @@ import (
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
+
+// テスト用の固定UUID
+var testLearningBookID = uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 
 func setupLearningTestRouter() (*gin.Engine, *repository.InMemoryLearningRepository) {
 	gin.SetMode(gin.TestMode)
@@ -49,7 +53,7 @@ func TestGetPageLearning(t *testing.T) {
 	assert.NoError(t, err)
 
 	// ページデータの確認
-	assert.Equal(t, testBookID, pageLearning.Page.BookID)
+	assert.Equal(t, testLearningBookID, pageLearning.Page.BookID)
 	assert.Equal(t, testPageNumber, pageLearning.Page.PageNumber)
 	assert.NotEmpty(t, pageLearning.Page.OCRText)
 	assert.NotEmpty(t, pageLearning.Page.Translation)
@@ -219,7 +223,7 @@ func TestGetBookProgress(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &progress)
 	assert.NoError(t, err)
 
-	assert.Equal(t, testBookID, progress.BookID)
+	assert.Equal(t, testLearningBookID, progress.BookID)
 	assert.Equal(t, 150, progress.TotalPages)
 	assert.Equal(t, 45, progress.CompletedPages) // サンプルデータ
 	assert.Greater(t, progress.CompletionPercentage, 0.0)

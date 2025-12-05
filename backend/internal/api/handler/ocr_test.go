@@ -19,6 +19,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// テスト用の固定UUID
+var testOCRBookID = uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+
 func setupOCRTestRouter() (*gin.Engine, repository.OCRRepositoryInterface) {
 	gin.SetMode(gin.TestMode)
 
@@ -74,8 +77,8 @@ func TestProcessPage(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 
-	assert.NotEmpty(t, response.JobID)
-	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response.BookID)
+	assert.NotEqual(t, uuid.Nil, response.JobID)
+	assert.Equal(t, testOCRBookID, response.BookID)
 	assert.Equal(t, 51, response.PageNumber)
 	assert.Equal(t, models.OCRStatusPending, response.Status)
 }
@@ -102,7 +105,7 @@ func TestGetJobStatus(t *testing.T) {
 	var completedJobID string
 	for _, job := range jobs {
 		if job.Status == models.OCRStatusCompleted {
-			completedJobID = job.ID
+			completedJobID = job.ID.String()
 			break
 		}
 	}
@@ -119,7 +122,7 @@ func TestGetJobStatus(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 
-	assert.Equal(t, completedJobID, response.JobID)
+	assert.Equal(t, completedJobID, response.JobID.String())
 	assert.Equal(t, models.OCRStatusCompleted, response.Status)
 }
 
@@ -137,7 +140,7 @@ func TestGetJobResult(t *testing.T) {
 	var completedJobID string
 	for _, job := range jobs {
 		if job.Status == models.OCRStatusCompleted {
-			completedJobID = job.ID
+			completedJobID = job.ID.String()
 			break
 		}
 	}
@@ -152,7 +155,7 @@ func TestGetJobResult(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 
-	assert.Equal(t, completedJobID, response.JobID)
+	assert.Equal(t, completedJobID, response.JobID.String())
 	assert.Equal(t, models.OCRStatusCompleted, response.Status)
 	assert.NotNil(t, response.Result)
 	assert.NotEmpty(t, response.Result.Text)
@@ -174,7 +177,7 @@ func TestGetJobResultStillProcessing(t *testing.T) {
 	var processingJobID string
 	for _, job := range jobs {
 		if job.Status == models.OCRStatusProcessing {
-			processingJobID = job.ID
+			processingJobID = job.ID.String()
 			break
 		}
 	}
@@ -215,7 +218,7 @@ func TestGetBookJobs(t *testing.T) {
 	assert.Equal(t, 50, len(response))
 
 	// 最初のジョブはページ1で完了済み
-	assert.Equal(t, testBookID, response[0].BookID)
+	assert.Equal(t, testOCRBookID, response[0].BookID)
 	assert.Equal(t, models.OCRStatusCompleted, response[0].Status)
 }
 
@@ -273,7 +276,7 @@ func TestBatchProcess(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response.BookID)
+	assert.Equal(t, testOCRBookID, response.BookID)
 	assert.Equal(t, 150, response.TotalPages)
 	assert.Equal(t, 150, len(response.JobIDs))
 }

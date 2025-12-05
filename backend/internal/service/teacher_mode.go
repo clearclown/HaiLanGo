@@ -70,7 +70,7 @@ func (s *TeacherModeService) GeneratePlaylist(
 
 	// プレイリストを作成
 	playlist := &models.TeacherModePlaylist{
-		ID:       uuid.New().String(),
+		ID:       uuid.New(),
 		BookID:   bookID,
 		Pages:    make([]models.PageAudio, 0),
 		Settings: *settings,
@@ -168,7 +168,7 @@ func (s *TeacherModeService) GeneratePlaylist(
 		// 4. ページ間隔（一時停止）
 		if settings.PageInterval > 0 {
 			pauseSegment := &models.AudioSegment{
-				ID:       fmt.Sprintf("page-%d-segment-%d", page.PageNumber, segmentID),
+				ID:       uuid.New(),
 				Type:     models.AudioSegmentTypePause,
 				AudioURL: "",
 				Duration: settings.PageInterval * 1000, // 秒をミリ秒に変換
@@ -217,7 +217,7 @@ func (s *TeacherModeService) createAudioSegment(
 	duration := len(text) * 100
 
 	segment := &models.AudioSegment{
-		ID:       fmt.Sprintf("page-%d-segment-%d", pageNumber, segmentID),
+		ID:       uuid.New(),
 		Type:     segmentType,
 		AudioURL: audioURL,
 		Duration: duration,

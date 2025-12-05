@@ -65,12 +65,13 @@ func NewInMemoryOCRRepository() *InMemoryOCRRepository {
 }
 
 func (r *InMemoryOCRRepository) initSampleData() {
-	testUserID := "550e8400-e29b-41d4-a716-446655440000"
-	testBookID := "550e8400-e29b-41d4-a716-446655440000"
+	testUserID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+	testBookID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 
 	// 完了済みのOCRジョブ（最初の45ページ）
 	for i := 1; i <= 45; i++ {
-		jobID := uuid.New().String()
+		jobID := uuid.New()
+		jobKey := jobID.String()
 		now := time.Now().Add(-time.Duration(46-i) * time.Hour)
 		completedAt := now.Add(5 * time.Minute)
 
@@ -124,7 +125,7 @@ func (r *InMemoryOCRRepository) initSampleData() {
 			ID:          jobID,
 			BookID:      testBookID,
 			PageNumber:  i,
-			ImageURL:    fmt.Sprintf("/storage/books/%s/pages/%d.jpg", testBookID, i),
+			ImageURL:    fmt.Sprintf("/storage/books/%s/pages/%d.jpg", testBookID.String(), i),
 			Status:      models.OCRStatusCompleted,
 			Progress:    100,
 			Result:      result,
@@ -133,51 +134,53 @@ func (r *InMemoryOCRRepository) initSampleData() {
 			CompletedAt: &completedAt,
 		}
 
-		r.jobs[jobID] = job
-		r.userJobs[testUserID] = append(r.userJobs[testUserID], jobID)
-		r.bookJobs[testBookID] = append(r.bookJobs[testBookID], jobID)
+		r.jobs[jobKey] = job
+		r.userJobs[testUserID.String()] = append(r.userJobs[testUserID.String()], jobKey)
+		r.bookJobs[testBookID.String()] = append(r.bookJobs[testBookID.String()], jobKey)
 	}
 
 	// 処理中のOCRジョブ（ページ46-48）
 	for i := 46; i <= 48; i++ {
-		jobID := uuid.New().String()
+		jobID := uuid.New()
+		jobKey := jobID.String()
 		now := time.Now().Add(-time.Duration(5) * time.Minute)
 
 		job := &models.OCRJobDetail{
 			ID:         jobID,
 			BookID:     testBookID,
 			PageNumber: i,
-			ImageURL:   fmt.Sprintf("/storage/books/%s/pages/%d.jpg", testBookID, i),
+			ImageURL:   fmt.Sprintf("/storage/books/%s/pages/%d.jpg", testBookID.String(), i),
 			Status:     models.OCRStatusProcessing,
 			Progress:   50 + (i-46)*10,
 			CreatedAt:  now,
 			UpdatedAt:  time.Now(),
 		}
 
-		r.jobs[jobID] = job
-		r.userJobs[testUserID] = append(r.userJobs[testUserID], jobID)
-		r.bookJobs[testBookID] = append(r.bookJobs[testBookID], jobID)
+		r.jobs[jobKey] = job
+		r.userJobs[testUserID.String()] = append(r.userJobs[testUserID.String()], jobKey)
+		r.bookJobs[testBookID.String()] = append(r.bookJobs[testBookID.String()], jobKey)
 	}
 
 	// ペンディングのOCRジョブ（ページ49-50）
 	for i := 49; i <= 50; i++ {
-		jobID := uuid.New().String()
+		jobID := uuid.New()
+		jobKey := jobID.String()
 		now := time.Now().Add(-time.Duration(1) * time.Minute)
 
 		job := &models.OCRJobDetail{
 			ID:         jobID,
 			BookID:     testBookID,
 			PageNumber: i,
-			ImageURL:   fmt.Sprintf("/storage/books/%s/pages/%d.jpg", testBookID, i),
+			ImageURL:   fmt.Sprintf("/storage/books/%s/pages/%d.jpg", testBookID.String(), i),
 			Status:     models.OCRStatusPending,
 			Progress:   0,
 			CreatedAt:  now,
 			UpdatedAt:  now,
 		}
 
-		r.jobs[jobID] = job
-		r.userJobs[testUserID] = append(r.userJobs[testUserID], jobID)
-		r.bookJobs[testBookID] = append(r.bookJobs[testBookID], jobID)
+		r.jobs[jobKey] = job
+		r.userJobs[testUserID.String()] = append(r.userJobs[testUserID.String()], jobKey)
+		r.bookJobs[testBookID.String()] = append(r.bookJobs[testBookID.String()], jobKey)
 	}
 }
 
@@ -185,12 +188,13 @@ func (r *InMemoryOCRRepository) CreateJob(ctx context.Context, userID, bookID uu
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	jobID := uuid.New().String()
+	jobID := uuid.New()
+	jobKey := jobID.String()
 	now := time.Now()
 
 	job := &models.OCRJobDetail{
 		ID:         jobID,
-		BookID:     bookID.String(),
+		BookID:     bookID,
 		PageNumber: pageNumber,
 		ImageURL:   imageURL,
 		Status:     models.OCRStatusPending,
@@ -199,9 +203,9 @@ func (r *InMemoryOCRRepository) CreateJob(ctx context.Context, userID, bookID uu
 		UpdatedAt:  now,
 	}
 
-	r.jobs[jobID] = job
-	r.userJobs[userID.String()] = append(r.userJobs[userID.String()], jobID)
-	r.bookJobs[bookID.String()] = append(r.bookJobs[bookID.String()], jobID)
+	r.jobs[jobKey] = job
+	r.userJobs[userID.String()] = append(r.userJobs[userID.String()], jobKey)
+	r.bookJobs[bookID.String()] = append(r.bookJobs[bookID.String()], jobKey)
 
 	return job, nil
 }
@@ -455,19 +459,19 @@ func NewOCRRepositoryPostgres(db *sql.DB) OCRRepositoryInterface {
 func (r *OCRRepositoryPostgres) CreateJob(ctx context.Context, userID, bookID uuid.UUID, pageNumber int, imageURL string, language string) (*models.OCRJobDetail, error) {
 	jobID := uuid.New()
 	now := time.Now()
-	
+
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO ocr_jobs (id, user_id, book_id, page_number, status, progress, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`, jobID, userID, bookID, pageNumber, "pending", 0, now, now)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &models.OCRJobDetail{
-		ID:         jobID.String(),
-		BookID:     bookID.String(),
+		ID:         jobID,
+		BookID:     bookID,
 		PageNumber: pageNumber,
 		ImageURL:   imageURL,
 		Status:     models.OCRStatusPending,

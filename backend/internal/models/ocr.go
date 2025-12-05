@@ -22,17 +22,17 @@ type OCROptions struct {
 
 // OCRJobDetail はOCR処理ジョブの詳細情報（APIレスポンス用）
 type OCRJobDetail struct {
-	ID          string      `json:"id"`
-	BookID      string      `json:"book_id"`
-	PageNumber  int         `json:"page_number"`
-	ImageURL    string      `json:"image_url"`
-	Status      OCRStatus   `json:"status"`
-	Progress    int         `json:"progress"` // 0-100
-	Result      *OCRResult  `json:"result,omitempty"`
-	Error       string      `json:"error,omitempty"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-	CompletedAt *time.Time  `json:"completed_at,omitempty"`
+	ID          uuid.UUID  `json:"id"`
+	BookID      uuid.UUID  `json:"book_id"`
+	PageNumber  int        `json:"page_number"`
+	ImageURL    string     `json:"image_url"`
+	Status      OCRStatus  `json:"status"`
+	Progress    int        `json:"progress"` // 0-100
+	Result      *OCRResult `json:"result,omitempty"`
+	Error       string     `json:"error,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 // OCRResult はOCR処理結果
@@ -90,8 +90,8 @@ type ProcessPageOCRRequest struct {
 
 // OCRJobResponse はOCR処理ジョブレスポンス
 type OCRJobResponse struct {
-	JobID      string    `json:"job_id"`
-	BookID     string    `json:"book_id,omitempty"`
+	JobID      uuid.UUID `json:"job_id"`
+	BookID     uuid.UUID `json:"book_id,omitempty"`
 	PageNumber int       `json:"page_number,omitempty"`
 	Status     OCRStatus `json:"status"`
 	Progress   int       `json:"progress"`
@@ -101,8 +101,8 @@ type OCRJobResponse struct {
 
 // OCRResultResponse はOCR処理結果レスポンス
 type OCRResultResponse struct {
-	JobID       string     `json:"job_id"`
-	BookID      string     `json:"book_id,omitempty"`
+	JobID       uuid.UUID  `json:"job_id"`
+	BookID      uuid.UUID  `json:"book_id,omitempty"`
 	PageNumber  int        `json:"page_number,omitempty"`
 	Status      OCRStatus  `json:"status"`
 	Result      *OCRResult `json:"result,omitempty"`
@@ -120,10 +120,10 @@ type BatchOCRRequest struct {
 
 // BatchOCRResponse はバッチOCR処理レスポンス
 type BatchOCRResponse struct {
-	BookID     string    `json:"book_id"`
-	TotalPages int       `json:"total_pages"`
-	JobIDs     []string  `json:"job_ids"`
-	CreatedAt  time.Time `json:"created_at"`
+	BookID     uuid.UUID   `json:"book_id"`
+	TotalPages int         `json:"total_pages"`
+	JobIDs     []uuid.UUID `json:"job_ids"`
+	CreatedAt  time.Time   `json:"created_at"`
 }
 
 // OCRStatistics はOCR統計情報

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/pkg/language"
 	"github.com/google/uuid"
 )
 
@@ -73,29 +74,31 @@ func NewInMemorySTTRepository() *InMemorySTTRepository {
 }
 
 func (r *InMemorySTTRepository) initSupportedLanguages() {
-	r.languages = []*models.STTLanguage{
-		{Code: "ja", Name: "Japanese", NativeName: "日本語", IsSupported: true, SupportsPronunciation: true},
-		{Code: "en", Name: "English", NativeName: "English", IsSupported: true, SupportsPronunciation: true},
-		{Code: "zh", Name: "Chinese", NativeName: "中文", IsSupported: true, SupportsPronunciation: true},
-		{Code: "ru", Name: "Russian", NativeName: "Русский", IsSupported: true, SupportsPronunciation: true},
-		{Code: "fa", Name: "Persian", NativeName: "فارسی", IsSupported: true, SupportsPronunciation: true},
-		{Code: "he", Name: "Hebrew", NativeName: "עברית", IsSupported: true, SupportsPronunciation: true},
-		{Code: "es", Name: "Spanish", NativeName: "Español", IsSupported: true, SupportsPronunciation: true},
-		{Code: "fr", Name: "French", NativeName: "Français", IsSupported: true, SupportsPronunciation: true},
-		{Code: "pt", Name: "Portuguese", NativeName: "Português", IsSupported: true, SupportsPronunciation: true},
-		{Code: "de", Name: "German", NativeName: "Deutsch", IsSupported: true, SupportsPronunciation: true},
-		{Code: "it", Name: "Italian", NativeName: "Italiano", IsSupported: true, SupportsPronunciation: true},
-		{Code: "tr", Name: "Turkish", NativeName: "Türkçe", IsSupported: true, SupportsPronunciation: true},
+	// Use centralized LanguageRegistry for dynamic language support
+	registry := language.GetRegistry()
+	allLangs := registry.GetAll()
+
+	r.languages = make([]*models.STTLanguage, 0, len(allLangs))
+	for _, lang := range allLangs {
+		r.languages = append(r.languages, &models.STTLanguage{
+			Code:                  lang.Code,
+			Name:                  lang.Name,
+			NativeName:            lang.NativeName,
+			IsSupported:           true,
+			SupportsPronunciation: lang.SupportsPronunciation,
+			SupportTier:           string(lang.SupportTier),
+		})
 	}
 }
 
 func (r *InMemorySTTRepository) initSampleData() {
-	testUserID := "550e8400-e29b-41d4-a716-446655440000"
-	testBookID := "550e8400-e29b-41d4-a716-446655440000"
+	testUserID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+	testBookID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 
 	// 完了済みのSTTジョブ（最初の25個）
 	for i := 1; i <= 25; i++ {
-		jobID := uuid.New().String()
+		jobID := uuid.New()
+		jobKey := jobID.String()
 		now := time.Now().Add(-time.Duration(26-i) * time.Hour)
 		completedAt := now.Add(5 * time.Second)
 
@@ -139,14 +142,15 @@ func (r *InMemorySTTRepository) initSampleData() {
 			CompletedAt: &completedAt,
 		}
 
-		r.jobs[jobID] = job
-		r.userJobs[testUserID] = append(r.userJobs[testUserID], jobID)
-		r.bookJobs[testBookID] = append(r.bookJobs[testBookID], jobID)
+		r.jobs[jobKey] = job
+		r.userJobs[testUserID.String()] = append(r.userJobs[testUserID.String()], jobKey)
+		r.bookJobs[testBookID.String()] = append(r.bookJobs[testBookID.String()], jobKey)
 	}
 
 	// 処理中のSTTジョブ（ページ26-28）
 	for i := 26; i <= 28; i++ {
-		jobID := uuid.New().String()
+		jobID := uuid.New()
+		jobKey := jobID.String()
 		now := time.Now().Add(-time.Duration(2) * time.Minute)
 
 		job := &models.STTJobDetail{
@@ -162,14 +166,15 @@ func (r *InMemorySTTRepository) initSampleData() {
 			UpdatedAt:     time.Now(),
 		}
 
-		r.jobs[jobID] = job
-		r.userJobs[testUserID] = append(r.userJobs[testUserID], jobID)
-		r.bookJobs[testBookID] = append(r.bookJobs[testBookID], jobID)
+		r.jobs[jobKey] = job
+		r.userJobs[testUserID.String()] = append(r.userJobs[testUserID.String()], jobKey)
+		r.bookJobs[testBookID.String()] = append(r.bookJobs[testBookID.String()], jobKey)
 	}
 
 	// ペンディングのSTTジョブ（ページ29-30）
 	for i := 29; i <= 30; i++ {
-		jobID := uuid.New().String()
+		jobID := uuid.New()
+		jobKey := jobID.String()
 		now := time.Now().Add(-time.Duration(30) * time.Second)
 
 		job := &models.STTJobDetail{
@@ -185,9 +190,9 @@ func (r *InMemorySTTRepository) initSampleData() {
 			UpdatedAt:     now,
 		}
 
-		r.jobs[jobID] = job
-		r.userJobs[testUserID] = append(r.userJobs[testUserID], jobID)
-		r.bookJobs[testBookID] = append(r.bookJobs[testBookID], jobID)
+		r.jobs[jobKey] = job
+		r.userJobs[testUserID.String()] = append(r.userJobs[testUserID.String()], jobKey)
+		r.bookJobs[testBookID.String()] = append(r.bookJobs[testBookID.String()], jobKey)
 	}
 }
 
@@ -195,12 +200,13 @@ func (r *InMemorySTTRepository) CreateJob(ctx context.Context, userID, bookID uu
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	jobID := uuid.New().String()
+	jobID := uuid.New()
+	jobKey := jobID.String()
 	now := time.Now()
 
 	job := &models.STTJobDetail{
 		ID:            jobID,
-		BookID:        bookID.String(),
+		BookID:        bookID,
 		PageNumber:    pageNumber,
 		AudioURL:      audioURL,
 		ReferenceText: referenceText,
@@ -211,9 +217,9 @@ func (r *InMemorySTTRepository) CreateJob(ctx context.Context, userID, bookID uu
 		UpdatedAt:     now,
 	}
 
-	r.jobs[jobID] = job
-	r.userJobs[userID.String()] = append(r.userJobs[userID.String()], jobID)
-	r.bookJobs[bookID.String()] = append(r.bookJobs[bookID.String()], jobID)
+	r.jobs[jobKey] = job
+	r.userJobs[userID.String()] = append(r.userJobs[userID.String()], jobKey)
+	r.bookJobs[bookID.String()] = append(r.bookJobs[bookID.String()], jobKey)
 
 	return job, nil
 }
@@ -446,8 +452,8 @@ func (r *InMemorySTTRepository) SimulateSTTProcessing(ctx context.Context, jobID
 		PronuncScore:   86,
 		ExpectedText:   job.ReferenceText,
 		RecognizedText: job.ReferenceText,
-		EvaluationID:   jobID,
-		UserID:         "550e8400-e29b-41d4-a716-446655440000",
+		EvaluationID:   job.ID,
+		UserID:         uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 		Feedback: &models.Feedback{
 			Level:          "good",
 			Message:        "素晴らしい発音です！",
@@ -485,8 +491,8 @@ func (r *STTRepositoryPostgres) CreateJob(ctx context.Context, userID, bookID uu
 	}
 
 	return &models.STTJobDetail{
-		ID:            jobID.String(),
-		BookID:        bookID.String(),
+		ID:            jobID,
+		BookID:        bookID,
 		PageNumber:    pageNumber,
 		AudioURL:      audioURL,
 		ReferenceText: referenceText,
@@ -729,20 +735,20 @@ func (r *STTRepositoryPostgres) DeleteJob(ctx context.Context, jobID string) err
 }
 
 func (r *STTRepositoryPostgres) GetSupportedLanguages(ctx context.Context) ([]*models.STTLanguage, error) {
-	// Return hardcoded supported languages
-	languages := []*models.STTLanguage{
-		{Code: "ja", Name: "Japanese", NativeName: "日本語", IsSupported: true, SupportsPronunciation: true},
-		{Code: "en", Name: "English", NativeName: "English", IsSupported: true, SupportsPronunciation: true},
-		{Code: "zh", Name: "Chinese", NativeName: "中文", IsSupported: true, SupportsPronunciation: true},
-		{Code: "ru", Name: "Russian", NativeName: "Русский", IsSupported: true, SupportsPronunciation: true},
-		{Code: "fa", Name: "Persian", NativeName: "فارسی", IsSupported: true, SupportsPronunciation: true},
-		{Code: "he", Name: "Hebrew", NativeName: "עברית", IsSupported: true, SupportsPronunciation: true},
-		{Code: "es", Name: "Spanish", NativeName: "Español", IsSupported: true, SupportsPronunciation: true},
-		{Code: "fr", Name: "French", NativeName: "Français", IsSupported: true, SupportsPronunciation: true},
-		{Code: "pt", Name: "Portuguese", NativeName: "Português", IsSupported: true, SupportsPronunciation: true},
-		{Code: "de", Name: "German", NativeName: "Deutsch", IsSupported: true, SupportsPronunciation: true},
-		{Code: "it", Name: "Italian", NativeName: "Italiano", IsSupported: true, SupportsPronunciation: true},
-		{Code: "tr", Name: "Turkish", NativeName: "Türkçe", IsSupported: true, SupportsPronunciation: true},
+	// Use centralized LanguageRegistry for dynamic language support
+	registry := language.GetRegistry()
+	allLangs := registry.GetAll()
+
+	languages := make([]*models.STTLanguage, 0, len(allLangs))
+	for _, lang := range allLangs {
+		languages = append(languages, &models.STTLanguage{
+			Code:                  lang.Code,
+			Name:                  lang.Name,
+			NativeName:            lang.NativeName,
+			IsSupported:           true,
+			SupportsPronunciation: lang.SupportsPronunciation,
+			SupportTier:           string(lang.SupportTier),
+		})
 	}
 	return languages, nil
 }

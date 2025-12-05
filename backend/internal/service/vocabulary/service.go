@@ -11,20 +11,21 @@ import (
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/clearclown/HaiLanGo/backend/pkg/vocabulary"
+	"github.com/google/uuid"
 )
 
 // VocabularyService は単語帳サービスのインターフェース
 type VocabularyService interface {
-	AutoCollectWords(ctx context.Context, userID, bookID string, pageNumber int, text, language string) error
+	AutoCollectWords(ctx context.Context, userID, bookID uuid.UUID, pageNumber int, text, language string) error
 	AddWord(ctx context.Context, word *models.Word) error
 	GetWords(ctx context.Context, filter *models.WordFilter) ([]*models.Word, error)
-	GetWordByID(ctx context.Context, id string) (*models.Word, error)
+	GetWordByID(ctx context.Context, id uuid.UUID) (*models.Word, error)
 	UpdateWord(ctx context.Context, word *models.Word) error
-	DeleteWord(ctx context.Context, id string) error
-	RecordReview(ctx context.Context, wordID string, score float64) error
-	GetStats(ctx context.Context, userID, bookID string) (*models.WordStats, error)
+	DeleteWord(ctx context.Context, id uuid.UUID) error
+	RecordReview(ctx context.Context, wordID uuid.UUID, score float64) error
+	GetStats(ctx context.Context, userID, bookID uuid.UUID) (*models.WordStats, error)
 	ExportWordsToCSV(ctx context.Context, filter *models.WordFilter) ([]byte, error)
-	AddTags(ctx context.Context, wordID string, tags []string) error
+	AddTags(ctx context.Context, wordID uuid.UUID, tags []string) error
 }
 
 // vocabularyService は単語帳サービスの実装
@@ -47,7 +48,7 @@ func NewMockVocabularyService() VocabularyService {
 }
 
 // AutoCollectWords はテキストから単語を自動収集する
-func (s *vocabularyService) AutoCollectWords(ctx context.Context, userID, bookID string, pageNumber int, text, language string) error {
+func (s *vocabularyService) AutoCollectWords(ctx context.Context, userID, bookID uuid.UUID, pageNumber int, text, language string) error {
 	// 単語を抽出
 	words := vocabulary.ExtractWords(text, language)
 
@@ -111,7 +112,7 @@ func (s *vocabularyService) GetWords(ctx context.Context, filter *models.WordFil
 }
 
 // GetWordByID はIDで単語を取得する
-func (s *vocabularyService) GetWordByID(ctx context.Context, id string) (*models.Word, error) {
+func (s *vocabularyService) GetWordByID(ctx context.Context, id uuid.UUID) (*models.Word, error) {
 	word, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get word: %w", err)
@@ -128,7 +129,7 @@ func (s *vocabularyService) UpdateWord(ctx context.Context, word *models.Word) e
 }
 
 // DeleteWord は単語を削除する
-func (s *vocabularyService) DeleteWord(ctx context.Context, id string) error {
+func (s *vocabularyService) DeleteWord(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("failed to delete word: %w", err)
 	}
@@ -136,7 +137,7 @@ func (s *vocabularyService) DeleteWord(ctx context.Context, id string) error {
 }
 
 // RecordReview は学習記録を保存し、習得度を更新する
-func (s *vocabularyService) RecordReview(ctx context.Context, wordID string, score float64) error {
+func (s *vocabularyService) RecordReview(ctx context.Context, wordID uuid.UUID, score float64) error {
 	// 単語を取得
 	word, err := s.repo.GetByID(ctx, wordID)
 	if err != nil {
@@ -186,7 +187,7 @@ func CalculateMastery(reviewCount int, averageScore float64) float64 {
 }
 
 // GetStats は単語統計を取得する
-func (s *vocabularyService) GetStats(ctx context.Context, userID, bookID string) (*models.WordStats, error) {
+func (s *vocabularyService) GetStats(ctx context.Context, userID, bookID uuid.UUID) (*models.WordStats, error) {
 	stats, err := s.repo.GetStats(ctx, userID, bookID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stats: %w", err)
@@ -244,7 +245,7 @@ func (s *vocabularyService) ExportWordsToCSV(ctx context.Context, filter *models
 }
 
 // AddTags は単語にタグを追加する
-func (s *vocabularyService) AddTags(ctx context.Context, wordID string, tags []string) error {
+func (s *vocabularyService) AddTags(ctx context.Context, wordID uuid.UUID, tags []string) error {
 	// 単語を取得
 	word, err := s.repo.GetByID(ctx, wordID)
 	if err != nil {

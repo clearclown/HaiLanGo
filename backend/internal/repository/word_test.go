@@ -5,8 +5,16 @@ import (
 	"testing"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+// テスト用の固定UUID
+var (
+	testUserID1 = uuid.MustParse("550e8400-e29b-41d4-a716-446655440001")
+	testBookID1 = uuid.MustParse("550e8400-e29b-41d4-a716-446655440002")
+	testBookID2 = uuid.MustParse("550e8400-e29b-41d4-a716-446655440003")
 )
 
 // TestWordRepository_Create は単語の作成テスト
@@ -15,8 +23,8 @@ func TestWordRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testUserID1,
+		BookID:     testBookID1,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -25,7 +33,7 @@ func TestWordRepository_Create(t *testing.T) {
 
 	err := repo.Create(ctx, word)
 	require.NoError(t, err)
-	assert.NotEmpty(t, word.ID, "単語IDが生成されること")
+	assert.NotEqual(t, uuid.Nil, word.ID, "単語IDが生成されること")
 }
 
 // TestWordRepository_CreateDuplicate は重複単語の作成エラーテスト
@@ -34,8 +42,8 @@ func TestWordRepository_CreateDuplicate(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testUserID1,
+		BookID:     testBookID1,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -57,8 +65,8 @@ func TestWordRepository_GetByID(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testUserID1,
+		BookID:     testBookID1,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -80,7 +88,7 @@ func TestWordRepository_GetByIDNotFound(t *testing.T) {
 	repo := NewMockWordRepository()
 	ctx := context.Background()
 
-	_, err := repo.GetByID(ctx, "non-existent-id")
+	_, err := repo.GetByID(ctx, uuid.New())
 	assert.Error(t, err, "存在しない単語IDはエラーになること")
 }
 
@@ -92,24 +100,24 @@ func TestWordRepository_List(t *testing.T) {
 	// テストデータの作成
 	words := []*models.Word{
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: 1,
 			Text:       "Здравствуйте",
 			Meaning:    "こんにちは",
 			Language:   "ru",
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: 1,
 			Text:       "Привет",
 			Meaning:    "やあ",
 			Language:   "ru",
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-2",
+			UserID:     testUserID1,
+			BookID:     testBookID2,
 			PageNumber: 1,
 			Text:       "Hello",
 			Meaning:    "こんにちは",
@@ -124,7 +132,7 @@ func TestWordRepository_List(t *testing.T) {
 
 	// フィルタなしで全取得
 	filter := &models.WordFilter{
-		UserID: "user-1",
+		UserID: testUserID1,
 	}
 	result, total, err := repo.List(ctx, filter)
 	require.NoError(t, err)
@@ -140,8 +148,8 @@ func TestWordRepository_ListWithFilter(t *testing.T) {
 	// テストデータの作成
 	words := []*models.Word{
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: 1,
 			Text:       "Здравствуйте",
 			Meaning:    "こんにちは",
@@ -149,8 +157,8 @@ func TestWordRepository_ListWithFilter(t *testing.T) {
 			Mastery:    85.0,
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: 1,
 			Text:       "Привет",
 			Meaning:    "やあ",
@@ -158,8 +166,8 @@ func TestWordRepository_ListWithFilter(t *testing.T) {
 			Mastery:    60.0,
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-2",
+			UserID:     testUserID1,
+			BookID:     testBookID2,
 			PageNumber: 1,
 			Text:       "Hello",
 			Meaning:    "こんにちは",
@@ -175,8 +183,8 @@ func TestWordRepository_ListWithFilter(t *testing.T) {
 
 	// BookIDでフィルタ
 	filter := &models.WordFilter{
-		UserID: "user-1",
-		BookID: "book-1",
+		UserID: testUserID1,
+		BookID: testBookID1,
 	}
 	result, total, err := repo.List(ctx, filter)
 	require.NoError(t, err)
@@ -184,7 +192,7 @@ func TestWordRepository_ListWithFilter(t *testing.T) {
 
 	// 言語でフィルタ
 	filter = &models.WordFilter{
-		UserID:   "user-1",
+		UserID:   testUserID1,
 		Language: "ru",
 	}
 	result, total, err = repo.List(ctx, filter)
@@ -193,7 +201,7 @@ func TestWordRepository_ListWithFilter(t *testing.T) {
 
 	// 習得度でフィルタ
 	filter = &models.WordFilter{
-		UserID:     "user-1",
+		UserID:     testUserID1,
 		MinMastery: 70.0,
 	}
 	result, total, err = repo.List(ctx, filter)
@@ -210,16 +218,16 @@ func TestWordRepository_Search(t *testing.T) {
 	// テストデータの作成
 	words := []*models.Word{
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: 1,
 			Text:       "Здравствуйте",
 			Meaning:    "こんにちは",
 			Language:   "ru",
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: 1,
 			Text:       "Привет",
 			Meaning:    "やあ",
@@ -234,7 +242,7 @@ func TestWordRepository_Search(t *testing.T) {
 
 	// 検索
 	filter := &models.WordFilter{
-		UserID: "user-1",
+		UserID: testUserID1,
 		Query:  "Здрав",
 	}
 	result, total, err := repo.List(ctx, filter)
@@ -249,8 +257,8 @@ func TestWordRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testUserID1,
+		BookID:     testBookID1,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -280,8 +288,8 @@ func TestWordRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testUserID1,
+		BookID:     testBookID1,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -308,8 +316,8 @@ func TestWordRepository_GetStats(t *testing.T) {
 	// テストデータの作成
 	words := []*models.Word{
 		{
-			UserID:      "user-1",
-			BookID:      "book-1",
+			UserID:      testUserID1,
+			BookID:      testBookID1,
 			PageNumber:  1,
 			Text:        "Здравствуйте",
 			Meaning:     "こんにちは",
@@ -318,8 +326,8 @@ func TestWordRepository_GetStats(t *testing.T) {
 			ReviewCount: 5,
 		},
 		{
-			UserID:      "user-1",
-			BookID:      "book-1",
+			UserID:      testUserID1,
+			BookID:      testBookID1,
 			PageNumber:  1,
 			Text:        "Привет",
 			Meaning:     "やあ",
@@ -328,8 +336,8 @@ func TestWordRepository_GetStats(t *testing.T) {
 			ReviewCount: 3,
 		},
 		{
-			UserID:      "user-1",
-			BookID:      "book-2",
+			UserID:      testUserID1,
+			BookID:      testBookID2,
 			PageNumber:  1,
 			Text:        "Hello",
 			Meaning:     "こんにちは",
@@ -345,7 +353,7 @@ func TestWordRepository_GetStats(t *testing.T) {
 	}
 
 	// 統計取得
-	stats, err := repo.GetStats(ctx, "user-1", "book-1")
+	stats, err := repo.GetStats(ctx, testUserID1, testBookID1)
 	require.NoError(t, err)
 	assert.Equal(t, 2, stats.TotalWords, "全単語数が正しいこと")
 	assert.Equal(t, 1, stats.MasteredWords, "習得単語数が正しいこと（習得度80%以上）")
@@ -360,16 +368,16 @@ func TestWordRepository_BulkCreate(t *testing.T) {
 
 	words := []*models.Word{
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: 1,
 			Text:       "Здравствуйте",
 			Meaning:    "こんにちは",
 			Language:   "ru",
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: 1,
 			Text:       "Привет",
 			Meaning:    "やあ",
@@ -382,8 +390,8 @@ func TestWordRepository_BulkCreate(t *testing.T) {
 
 	// 確認
 	filter := &models.WordFilter{
-		UserID: "user-1",
-		BookID: "book-1",
+		UserID: testUserID1,
+		BookID: testBookID1,
 	}
 	result, total, err := repo.List(ctx, filter)
 	require.NoError(t, err)
@@ -399,8 +407,8 @@ func BenchmarkWordRepository_Create(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		word := &models.Word{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: 1,
 			Text:       "test-word",
 			Meaning:    "テスト",
@@ -417,8 +425,8 @@ func BenchmarkWordRepository_List(b *testing.B) {
 	// テストデータの準備
 	for i := 0; i < 100; i++ {
 		word := &models.Word{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testUserID1,
+			BookID:     testBookID1,
 			PageNumber: i,
 			Text:       "test-word",
 			Meaning:    "テスト",
@@ -428,7 +436,7 @@ func BenchmarkWordRepository_List(b *testing.B) {
 	}
 
 	filter := &models.WordFilter{
-		UserID: "user-1",
+		UserID: testUserID1,
 	}
 
 	b.ResetTimer()

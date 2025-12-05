@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/clearclown/HaiLanGo/backend/pkg/language"
 )
 
 // TTSClient はTTS APIクライアントのインターフェース
@@ -88,29 +90,24 @@ func (c *GoogleTTSClient) generateReal(ctx context.Context, text string, lang st
 }
 
 // SupportedLanguages は対応言語のリストを返す
+// Dynamic language support: returns all registered languages (verified + supported)
+// Note: ANY valid language code can be used - experimental languages are allowed
 func (c *GoogleTTSClient) SupportedLanguages() []string {
-	return []string{
-		"ja", // 日本語
-		"zh", // 中国語
-		"en", // 英語
-		"ru", // ロシア語
-		"fa", // ペルシャ語
-		"he", // ヘブライ語
-		"es", // スペイン語
-		"fr", // フランス語
-		"pt", // ポルトガル語
-		"de", // ドイツ語
-		"it", // イタリア語
-		"tr", // トルコ語
+	registry := language.GetRegistry()
+	allLangs := registry.GetAll()
+
+	codes := make([]string, 0, len(allLangs))
+	for _, lang := range allLangs {
+		codes = append(codes, lang.Code)
 	}
+	return codes
 }
 
 // IsLanguageSupported は言語がサポートされているかチェック
+// Dynamic language support: ANY valid language code is considered supported
+// The underlying LLM/TTS API will handle it if it's truly supported
 func (c *GoogleTTSClient) IsLanguageSupported(lang string) bool {
-	for _, supported := range c.SupportedLanguages() {
-		if supported == lang {
-			return true
-		}
-	}
-	return false
+	// With dynamic language support, any valid language code is allowed
+	// The registry will return an experimental entry for unknown languages
+	return language.IsValidCode(lang)
 }

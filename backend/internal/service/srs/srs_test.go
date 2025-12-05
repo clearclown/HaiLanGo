@@ -21,6 +21,10 @@ func TestGetReviewItemsWithPriority(t *testing.T) {
 	now := time.Now()
 
 	// 異なる優先度の項目を作成
+	// GetPriority logic:
+	// - daysUntilDue < 0 → Urgent (overdue)
+	// - daysUntilDue < 1 → Recommended (due today)
+	// - daysUntilDue >= 1 → Relaxed (余裕あり)
 	items := []*models.ReviewItem{
 		{
 			ID:             uuid.New(),
@@ -28,7 +32,7 @@ func TestGetReviewItemsWithPriority(t *testing.T) {
 			BookID:         bookID,
 			PageNumber:     1,
 			Content:        "Urgent 1",
-			NextReviewDate: &[]time.Time{now.AddDate(0, 0, -2)}[0],
+			NextReviewDate: &[]time.Time{now.AddDate(0, 0, -2)}[0], // 2 days overdue
 		},
 		{
 			ID:             uuid.New(),
@@ -36,7 +40,7 @@ func TestGetReviewItemsWithPriority(t *testing.T) {
 			BookID:         bookID,
 			PageNumber:     2,
 			Content:        "Urgent 2",
-			NextReviewDate: &[]time.Time{now.AddDate(0, 0, -1)}[0],
+			NextReviewDate: &[]time.Time{now.AddDate(0, 0, -1)}[0], // 1 day overdue
 		},
 		{
 			ID:             uuid.New(),
@@ -44,7 +48,7 @@ func TestGetReviewItemsWithPriority(t *testing.T) {
 			BookID:         bookID,
 			PageNumber:     3,
 			Content:        "Recommended",
-			NextReviewDate: &[]time.Time{now.AddDate(0, 0, 1)}[0],
+			NextReviewDate: &[]time.Time{now.Add(12 * time.Hour)}[0], // Due within today
 		},
 		{
 			ID:             uuid.New(),
@@ -52,7 +56,7 @@ func TestGetReviewItemsWithPriority(t *testing.T) {
 			BookID:         bookID,
 			PageNumber:     4,
 			Content:        "Relaxed",
-			NextReviewDate: &[]time.Time{now.AddDate(0, 0, 3)}[0],
+			NextReviewDate: &[]time.Time{now.AddDate(0, 0, 3)}[0], // Due in 3 days
 		},
 	}
 
@@ -130,16 +134,20 @@ func TestGetReviewStats(t *testing.T) {
 	now := time.Now()
 
 	// テストデータを作成
+	// GetPriority logic:
+	// - daysUntilDue < 0 → Urgent (overdue)
+	// - daysUntilDue < 1 → Recommended (due today)
+	// - daysUntilDue >= 1 → Relaxed (余裕あり)
 	for i := 0; i < 10; i++ {
 		var nextReviewDate time.Time
 		if i < 3 {
-			// 緊急項目
+			// 緊急項目 (overdue - yesterday)
 			nextReviewDate = now.AddDate(0, 0, -1)
 		} else if i < 7 {
-			// 推奨項目
-			nextReviewDate = now.AddDate(0, 0, 1)
+			// 推奨項目 (due within today - use hours to stay within 0-1 day range)
+			nextReviewDate = now.Add(12 * time.Hour)
 		} else {
-			// 余裕あり項目
+			// 余裕あり項目 (due tomorrow or later)
 			nextReviewDate = now.AddDate(0, 0, 3)
 		}
 
@@ -156,10 +164,9 @@ func TestGetReviewStats(t *testing.T) {
 
 	stats, err := service.GetStats(ctx, userID, now)
 	require.NoError(t, err)
-	assert.Equal(t, 10, stats.TotalReviewItems)
-	assert.Equal(t, 3, stats.UrgentItems)
-	assert.Equal(t, 4, stats.RecommendedItems)
-	assert.Equal(t, 3, stats.RelaxedItems)
+	assert.Equal(t, 3, stats.UrgentCount)
+	assert.Equal(t, 4, stats.RecommendedCount)
+	assert.Equal(t, 3, stats.OptionalCount)
 }
 
 // TestCreateReviewItemFromPhrase はフレーズから復習項目を作成をテスト
@@ -283,23 +290,19 @@ func (m *MockSRSService) CompleteReview(ctx context.Context, itemID uuid.UUID, s
 }
 
 func (m *MockSRSService) GetStats(ctx context.Context, userID uuid.UUID, now time.Time) (*models.ReviewStats, error) {
-	stats := &models.ReviewStats{
-		UserID: userID,
-	}
+	stats := &models.ReviewStats{}
 
 	for _, item := range m.items {
 		if item.UserID == userID {
-			stats.TotalReviewItems++
-
 			if item.NextReviewDate != nil {
 				priority := item.GetPriority(now)
 				switch priority {
 				case models.PriorityUrgent:
-					stats.UrgentItems++
+					stats.UrgentCount++
 				case models.PriorityRecommended:
-					stats.RecommendedItems++
+					stats.RecommendedCount++
 				case models.PriorityRelaxed:
-					stats.RelaxedItems++
+					stats.OptionalCount++
 				}
 			}
 		}

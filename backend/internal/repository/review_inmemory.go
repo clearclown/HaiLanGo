@@ -33,77 +33,89 @@ func NewInMemoryReviewRepository() *InMemoryReviewRepository {
 // initSampleData はサンプルデータを初期化
 func (r *InMemoryReviewRepository) initSampleData() {
 	// サンプル復習アイテムを作成
-	sampleUserID := "550e8400-e29b-41d4-a716-446655440001"
-	sampleBookID := "550e8400-e29b-41d4-a716-446655440000"
+	sampleUserID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440001")
+	sampleBookID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 
 	now := time.Now()
+	pastTime := now.Add(-25 * time.Hour)
+	overdueTime := now.Add(-1 * time.Hour)
 
 	// 緊急: 期限切れアイテム (3個)
+	texts := []string{"Здравствуйте", "Спасибо", "До свидания"}
+	translations := []string{"こんにちは", "ありがとう", "さようなら"}
 	for i := 0; i < 3; i++ {
-		id := uuid.New().String()
-		r.items[id] = &models.ReviewItem{
-			ID:           id,
-			UserID:       sampleUserID,
-			BookID:       sampleBookID,
-			PageNumber:   i + 1,
-			Type:         "word",
-			Text:         []string{"Здравствуйте", "Спасибо", "До свидания"}[i],
-			Translation:  []string{"こんにちは", "ありがとう", "さようなら"}[i],
-			Language:     "ru",
-			MasteryLevel: 30 + i*10,
-			IntervalDays: 1,
-			EaseFactor:   2.5,
-			LastReviewed: now.Add(-25 * time.Hour), // 昨日より前
-			NextReview:   now.Add(-1 * time.Hour),  // 1時間前 (期限切れ)
-			ReviewCount:  i + 1,
-			CreatedAt:    now.Add(-48 * time.Hour),
-			UpdatedAt:    now,
+		id := uuid.New()
+		r.items[id.String()] = &models.ReviewItem{
+			ID:             id,
+			UserID:         sampleUserID,
+			BookID:         sampleBookID,
+			PageNumber:     i + 1,
+			ItemType:       "word",
+			Content:        texts[i],
+			Translation:    translations[i],
+			Language:       "ru",
+			MasteryLevel:   30 + i*10,
+			IntervalDays:   1,
+			EaseFactor:     2.5,
+			LastReviewDate: &pastTime,
+			NextReviewDate: &overdueTime,
+			ReviewCount:    i + 1,
+			CreatedAt:      now.Add(-48 * time.Hour),
+			UpdatedAt:      now,
 		}
 	}
 
 	// 推奨: 明日までのアイテム (5個)
+	recommendedTexts := []string{"Привет", "Пока", "Да", "Нет", "Может быть"}
+	recommendedTranslations := []string{"やあ", "じゃあね", "はい", "いいえ", "たぶん"}
+	tomorrowTime := now.Add(36 * time.Hour)
 	for i := 0; i < 5; i++ {
-		id := uuid.New().String()
-		r.items[id] = &models.ReviewItem{
-			ID:           id,
-			UserID:       sampleUserID,
-			BookID:       sampleBookID,
-			PageNumber:   i + 10,
-			Type:         "word",
-			Text:         []string{"Привет", "Пока", "Да", "Нет", "Может быть"}[i],
-			Translation:  []string{"やあ", "じゃあね", "はい", "いいえ", "たぶん"}[i],
-			Language:     "ru",
-			MasteryLevel: 50 + i*5,
-			IntervalDays: 2,
-			EaseFactor:   2.6,
-			LastReviewed: now.Add(-20 * time.Hour),
-			NextReview:   now.Add(36 * time.Hour), // 明日
-			ReviewCount:  i + 2,
-			CreatedAt:    now.Add(-72 * time.Hour),
-			UpdatedAt:    now,
+		id := uuid.New()
+		lastReview := now.Add(-20 * time.Hour)
+		r.items[id.String()] = &models.ReviewItem{
+			ID:             id,
+			UserID:         sampleUserID,
+			BookID:         sampleBookID,
+			PageNumber:     i + 10,
+			ItemType:       "word",
+			Content:        recommendedTexts[i],
+			Translation:    recommendedTranslations[i],
+			Language:       "ru",
+			MasteryLevel:   50 + i*5,
+			IntervalDays:   2,
+			EaseFactor:     2.6,
+			LastReviewDate: &lastReview,
+			NextReviewDate: &tomorrowTime,
+			ReviewCount:    i + 2,
+			CreatedAt:      now.Add(-72 * time.Hour),
+			UpdatedAt:      now,
 		}
 	}
 
 	// 余裕あり: 2日以上先のアイテム (4個)
+	relaxedTexts := []string{"Как дела?", "Всё хорошо", "Извините", "Пожалуйста"}
+	relaxedTranslations := []string{"元気ですか？", "元気です", "すみません", "どういたしまして"}
+	futureTime := now.Add(72 * time.Hour)
 	for i := 0; i < 4; i++ {
-		id := uuid.New().String()
-		r.items[id] = &models.ReviewItem{
-			ID:           id,
-			UserID:       sampleUserID,
-			BookID:       sampleBookID,
-			PageNumber:   i + 20,
-			Type:         "phrase",
-			Text:         []string{"Как дела?", "Всё хорошо", "Извините", "Пожалуйста"}[i],
-			Translation:  []string{"元気ですか？", "元気です", "すみません", "どういたしまして"}[i],
-			Language:     "ru",
-			MasteryLevel: 70 + i*5,
-			IntervalDays: 7,
-			EaseFactor:   2.8,
-			LastReviewed: now.Add(-100 * time.Hour),
-			NextReview:   now.Add(72 * time.Hour), // 3日後
-			ReviewCount:  i + 5,
-			CreatedAt:    now.Add(-168 * time.Hour),
-			UpdatedAt:    now,
+		id := uuid.New()
+		lastReview := now.Add(-100 * time.Hour)
+		r.items[id.String()] = &models.ReviewItem{
+			ID:             id,
+			UserID:         sampleUserID,
+			BookID:         sampleBookID,
+			PageNumber:     i + 20,
+			ItemType:       "phrase",
+			Content:        relaxedTexts[i],
+			Translation:    relaxedTranslations[i],
+			Language:       "ru",
+			MasteryLevel:   70 + i*5,
+			IntervalDays:   7,
+			EaseFactor:     2.8,
+			LastReviewDate: &lastReview,
+			NextReviewDate: &futureTime,
+			ReviewCount:    i + 5,
+			CreatedAt:      now.Add(-168 * time.Hour),
+			UpdatedAt:      now,
 		}
 	}
 }
@@ -112,15 +124,15 @@ func (r *InMemoryReviewRepository) Create(ctx context.Context, item *models.Revi
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if item.ID == "" {
-		item.ID = uuid.New().String()
+	if item.ID == uuid.Nil {
+		item.ID = uuid.New()
 	}
 
 	now := time.Now()
 	item.CreatedAt = now
 	item.UpdatedAt = now
 
-	r.items[item.ID] = item
+	r.items[item.ID.String()] = item
 	return nil
 }
 
@@ -142,7 +154,7 @@ func (r *InMemoryReviewRepository) FindByUserID(ctx context.Context, userID stri
 
 	var items []*models.ReviewItem
 	for _, item := range r.items {
-		if item.UserID == userID {
+		if item.UserID.String() == userID {
 			items = append(items, item)
 		}
 	}
@@ -154,12 +166,12 @@ func (r *InMemoryReviewRepository) Update(ctx context.Context, item *models.Revi
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, exists := r.items[item.ID]; !exists {
+	if _, exists := r.items[item.ID.String()]; !exists {
 		return ErrReviewItemNotFound
 	}
 
 	item.UpdatedAt = time.Now()
-	r.items[item.ID] = item
+	r.items[item.ID.String()] = item
 	return nil
 }
 
@@ -181,7 +193,7 @@ func (r *InMemoryReviewRepository) CountCompletedToday(ctx context.Context, user
 
 	count := 0
 	for _, history := range r.histories {
-		if history.UserID == userID && history.ReviewedAt.After(since) {
+		if history.UserID.String() == userID && history.ReviewedAt.After(since) {
 			count++
 		}
 	}
@@ -195,7 +207,7 @@ func (r *InMemoryReviewRepository) CountCompletedSince(ctx context.Context, user
 
 	count := 0
 	for _, history := range r.histories {
-		if history.UserID == userID && history.ReviewedAt.After(since) {
+		if history.UserID.String() == userID && history.ReviewedAt.After(since) {
 			count++
 		}
 	}
@@ -207,11 +219,11 @@ func (r *InMemoryReviewRepository) SaveHistory(ctx context.Context, history *mod
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if history.ID == "" {
-		history.ID = uuid.New().String()
+	if history.ID == uuid.Nil {
+		history.ID = uuid.New()
 	}
 
-	r.histories[history.ID] = history
+	r.histories[history.ID.String()] = history
 	return nil
 }
 
@@ -234,14 +246,14 @@ func (r *reviewRepositoryPostgres) Create(ctx context.Context, item *models.Revi
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
 	`
 
-	if item.ID == "" {
-		item.ID = uuid.New().String()
+	if item.ID == uuid.Nil {
+		item.ID = uuid.New()
 	}
 
 	_, err := r.db.ExecContext(ctx, query,
-		item.ID, item.UserID, item.BookID, item.PageNumber, item.Type,
-		item.Text, item.Translation, "", // context field
-		item.EaseFactor, item.IntervalDays, item.ReviewCount, item.NextReview, item.LastReviewed,
+		item.ID, item.UserID, item.BookID, item.PageNumber, item.ItemType,
+		item.Content, item.Translation, "", // context field
+		item.EaseFactor, item.IntervalDays, item.ReviewCount, item.NextReviewDate, item.LastReviewDate,
 		0, 0, // correct_count, incorrect_count
 	)
 	return err
@@ -258,9 +270,9 @@ func (r *reviewRepositoryPostgres) FindByID(ctx context.Context, id string) (*mo
 	item := &models.ReviewItem{}
 	var correctCount, incorrectCount int
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&item.ID, &item.UserID, &item.BookID, &item.PageNumber, &item.Type,
-		&item.Text, &item.Translation, &item.EaseFactor, &item.IntervalDays,
-		&item.ReviewCount, &item.NextReview, &item.LastReviewed,
+		&item.ID, &item.UserID, &item.BookID, &item.PageNumber, &item.ItemType,
+		&item.Content, &item.Translation, &item.EaseFactor, &item.IntervalDays,
+		&item.ReviewCount, &item.NextReviewDate, &item.LastReviewDate,
 		&correctCount, &incorrectCount, &item.CreatedAt, &item.UpdatedAt,
 	)
 
@@ -293,9 +305,9 @@ func (r *reviewRepositoryPostgres) FindByUserID(ctx context.Context, userID stri
 		item := &models.ReviewItem{}
 		var correctCount, incorrectCount int
 		err := rows.Scan(
-			&item.ID, &item.UserID, &item.BookID, &item.PageNumber, &item.Type,
-			&item.Text, &item.Translation, &item.EaseFactor, &item.IntervalDays,
-			&item.ReviewCount, &item.NextReview, &item.LastReviewed,
+			&item.ID, &item.UserID, &item.BookID, &item.PageNumber, &item.ItemType,
+			&item.Content, &item.Translation, &item.EaseFactor, &item.IntervalDays,
+			&item.ReviewCount, &item.NextReviewDate, &item.LastReviewDate,
 			&correctCount, &incorrectCount, &item.CreatedAt, &item.UpdatedAt,
 		)
 		if err != nil {
@@ -317,9 +329,9 @@ func (r *reviewRepositoryPostgres) Update(ctx context.Context, item *models.Revi
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
-		item.ID, item.PageNumber, item.Type, item.Text, item.Translation,
+		item.ID, item.PageNumber, item.ItemType, item.Content, item.Translation,
 		item.EaseFactor, item.IntervalDays, item.ReviewCount,
-		item.NextReview, item.LastReviewed,
+		item.NextReviewDate, item.LastReviewDate,
 	)
 	if err != nil {
 		return err
@@ -377,16 +389,13 @@ func (r *reviewRepositoryPostgres) SaveHistory(ctx context.Context, history *mod
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
-	if history.ID == "" {
-		history.ID = uuid.New().String()
+	if history.ID == uuid.Nil {
+		history.ID = uuid.New()
 	}
-
-	// Use default time_spent_seconds of 0 since model doesn't have this field
-	timeSpentSeconds := 0
 
 	_, err := r.db.ExecContext(ctx, query,
 		history.ID, history.UserID, history.ReviewItemID,
-		history.Score, timeSpentSeconds, history.ReviewedAt,
+		history.Score, history.TimeSpentSec, history.ReviewedAt,
 	)
 	return err
 }

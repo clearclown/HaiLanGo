@@ -36,7 +36,7 @@ const (
 
 // AudioSegment は音声セグメントを表す
 type AudioSegment struct {
-	ID       string           `json:"id"`        // セグメントID
+	ID       uuid.UUID        `json:"id"`        // セグメントID
 	Type     AudioSegmentType `json:"type"`      // タイプ
 	AudioURL string           `json:"audio_url"` // 音声URL
 	Duration int              `json:"duration"`  // 長さ（ミリ秒）
@@ -53,7 +53,7 @@ type PageAudio struct {
 
 // TeacherModePlaylist は教師モードのプレイリストを表す
 type TeacherModePlaylist struct {
-	ID            string              `json:"id"`             // プレイリストID
+	ID            uuid.UUID           `json:"id"`             // プレイリストID
 	BookID        uuid.UUID           `json:"book_id"`        // 書籍ID
 	Pages         []PageAudio         `json:"pages"`          // ページ
 	Settings      TeacherModeSettings `json:"settings"`       // 設定

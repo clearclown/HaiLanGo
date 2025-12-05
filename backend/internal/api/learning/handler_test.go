@@ -55,16 +55,14 @@ func TestGetPageHandler(t *testing.T) {
 	pageNumber := 1
 
 	expectedPage := &models.PageWithProgress{
-		Page: models.Page{
-			ID:          uuid.New(),
-			BookID:      bookID,
-			PageNumber:  pageNumber,
-			ImageURL:    "https://example.com/page1.png",
-			OCRText:     "Здравствуйте!",
-			Translation: "こんにちは！",
-			AudioURL:    "https://example.com/audio1.mp3",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+		Page: &models.Page{
+			ID:         uuid.New(),
+			BookID:     bookID,
+			PageNumber: pageNumber,
+			ImageURL:   "https://example.com/page1.png",
+			OCRText:    "Здравствуйте!",
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
 		},
 		IsCompleted: false,
 		CompletedAt: nil,

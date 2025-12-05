@@ -10,6 +10,7 @@ import (
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/clearclown/HaiLanGo/backend/internal/service/audio"
 	"github.com/clearclown/HaiLanGo/backend/pkg/stt"
+	"github.com/google/uuid"
 )
 
 // STTService は音声認識・発音評価サービス
@@ -195,8 +196,8 @@ func calculateWordScores(expectedWords, recognizedWords []models.WordInfo) []mod
 }
 
 // generateEvaluationID は評価IDを生成する
-func generateEvaluationID() string {
-	return fmt.Sprintf("eval_%d", time.Now().UnixNano())
+func generateEvaluationID() uuid.UUID {
+	return uuid.New()
 }
 
 // ReduceNoise はノイズ除去を行う（テスト用のグローバル関数）

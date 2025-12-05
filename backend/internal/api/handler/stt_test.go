@@ -15,6 +15,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// テスト用の固定UUID
+var testSTTBookID = uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+
 func setupSTTTestRouter() (*gin.Engine, repository.STTRepositoryInterface) {
 	gin.SetMode(gin.TestMode)
 
@@ -82,8 +85,8 @@ func TestSTTGetLanguages(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 
-	// 12言語がサポートされているはず
-	assert.Equal(t, 12, len(response))
+	// Dynamic language support: at least 9 verified + 21 supported = 30 languages
+	assert.GreaterOrEqual(t, len(response), 30)
 
 	// 日本語が含まれているか確認
 	foundJapanese := false
@@ -114,7 +117,7 @@ func TestSTTGetJobStatus(t *testing.T) {
 	var completedJobID string
 	for _, job := range jobs {
 		if job.Status == models.STTStatusCompleted {
-			completedJobID = job.ID
+			completedJobID = job.ID.String()
 			break
 		}
 	}
@@ -131,7 +134,7 @@ func TestSTTGetJobStatus(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 
-	assert.Equal(t, completedJobID, response.JobID)
+	assert.Equal(t, completedJobID, response.JobID.String())
 	assert.Equal(t, models.STTStatusCompleted, response.Status)
 	assert.NotNil(t, response.Result)
 	assert.NotNil(t, response.Score)
@@ -157,7 +160,7 @@ func TestSTTGetBookJobs(t *testing.T) {
 	assert.Equal(t, 30, len(response))
 
 	// 最初のジョブはページ1で完了済み
-	assert.Equal(t, testBookID, response[0].BookID)
+	assert.Equal(t, testSTTBookID, response[0].BookID)
 	assert.Equal(t, models.STTStatusCompleted, response[0].Status)
 }
 

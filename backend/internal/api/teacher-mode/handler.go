@@ -229,7 +229,7 @@ func (h *Handler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// bookIDをURLから取得
-	bookID := "test-book" // TODO: ルーターから取得
+	bookID := extractBookIDFromPath(r.URL.Path)
 
 	// プレイリストが存在しない場合（テスト用）
 	if bookID == "nonexistent-book" {
@@ -258,4 +258,15 @@ func (h *Handler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+// extractBookIDFromPath extracts bookID from URL path like /api/v1/books/{bookId}/teacher-mode/...
+func extractBookIDFromPath(path string) string {
+	parts := strings.Split(path, "/")
+	for i, part := range parts {
+		if part == "books" && i+1 < len(parts) {
+			return parts[i+1]
+		}
+	}
+	return "test-book" // デフォルト値
 }

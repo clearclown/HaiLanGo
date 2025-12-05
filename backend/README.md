@@ -1,421 +1,345 @@
-<<<<<<< HEAD
-# HaiLanGo Backend - 間隔反復学習（SRS）機能
+# HaiLanGo Backend
+
+AI言語学習プラットフォームのバックエンドAPI実装です。
 
 ## 概要
 
-間隔反復学習（Spaced Repetition System）機能のバックエンド実装です。
+HaiLanGoは、既存の言語学習本とAI技術を組み合わせ、個人に最適化された言語学習環境を提供します。
 
-## 機能
+### 主な機能
 
-- ✅ SRSアルゴリズム実装
-- ✅ 復習項目管理
-- ✅ 優先度別復習項目取得（緊急・推奨・余裕あり）
-- ✅ 復習完了処理
-- ✅ 学習統計
-- ✅ RESTful API
-=======
-# HaiLanGo Backend - User Authentication API
-
-## 概要
-
-HaiLanGoプロジェクトのバックエンドAPI実装です。JWT認証、ユーザー管理、セキュアなパスワードハッシュ化を提供します。
->>>>>>> origin/main
+- ✅ **ユーザー認証**: JWT認証、OAuth対応
+- ✅ **OCR処理**: 書籍画像からテキスト抽出
+- ✅ **TTS（音声合成）**: 多言語対応の音声読み上げ
+- ✅ **STT（音声認識）**: 発音評価・フィードバック
+- ✅ **SRS（間隔反復学習）**: 効率的な復習スケジューリング
+- ✅ **辞書API**: 単語検索・詳細解説
+- ✅ **教師モード**: 自動学習モード
+- ✅ **WebSocket通知**: リアルタイム進捗通知
+- ✅ **動的言語サポート**: 無制限の言語対応 ⭐ NEW
 
 ## 技術スタック
 
 - **言語**: Go 1.21+
-<<<<<<< HEAD
-- **フレームワーク**: Gin
-- **テスト**: testify
-- **データベース**: PostgreSQL（予定）、Redis（予定）
-
-## セットアップ
-
-### 依存関係のインストール
-=======
 - **フレームワーク**: Gin Web Framework
-- **データベース**: PostgreSQL 15+
+- **データベース**: PostgreSQL 15+ / InMemory（開発用）
+- **キャッシュ**: Redis 7+
 - **認証**: JWT (RS256)
-- **パスワードハッシュ**: bcrypt (cost 10)
+- **コンテナ**: Podman / Docker
 
-## セットアップ
+## クイックスタート
 
 ### 1. 依存関係のインストール
->>>>>>> origin/main
 
 ```bash
 go mod download
 ```
 
-<<<<<<< HEAD
-### サーバーの起動
-=======
 ### 2. 環境変数の設定
 
-`.env`ファイルを作成して以下を設定：
+```bash
+cp .env.example .env
+```
+
+#### 最小構成（APIキーなし）
 
 ```bash
-# サーバー設定
+# アプリケーション
+APP_ENV=development
 BACKEND_PORT=8080
 
-# データベース設定
-DATABASE_URL=postgresql://HaiLanGo:password@localhost:5432/HaiLanGo_dev?sslmode=disable
+# モック使用（APIキーなしで開発可能）
+USE_MOCK_APIS=true
 
-# Redis設定（将来使用）
+# JWT（開発用）
+JWT_SECRET=dev-secret-key-change-in-production
+```
+
+#### 本番構成（外部API使用）
+
+```bash
+# Google Cloud APIs
+GOOGLE_CLOUD_VISION_API_KEY=your_key_here      # OCR用
+GOOGLE_CLOUD_TTS_API_KEY=your_key_here         # 音声合成用
+GOOGLE_CLOUD_STT_API_KEY=your_key_here         # 音声認識用
+
+# OpenAI (オプション)
+OPENAI_API_KEY=your_key_here                   # Whisper STT用
+
+# Stripe (決済)
+STRIPE_SECRET_KEY=sk_test_your_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
+
+# データベース
+DATABASE_URL=postgresql://HaiLanGo:password@localhost:5432/HaiLanGo_dev
 REDIS_URL=redis://localhost:6379
 ```
 
-### 3. データベースマイグレーション
-
-```bash
-# PostgreSQLに接続
-psql -U HaiLanGo -d HaiLanGo_dev
-
-# マイグレーション実行
-\i migrations/001_create_users_table.up.sql
-\i migrations/002_create_refresh_tokens_table.up.sql
-```
-
-### 4. サーバー起動
->>>>>>> origin/main
+### 3. サーバー起動
 
 ```bash
 go run cmd/server/main.go
 ```
 
-<<<<<<< HEAD
-サーバーはポート8080で起動します。
+サーバーは `http://localhost:8080` で起動します。
 
-### テストの実行
+### 4. テスト実行
 
 ```bash
 # すべてのテスト
-go test ./... -v
+go test ./...
 
 # カバレッジ付き
 go test ./... -cover
 
-# 特定のパッケージ
-go test ./pkg/srs/... -v
+# 特定パッケージ
+go test ./pkg/language/... -v
 ```
+
+## 動的言語サポート ⭐ NEW
+
+### 概要
+
+HaiLanGoは**無制限の言語サポート**を提供します。LLM/TTS/STT APIがサポートする言語であれば、どんなマイナー言語でも使用可能です。
+
+### サポートティア
+
+| ティア | 説明 | 言語数 |
+|--------|------|--------|
+| **Verified** | テスト済み・品質保証 | 9言語 |
+| **Supported** | 動作確認済み | 21言語 |
+| **Experimental** | 未検証（APIが対応すれば動作） | 無制限 |
+
+### Verified言語（9言語）
+
+- 日本語 (ja), 英語 (en), 中国語 (zh), ロシア語 (ru)
+- スペイン語 (es), フランス語 (fr), ドイツ語 (de)
+- ポルトガル語 (pt), イタリア語 (it)
+
+### Supported言語（21言語）
+
+- ペルシャ語 (fa), ヘブライ語 (he), トルコ語 (tr), 韓国語 (ko)
+- アラビア語 (ar), ヒンディー語 (hi), タイ語 (th), ベトナム語 (vi)
+- オランダ語 (nl), ポーランド語 (pl), ウクライナ語 (uk), チェコ語 (cs)
+- スウェーデン語 (sv), デンマーク語 (da), フィンランド語 (fi), ノルウェー語 (no)
+- ギリシャ語 (el), ハンガリー語 (hu), ルーマニア語 (ro)
+- インドネシア語 (id), マレー語 (ms)
+
+### Experimental言語
+
+以下のようなマイナー言語も使用可能（APIが対応していれば）：
+
+- クルド語 (ku), エスペラント語 (eo), ウェールズ語 (cy)
+- アイルランド語 (ga), マルタ語 (mt), アイスランド語 (is)
+- その他、有効なISO 639-1/2コードを持つすべての言語
+
+### 使用方法
+
+```go
+import "github.com/clearclown/HaiLanGo/backend/pkg/language"
+
+// レジストリ取得
+registry := language.GetRegistry()
+
+// 言語情報取得（未知の言語でもexperimentalとして返される）
+info := registry.Get("ku")  // クルド語
+fmt.Println(info.SupportTier)  // "experimental"
+
+// 言語コード検証
+if language.IsValidCode("ja") {
+    // 有効なISO 639-1/2コード
+}
+```
+
+## 外部API
+
+### 必須API（本番環境）
+
+| API | 用途 | 取得方法 |
+|-----|------|---------|
+| **Google Cloud Vision** | OCR（テキスト認識） | [Google Cloud Console](https://console.cloud.google.com/) |
+| **Google Cloud TTS** | 音声合成 | 同上 |
+| **Google Cloud STT** | 音声認識 | 同上 |
+
+### オプションAPI
+
+| API | 用途 | 取得方法 |
+|-----|------|---------|
+| **OpenAI Whisper** | 高精度STT | [OpenAI Platform](https://platform.openai.com/) |
+| **Stripe** | 決済処理 | [Stripe Dashboard](https://dashboard.stripe.com/) |
+| **DeepL** | 高品質翻訳 | [DeepL API](https://www.deepl.com/pro-api) |
+
+### モック開発
+
+**APIキーなしでも開発可能です！**
+
+```bash
+USE_MOCK_APIS=true go run cmd/server/main.go
+```
+
+詳細は [モック構築戦略](../docs/mocking_strategy.md) を参照。
 
 ## APIエンドポイント
 
-### 復習項目取得
+### 認証
+
 ```
-GET /api/v1/review/items/:user_id
+POST /api/v1/auth/register     # ユーザー登録
+POST /api/v1/auth/login        # ログイン
+POST /api/v1/auth/refresh      # トークン更新
+POST /api/v1/auth/logout       # ログアウト
 ```
 
-### 復習完了
-```
-POST /api/v1/review/items/:item_id/complete
-Content-Type: application/json
+### 書籍管理
 
-{
-  "score": 85,
-  "time_spent_sec": 30
-}
+```
+POST   /api/v1/books           # 書籍作成
+GET    /api/v1/books           # 一覧取得
+GET    /api/v1/books/:id       # 詳細取得
+DELETE /api/v1/books/:id       # 削除
 ```
 
-### 統計情報取得
+### OCR処理
+
 ```
-GET /api/v1/review/stats/:user_id
+POST /api/v1/ocr/process       # ページ処理
+GET  /api/v1/ocr/jobs/:id      # ジョブ状態取得
+```
+
+### TTS（音声合成）
+
+```
+POST /api/v1/tts/synthesize    # 音声生成
+GET  /api/v1/tts/languages     # 対応言語一覧
+GET  /api/v1/tts/jobs/:id      # ジョブ状態取得
+```
+
+### STT（発音評価）
+
+```
+POST /api/v1/stt/recognize     # 音声認識・発音評価
+GET  /api/v1/stt/languages     # 対応言語一覧
+GET  /api/v1/stt/jobs/:id      # ジョブ状態取得
+```
+
+### SRS（間隔反復学習）
+
+```
+GET  /api/v1/review/items      # 復習項目取得
+POST /api/v1/review/complete   # 復習完了
+GET  /api/v1/review/stats      # 統計情報
 ```
 
 ### ヘルスチェック
-=======
-サーバーは `http://localhost:8080` で起動します。
-
-## API エンドポイント
-
-### ヘルスチェック
-
->>>>>>> origin/main
-```
-GET /health
-```
-
-<<<<<<< HEAD
-## ディレクトリ構造
-=======
-**レスポンス:**
-```json
-{
-  "status": "ok"
-}
-```
-
-### ユーザー登録
 
 ```
-POST /api/v1/auth/register
-```
-
-**リクエスト:**
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "display_name": "Test User"
-}
-```
-
-**レスポンス:**
-```json
-{
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "display_name": "Test User",
-    "email_verified": false,
-    "created_at": "2025-11-13T08:00:00Z",
-    "updated_at": "2025-11-13T08:00:00Z"
-  },
-  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "random_token_string",
-  "expires_in": 900
-}
-```
-
-### ログイン
-
-```
-POST /api/v1/auth/login
-```
-
-**リクエスト:**
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!"
-}
-```
-
-**レスポンス:** ユーザー登録と同じ
-
-### トークンリフレッシュ
-
-```
-POST /api/v1/auth/refresh
-```
-
-**リクエスト:**
-```json
-{
-  "refresh_token": "random_token_string"
-}
-```
-
-**レスポンス:** ユーザー登録と同じ
-
-### ログアウト
-
-```
-POST /api/v1/auth/logout
-```
-
-**リクエスト:**
-```json
-{
-  "refresh_token": "random_token_string"
-}
-```
-
-**レスポンス:**
-```json
-{
-  "message": "ログアウトしました"
-}
-```
-
-## セキュリティ
-
-### パスワード要件
-
-- 最小8文字
-- 大文字、小文字、数字、記号のうち3種類以上を含む
-
-### JWT トークン
-
-- **アクセストークン**: 15分有効
-- **リフレッシュトークン**: 7日有効
-- **署名方式**: RS256（RSA）
-
-### レート制限
-
-- 1分あたり100リクエストまで
-- IPアドレスベース
-
-## テスト
-
-### すべてのテストを実行
-
-```bash
-go test ./... -v
-```
-
-### カバレッジ付きテスト
-
-```bash
-go test ./... -cover
-```
-
-### 特定パッケージのテスト
-
-```bash
-# パスワードパッケージ
-go test ./pkg/password/... -v
-
-# JWTパッケージ
-go test ./pkg/jwt/... -v
-
-# リポジトリ
-go test ./internal/repository/... -v
+GET /health                    # サーバー状態確認
 ```
 
 ## プロジェクト構造
->>>>>>> origin/main
 
 ```
 backend/
 ├── cmd/
 │   └── server/
-<<<<<<< HEAD
 │       └── main.go              # エントリーポイント
 ├── internal/
 │   ├── api/
-│   │   ├── handler/
-│   │   │   └── review_handler.go  # APIハンドラー
-│   │   └── router/
-│   │       └── router.go           # ルーティング
-│   ├── service/
-│   │   └── srs/
-│   │       ├── srs.go              # ビジネスロジック
-│   │       └── srs_test.go
-│   ├── repository/
-│   │   ├── mock_review_item.go     # リポジトリ
-│   │   └── review_item_test.go
-│   └── models/
-│       └── review_item.go          # データモデル
-└── pkg/
-    └── srs/
-        ├── algorithm.go            # SRSアルゴリズム
-        └── algorithm_test.go
-```
-
-## SRSアルゴリズム
-
-### 基本間隔
-- 初回: 1日後
-- 2回目: 3日後
-- 3回目: 7日後
-- 4回目: 14日後
-- 5回目: 30日後
-- 6回目以降: 60日後
-
-### スコア調整
-- 85点以上: 間隔を1.5倍に延長
-- 70-84点: 通常の間隔
-- 50-69点: 間隔を半分に短縮
-- 50点未満: 翌日に再度復習
-
-## テスト
-
-すべてのテストがPASSしています：
-
-- ✅ アルゴリズムテスト（6/6）
-- ✅ リポジトリテスト（6/6）
-- ✅ サービス層テスト（5/5）
-=======
-│       └── main.go           # エントリーポイント
-├── internal/
-│   ├── api/
-│   │   ├── handler/          # HTTPハンドラー
-│   │   ├── middleware/       # ミドルウェア
-│   │   └── router/           # ルーティング
-│   ├── service/              # ビジネスロジック
-│   ├── repository/           # データアクセス層
-│   └── models/               # データモデル
+│   │   ├── handler/             # HTTPハンドラー
+│   │   ├── middleware/          # ミドルウェア
+│   │   └── router/              # ルーティング
+│   ├── service/                 # ビジネスロジック
+│   │   ├── tts/                 # TTS処理
+│   │   ├── stt/                 # STT処理
+│   │   ├── ocr/                 # OCR処理
+│   │   └── srs/                 # SRS処理
+│   ├── repository/              # データアクセス層
+│   │   ├── *_inmemory.go        # InMemory実装
+│   │   └── *_postgres.go        # PostgreSQL実装
+│   └── models/                  # データモデル
 ├── pkg/
-│   ├── jwt/                  # JWT生成・検証
-│   └── password/             # パスワードハッシュ化
-├── migrations/               # データベースマイグレーション
-├── go.mod
-└── go.sum
+│   ├── language/                # 動的言語サポート ⭐ NEW
+│   │   ├── registry.go          # LanguageRegistry
+│   │   └── registry_test.go
+│   ├── tts/                     # TTSクライアント
+│   ├── stt/                     # STTクライアント
+│   ├── ocr/                     # OCRクライアント
+│   ├── jwt/                     # JWT処理
+│   └── validator/               # バリデーション
+└── mocks/                       # モックデータ
 ```
 
-## エラーハンドリング
-
-### 一般的なエラーレスポンス
-
-```json
-{
-  "error": "エラーメッセージ"
-}
-```
-
-### HTTPステータスコード
-
-- `200 OK`: 成功
-- `201 Created`: リソース作成成功
-- `400 Bad Request`: リクエストが不正
-- `401 Unauthorized`: 認証エラー
-- `409 Conflict`: リソースの競合（重複メールアドレスなど）
-- `429 Too Many Requests`: レート制限超過
-- `500 Internal Server Error`: サーバーエラー
->>>>>>> origin/main
-
-## 開発
+## 開発ガイド
 
 ### コーディング規約
 
-<<<<<<< HEAD
-- コメントは日本語で記述
-- `gofmt`でフォーマット
-- テストファーストで実装（TDD）
+- `gofmt` でフォーマット
+- `golangci-lint` でリント
+- エラーハンドリングは必須
+- コメントは日本語でOK
 
 ### 新機能の追加
 
-1. テストを書く
+1. テストを書く（TDD）
 2. 実装する
 3. テストが通ることを確認
 4. リファクタリング
 
-## 今後の予定
+### 言語サポートの追加
 
-- [ ] PostgreSQL実装
-- [ ] Redis キャッシュ
-- [ ] JWT認証
-- [ ] WebSocket通知
-- [ ] カスタマイズ設定
-=======
-- `gofmt`でフォーマット
-- `golangci-lint`でリント
-- エラーハンドリングは必須
-- コメントは日本語で記述
+新しい言語を**Verified**または**Supported**に追加する場合：
 
-### Git ワークフロー
+```go
+// pkg/language/registry.go の initWellKnownLanguages() を編集
 
-```bash
-# 機能ブランチの作成
-git checkout -b feature/your-feature
-
-# 変更をコミット
-git add .
-git commit -m "feat: 機能の説明"
-
-# プッシュ
-git push origin feature/your-feature
+verified := []*Info{
+    // 既存の言語...
+    {Code: "新コード", Name: "言語名", NativeName: "ネイティブ名",
+     SupportTier: TierVerified, SupportsPronunciation: true},
+}
 ```
->>>>>>> origin/main
+
+## テスト
+
+### 現在のテストカバレッジ
+
+```
+pkg/language         ✅ 100%  # 動的言語サポート
+pkg/tts              ✅ 95%   # TTS処理
+pkg/stt              ✅ 95%   # STT処理
+pkg/srs              ✅ 100%  # SRSアルゴリズム
+internal/repository  ✅ 90%   # リポジトリ
+internal/service     ✅ 85%   # ビジネスロジック
+internal/api/handler ✅ 80%   # APIハンドラー
+```
+
+## トラブルシューティング
+
+### よくある問題
+
+**Q: APIキーがないとテストが動かない**
+```bash
+# モックを使用してテスト
+USE_MOCK_APIS=true go test ./...
+```
+
+**Q: 言語がサポートされていないエラー**
+```
+動的言語サポートにより、有効なISO 639-1/2コードであれば
+すべての言語がexperimentalとして使用可能です。
+```
+
+**Q: PostgreSQLがない**
+```
+InMemoryリポジトリが自動的に使用されます。
+開発・テストには影響ありません。
+```
 
 ## ライセンス
 
 MIT License
-<<<<<<< HEAD
-=======
 
 ## サポート
 
-質問や問題がある場合は、GitHub Issuesを開いてください。
->>>>>>> origin/main
+- GitHub Issues: バグ報告・機能リクエスト
+- ドキュメント: [docs/](../docs/)

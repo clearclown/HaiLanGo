@@ -21,11 +21,11 @@ var (
 // WordRepository は単語リポジトリのインターフェース
 type WordRepository interface {
 	Create(ctx context.Context, word *models.Word) error
-	GetByID(ctx context.Context, id string) (*models.Word, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*models.Word, error)
 	List(ctx context.Context, filter *models.WordFilter) ([]*models.Word, int, error)
 	Update(ctx context.Context, word *models.Word) error
-	Delete(ctx context.Context, id string) error
-	GetStats(ctx context.Context, userID, bookID string) (*models.WordStats, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+	GetStats(ctx context.Context, userID, bookID uuid.UUID) (*models.WordStats, error)
 	BulkCreate(ctx context.Context, words []*models.Word) error
 }
 
@@ -57,23 +57,23 @@ func (r *MockWordRepository) Create(ctx context.Context, word *models.Word) erro
 	}
 
 	// IDの生成
-	word.ID = uuid.New().String()
+	word.ID = uuid.New()
 	word.CreatedAt = time.Now()
 	word.UpdatedAt = time.Now()
 
 	// コピーして保存
 	wordCopy := *word
-	r.words[word.ID] = &wordCopy
+	r.words[word.ID.String()] = &wordCopy
 
 	return nil
 }
 
 // GetByID はIDで単語を取得する
-func (r *MockWordRepository) GetByID(ctx context.Context, id string) (*models.Word, error) {
+func (r *MockWordRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Word, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	word, ok := r.words[id]
+	word, ok := r.words[id.String()]
 	if !ok {
 		return nil, ErrWordNotFound
 	}
@@ -124,32 +124,32 @@ func (r *MockWordRepository) Update(ctx context.Context, word *models.Word) erro
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, ok := r.words[word.ID]; !ok {
+	if _, ok := r.words[word.ID.String()]; !ok {
 		return ErrWordNotFound
 	}
 
 	word.UpdatedAt = time.Now()
 	wordCopy := *word
-	r.words[word.ID] = &wordCopy
+	r.words[word.ID.String()] = &wordCopy
 
 	return nil
 }
 
 // Delete は単語を削除する
-func (r *MockWordRepository) Delete(ctx context.Context, id string) error {
+func (r *MockWordRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, ok := r.words[id]; !ok {
+	if _, ok := r.words[id.String()]; !ok {
 		return ErrWordNotFound
 	}
 
-	delete(r.words, id)
+	delete(r.words, id.String())
 	return nil
 }
 
 // GetStats は単語統計を取得する
-func (r *MockWordRepository) GetStats(ctx context.Context, userID, bookID string) (*models.WordStats, error) {
+func (r *MockWordRepository) GetStats(ctx context.Context, userID, bookID uuid.UUID) (*models.WordStats, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -158,11 +158,12 @@ func (r *MockWordRepository) GetStats(ctx context.Context, userID, bookID string
 	var totalMastery float64
 	var totalReviews int
 
+	emptyUUID := uuid.UUID{}
 	for _, word := range r.words {
 		if word.UserID != userID {
 			continue
 		}
-		if bookID != "" && word.BookID != bookID {
+		if bookID != emptyUUID && word.BookID != bookID {
 			continue
 		}
 
@@ -204,13 +205,13 @@ func (r *MockWordRepository) BulkCreate(ctx context.Context, words []*models.Wor
 		}
 
 		// IDの生成
-		word.ID = uuid.New().String()
+		word.ID = uuid.New()
 		word.CreatedAt = time.Now()
 		word.UpdatedAt = time.Now()
 
 		// コピーして保存
 		wordCopy := *word
-		r.words[word.ID] = &wordCopy
+		r.words[word.ID.String()] = &wordCopy
 	}
 
 	return nil
@@ -218,11 +219,12 @@ func (r *MockWordRepository) BulkCreate(ctx context.Context, words []*models.Wor
 
 // matchFilter はフィルタ条件にマッチするか判定する
 func matchFilter(word *models.Word, filter *models.WordFilter) bool {
-	if filter.UserID != "" && word.UserID != filter.UserID {
+	emptyUUID := uuid.UUID{}
+	if filter.UserID != emptyUUID && word.UserID != filter.UserID {
 		return false
 	}
 
-	if filter.BookID != "" && word.BookID != filter.BookID {
+	if filter.BookID != emptyUUID && word.BookID != filter.BookID {
 		return false
 	}
 

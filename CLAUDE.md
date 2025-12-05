@@ -33,6 +33,11 @@
 - **本番環境**: AWS / GCP / Cloudflare（将来）
 - **IaC**必須: Terraform
 
+### 動的言語サポート
+- **パッケージ**: `pkg/language/` - LanguageRegistry
+- **サポートティア**: Verified (9), Supported (21), Experimental (無制限)
+- **対応言語**: ISO 639-1/2コードを持つすべての言語
+
 ## コーディング規約
 
 ### Go（バックエンド）
@@ -57,7 +62,13 @@ backend/
 │   ├── service/            # ビジネスロジック
 │   ├── repository/         # データアクセス層
 │   └── models/             # データモデル
-└── pkg/                    # 外部パッケージ（再利用可能）
+├── pkg/                    # 外部パッケージ（再利用可能）
+│   ├── language/           # 動的言語サポート
+│   ├── tts/                # TTS クライアント
+│   ├── stt/                # STT クライアント
+│   ├── ocr/                # OCR クライアント
+│   └── jwt/                # JWT 処理
+└── mocks/                  # モックデータ
 ```
 
 #### 命名規則
@@ -561,6 +572,118 @@ func NewOCRClient() OCRClient {
 - バックグラウンド再生はMedia Session API使用（Web）
 - audio_serviceパッケージ使用（Flutter）
 - プレイリスト生成は非同期で行う
+
+## 動的言語サポート
+
+### 概要
+
+HaiLanGoは**無制限の言語サポート**を提供します。LLM/TTS/STT APIがサポートする言語であれば、どんなマイナー言語でも使用可能です。
+
+### サポートティア
+
+| ティア | 説明 | 言語数 |
+|--------|------|--------|
+| **Verified** | テスト済み・品質保証 | 9言語 |
+| **Supported** | 動作確認済み | 21言語 |
+| **Experimental** | 未検証（APIが対応すれば動作） | 無制限 |
+
+### Verified言語（9言語）
+
+- 日本語 (ja), 英語 (en), 中国語 (zh), ロシア語 (ru)
+- スペイン語 (es), フランス語 (fr), ドイツ語 (de)
+- ポルトガル語 (pt), イタリア語 (it)
+
+### LanguageRegistry の使用方法
+
+```go
+import "github.com/clearclown/HaiLanGo/backend/pkg/language"
+
+// レジストリ取得（シングルトン）
+registry := language.GetRegistry()
+
+// 言語情報取得（未知の言語でもexperimentalとして返される）
+info := registry.Get("ku")  // クルド語
+fmt.Println(info.SupportTier)  // "experimental"
+
+// 全言語取得
+allLangs := registry.GetAll()
+
+// 言語コード検証
+if language.IsValidCode("ja") {
+    // 有効なISO 639-1/2コード
+}
+```
+
+### 新しい言語を追加する場合
+
+Verified または Supported に追加する場合：
+
+```go
+// pkg/language/registry.go の initWellKnownLanguages() を編集
+
+verified := []*Info{
+    // 既存の言語...
+    {Code: "新コード", Name: "言語名", NativeName: "ネイティブ名",
+     SupportTier: TierVerified, SupportsPronunciation: true},
+}
+```
+
+## 外部API
+
+### 必須API（本番環境）
+
+| API | 用途 | 環境変数 | 取得方法 |
+|-----|------|----------|---------|
+| **Google Cloud Vision** | OCR（テキスト認識） | `GOOGLE_CLOUD_VISION_API_KEY` | [Google Cloud Console](https://console.cloud.google.com/) |
+| **Google Cloud TTS** | 音声合成 | `GOOGLE_CLOUD_TTS_API_KEY` | 同上 |
+| **Google Cloud STT** | 音声認識 | `GOOGLE_CLOUD_STT_API_KEY` | 同上 |
+
+### オプションAPI
+
+| API | 用途 | 環境変数 | 取得方法 |
+|-----|------|----------|---------|
+| **OpenAI Whisper** | 高精度STT | `OPENAI_API_KEY` | [OpenAI Platform](https://platform.openai.com/) |
+| **Stripe** | 決済処理 | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` | [Stripe Dashboard](https://dashboard.stripe.com/) |
+| **DeepL** | 高品質翻訳 | `DEEPL_API_KEY` | [DeepL API](https://www.deepl.com/pro-api) |
+
+### API取得手順
+
+#### Google Cloud APIs
+
+1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
+2. 新規プロジェクトを作成
+3. 「APIとサービス」→「ライブラリ」で以下を有効化：
+   - Cloud Vision API
+   - Cloud Text-to-Speech API
+   - Cloud Speech-to-Text API
+4. 「APIとサービス」→「認証情報」→「認証情報を作成」→「APIキー」
+5. キーを`.env`ファイルに設定
+
+#### Stripe
+
+1. [Stripe Dashboard](https://dashboard.stripe.com/) でアカウント作成
+2. 開発者 → APIキー でテストキーを取得
+3. `STRIPE_SECRET_KEY` と `STRIPE_PUBLISHABLE_KEY` を設定
+
+#### OpenAI
+
+1. [OpenAI Platform](https://platform.openai.com/) でアカウント作成
+2. API Keys でキーを生成
+3. `OPENAI_API_KEY` を設定
+
+### モック開発（APIキー不要）
+
+**APIキーなしでも開発可能です！**
+
+```bash
+# .envファイルに追加
+USE_MOCK_APIS=true
+
+# サーバー起動
+go run cmd/server/main.go
+```
+
+詳細は [モック構築戦略](docs/mocking_strategy.md) を参照。
 
 ## 参考リンク
 

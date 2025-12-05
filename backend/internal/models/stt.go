@@ -26,17 +26,17 @@ type WordInfo struct {
 
 // PronunciationScore は発音評価のスコアを表す
 type PronunciationScore struct {
-	TotalScore      int                `json:"total_score"`       // 総合スコア（0-100）
-	AccuracyScore   int                `json:"accuracy_score"`    // 正確性スコア（0-100）
-	FluencyScore    int                `json:"fluency_score"`     // 流暢性スコア（0-100）
-	PronuncScore    int                `json:"pronunc_score"`     // 発音スコア（0-100）
-	WordScores      []WordScore        `json:"word_scores"`       // 単語ごとのスコア
-	Feedback        *Feedback          `json:"feedback"`          // フィードバック
-	ExpectedText    string             `json:"expected_text"`     // 期待されるテキスト
-	RecognizedText  string             `json:"recognized_text"`   // 認識されたテキスト
-	EvaluationID    string             `json:"evaluation_id"`     // 評価ID
-	UserID          string             `json:"user_id"`           // ユーザーID
-	CreatedAt       time.Time          `json:"created_at"`
+	TotalScore     int         `json:"total_score"`      // 総合スコア（0-100）
+	AccuracyScore  int         `json:"accuracy_score"`   // 正確性スコア（0-100）
+	FluencyScore   int         `json:"fluency_score"`    // 流暢性スコア（0-100）
+	PronuncScore   int         `json:"pronunc_score"`    // 発音スコア（0-100）
+	WordScores     []WordScore `json:"word_scores"`      // 単語ごとのスコア
+	Feedback       *Feedback   `json:"feedback"`         // フィードバック
+	ExpectedText   string      `json:"expected_text"`    // 期待されるテキスト
+	RecognizedText string      `json:"recognized_text"`  // 認識されたテキスト
+	EvaluationID   uuid.UUID   `json:"evaluation_id"`    // 評価ID
+	UserID         uuid.UUID   `json:"user_id"`          // ユーザーID
+	CreatedAt      time.Time   `json:"created_at"`
 }
 
 // WordScore は単語ごとの評価スコアを表す
@@ -86,20 +86,20 @@ type STTRecognizeOptions struct {
 
 // STTJobDetail はSTT処理ジョブの詳細情報
 type STTJobDetail struct {
-	ID             string       `json:"id"`
-	BookID         string       `json:"book_id,omitempty"`
-	PageNumber     int          `json:"page_number,omitempty"`
-	AudioURL       string       `json:"audio_url"`
-	ReferenceText  string       `json:"reference_text,omitempty"`
-	Language       string       `json:"language"`
-	Status         STTStatus    `json:"status"`
-	Progress       int          `json:"progress"` // 0-100
-	Result         *STTResult   `json:"result,omitempty"`
-	Score          *PronunciationScore `json:"score,omitempty"`
-	Error          string       `json:"error,omitempty"`
-	CreatedAt      time.Time    `json:"created_at"`
-	UpdatedAt      time.Time    `json:"updated_at"`
-	CompletedAt    *time.Time   `json:"completed_at,omitempty"`
+	ID            uuid.UUID           `json:"id"`
+	BookID        uuid.UUID           `json:"book_id,omitempty"`
+	PageNumber    int                 `json:"page_number,omitempty"`
+	AudioURL      string              `json:"audio_url"`
+	ReferenceText string              `json:"reference_text,omitempty"`
+	Language      string              `json:"language"`
+	Status        STTStatus           `json:"status"`
+	Progress      int                 `json:"progress"` // 0-100
+	Result        *STTResult          `json:"result,omitempty"`
+	Score         *PronunciationScore `json:"score,omitempty"`
+	Error         string              `json:"error,omitempty"`
+	CreatedAt     time.Time           `json:"created_at"`
+	UpdatedAt     time.Time           `json:"updated_at"`
+	CompletedAt   *time.Time          `json:"completed_at,omitempty"`
 }
 
 // STTStatus はSTT処理ステータス
@@ -114,17 +114,18 @@ const (
 
 // STTLanguage はサポート言語情報
 type STTLanguage struct {
-	Code                  string `json:"code"`                    // 言語コード（例: "ja"）
-	Name                  string `json:"name"`                    // 言語名（例: "Japanese"）
-	NativeName            string `json:"native_name"`             // ネイティブ名（例: "日本語"）
-	IsSupported           bool   `json:"is_supported"`            // サポートされているか
-	SupportsPronunciation bool   `json:"supports_pronunciation"`  // 発音評価サポート
+	Code                  string `json:"code"`                     // 言語コード（例: "ja"）
+	Name                  string `json:"name"`                     // 言語名（例: "Japanese"）
+	NativeName            string `json:"native_name"`              // ネイティブ名（例: "日本語"）
+	IsSupported           bool   `json:"is_supported"`             // サポートされているか
+	SupportsPronunciation bool   `json:"supports_pronunciation"`   // 発音評価サポート
+	SupportTier           string `json:"support_tier,omitempty"`   // サポートレベル: verified, supported, experimental
 }
 
 // STTJobResponse はSTT処理ジョブレスポンス
 type STTJobResponse struct {
-	JobID      string              `json:"job_id"`
-	BookID     string              `json:"book_id,omitempty"`
+	JobID      uuid.UUID           `json:"job_id"`
+	BookID     uuid.UUID           `json:"book_id,omitempty"`
 	PageNumber int                 `json:"page_number,omitempty"`
 	Status     STTStatus           `json:"status"`
 	Progress   int                 `json:"progress"`

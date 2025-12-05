@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // PageLearning はページ学習データ
 type PageLearning struct {
@@ -13,15 +17,15 @@ type PageLearning struct {
 
 // PageWithOCR はOCRデータを含むページ
 type PageWithOCR struct {
-	ID          string `json:"id"`
-	BookID      string `json:"book_id"`
-	PageNumber  int    `json:"page_number"`
-	ImageURL    string `json:"image_url"`
-	OCRText     string `json:"ocr_text"`
-	Translation string `json:"translation"`
-	Language    string `json:"language"`
-	HasAudio    bool   `json:"has_audio"`
-	AudioURL    string `json:"audio_url,omitempty"`
+	ID          uuid.UUID `json:"id"`
+	BookID      uuid.UUID `json:"book_id"`
+	PageNumber  int       `json:"page_number"`
+	ImageURL    string    `json:"image_url"`
+	OCRText     string    `json:"ocr_text"`
+	Translation string    `json:"translation"`
+	Language    string    `json:"language"`
+	HasAudio    bool      `json:"has_audio"`
+	AudioURL    string    `json:"audio_url,omitempty"`
 }
 
 // PageProgressDetail はページ進捗の詳細
@@ -35,11 +39,11 @@ type PageProgressDetail struct {
 
 // Phrase はフレーズ
 type Phrase struct {
-	ID            string `json:"id"`
-	Text          string `json:"text"`
-	Translation   string `json:"translation"`
-	Pronunciation string `json:"pronunciation,omitempty"`
-	AudioURL      string `json:"audio_url,omitempty"`
+	ID            uuid.UUID `json:"id"`
+	Text          string    `json:"text"`
+	Translation   string    `json:"translation"`
+	Pronunciation string    `json:"pronunciation,omitempty"`
+	AudioURL      string    `json:"audio_url,omitempty"`
 }
 
 // VocabularyItem は単語
@@ -79,21 +83,21 @@ type SessionRequest struct {
 
 // SessionResponse は学習セッションレスポンス
 type SessionResponse struct {
-	SessionID string     `json:"session_id"`
+	SessionID uuid.UUID  `json:"session_id"`
 	StartedAt time.Time  `json:"started_at"`
 	EndedAt   *time.Time `json:"ended_at,omitempty"`
 }
 
 // BookProgressSummary は書籍進捗サマリー
 type BookProgressSummary struct {
-	BookID               string                  `json:"book_id"`
-	TotalPages           int                     `json:"total_pages"`
-	CompletedPages       int                     `json:"completed_pages"`
-	CompletionPercentage float64                 `json:"completion_percentage"`
-	TotalStudyTime       int                     `json:"total_study_time"`
-	AverageTimePerPage   float64                 `json:"average_time_per_page"`
-	CurrentPage          int                     `json:"current_page"`
-	LastStudiedAt        *time.Time              `json:"last_studied_at"`
+	BookID               uuid.UUID                 `json:"book_id"`
+	TotalPages           int                       `json:"total_pages"`
+	CompletedPages       int                       `json:"completed_pages"`
+	CompletionPercentage float64                   `json:"completion_percentage"`
+	TotalStudyTime       int                       `json:"total_study_time"`
+	AverageTimePerPage   float64                   `json:"average_time_per_page"`
+	CurrentPage          int                       `json:"current_page"`
+	LastStudiedAt        *time.Time                `json:"last_studied_at"`
 	Pages                []PageProgressSummaryItem `json:"pages"`
 }
 
@@ -107,16 +111,16 @@ type PageProgressSummaryItem struct {
 
 // PageProgressRecord はデータベース用のページ進捗レコード
 type PageProgressRecord struct {
-	ID            string     `json:"id"`
-	UserID        string     `json:"user_id"`
-	BookID        string     `json:"book_id"`
-	PageNumber    int        `json:"page_number"`
-	IsCompleted   bool       `json:"is_completed"`
-	CompletedAt   *time.Time `json:"completed_at"`
-	StudyTime     int        `json:"study_time"` // 秒
-	ReviewCount   int        `json:"review_count"`
-	LastStudiedAt *time.Time `json:"last_studied_at"`
-	Notes         string     `json:"notes,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID            uuid.UUID  `json:"id" db:"id"`
+	UserID        uuid.UUID  `json:"user_id" db:"user_id"`
+	BookID        uuid.UUID  `json:"book_id" db:"book_id"`
+	PageNumber    int        `json:"page_number" db:"page_number"`
+	IsCompleted   bool       `json:"is_completed" db:"is_completed"`
+	CompletedAt   *time.Time `json:"completed_at" db:"completed_at"`
+	StudyTime     int        `json:"study_time" db:"study_time"` // 秒
+	ReviewCount   int        `json:"review_count" db:"review_count"`
+	LastStudiedAt *time.Time `json:"last_studied_at" db:"last_studied_at"`
+	Notes         string     `json:"notes,omitempty" db:"notes"`
+	CreatedAt     time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at" db:"updated_at"`
 }

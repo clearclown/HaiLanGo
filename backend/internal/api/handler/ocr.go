@@ -101,7 +101,7 @@ func (h *OCRHandler) ProcessPage(c *gin.Context) {
 	go func() {
 		// InMemoryリポジトリの場合はシミュレーション
 		if inMemRepo, ok := h.repo.(*repository.InMemoryOCRRepository); ok {
-			inMemRepo.SimulateOCRProcessing(c.Request.Context(), job.ID)
+			inMemRepo.SimulateOCRProcessing(c.Request.Context(), job.ID.String())
 		}
 		// TODO: 実際のOCR処理は ocrService.ProcessPage を使用する
 	}()
@@ -149,7 +149,7 @@ func (h *OCRHandler) BatchProcess(c *gin.Context) {
 	// 実際の実装では書籍のページ数を取得
 	totalPages := 150 // サンプルデータ
 
-	jobIDs := make([]string, 0, totalPages)
+	jobIDs := make([]uuid.UUID, 0, totalPages)
 
 	// 各ページのOCRジョブを作成
 	for i := 1; i <= totalPages; i++ {
@@ -163,9 +163,9 @@ func (h *OCRHandler) BatchProcess(c *gin.Context) {
 		jobIDs = append(jobIDs, job.ID)
 
 		// バックグラウンドでOCR処理を開始
-		go func(jobID string, pageNum int) {
+		go func(jobID uuid.UUID, pageNum int) {
 			if inMemRepo, ok := h.repo.(*repository.InMemoryOCRRepository); ok {
-				inMemRepo.SimulateOCRProcessing(c.Request.Context(), jobID)
+				inMemRepo.SimulateOCRProcessing(c.Request.Context(), jobID.String())
 			}
 			// TODO: 実際のOCR処理は ocrService.ProcessPage を使用する
 
@@ -186,7 +186,7 @@ func (h *OCRHandler) BatchProcess(c *gin.Context) {
 	}
 
 	response := &models.BatchOCRResponse{
-		BookID:     bookID.String(),
+		BookID:     bookID,
 		TotalPages: totalPages,
 		JobIDs:     jobIDs,
 		CreatedAt:  time.Now(),

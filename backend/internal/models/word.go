@@ -2,13 +2,15 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Word は単語データを表すモデル
 type Word struct {
-	ID             string    `json:"id" db:"id"`
-	UserID         string    `json:"user_id" db:"user_id"`
-	BookID         string    `json:"book_id" db:"book_id"`
+	ID             uuid.UUID `json:"id" db:"id"`
+	UserID         uuid.UUID `json:"user_id" db:"user_id"`
+	BookID         uuid.UUID `json:"book_id" db:"book_id"`
 	PageNumber     int       `json:"page_number" db:"page_number"`
 	Text           string    `json:"text" db:"text"`                     // 学習先言語の単語
 	Meaning        string    `json:"meaning" db:"meaning"`               // 母国語での意味
@@ -27,17 +29,17 @@ type Word struct {
 
 // WordFilter は単語検索のフィルタ条件
 type WordFilter struct {
-	UserID     string   `json:"user_id"`
-	BookID     string   `json:"book_id"`
-	Language   string   `json:"language"`
-	Query      string   `json:"query"`       // 単語のテキスト検索
-	Tags       []string `json:"tags"`        // タグでフィルタ
-	MinMastery float64  `json:"min_mastery"` // 最小習得度
-	MaxMastery float64  `json:"max_mastery"` // 最大習得度
-	Limit      int      `json:"limit"`
-	Offset     int      `json:"offset"`
-	SortBy     string   `json:"sort_by"` // "created_at", "mastery", "review_count"
-	SortOrder  string   `json:"sort_order"` // "asc", "desc"
+	UserID     uuid.UUID `json:"user_id"`
+	BookID     uuid.UUID `json:"book_id"`
+	Language   string    `json:"language"`
+	Query      string    `json:"query"`       // 単語のテキスト検索
+	Tags       []string  `json:"tags"`        // タグでフィルタ
+	MinMastery float64   `json:"min_mastery"` // 最小習得度
+	MaxMastery float64   `json:"max_mastery"` // 最大習得度
+	Limit      int       `json:"limit"`
+	Offset     int       `json:"offset"`
+	SortBy     string    `json:"sort_by"`    // "created_at", "mastery", "review_count"
+	SortOrder  string    `json:"sort_order"` // "asc", "desc"
 }
 
 // WordStats は単語統計情報

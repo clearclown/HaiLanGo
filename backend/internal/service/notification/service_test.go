@@ -6,6 +6,7 @@ import (
 
 	"github.com/clearclown/HaiLanGo/backend/internal/api/websocket"
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,8 +29,9 @@ func TestNotifyOCRProgress(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Send OCR progress notification
+	testBookID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 	data := &models.OCRProgressData{
-		BookID:         "book-123",
+		BookID:         testBookID,
 		TotalPages:     100,
 		ProcessedPages: 50,
 		CurrentPage:    50,
@@ -54,8 +56,9 @@ func TestNotifyTTSProgress(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Send TTS progress notification
+	testBookID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 	data := &models.TTSProgressData{
-		BookID:            "book-123",
+		BookID:            testBookID,
 		PageNumber:        10,
 		TotalSegments:     5,
 		ProcessedSegments: 3,
@@ -80,9 +83,11 @@ func TestNotifyLearningUpdate(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Send learning update notification
+	testUserID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440001")
+	testBookID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 	data := &models.LearningUpdateData{
-		UserID:         "test-user",
-		BookID:         "book-123",
+		UserID:         testUserID,
+		BookID:         testBookID,
 		PageNumber:     20,
 		CompletedPages: 20,
 		TotalPages:     100,

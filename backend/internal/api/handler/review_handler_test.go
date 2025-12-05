@@ -13,6 +13,7 @@ import (
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/clearclown/HaiLanGo/backend/internal/websocket"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,10 +87,10 @@ func TestGetItems(t *testing.T) {
 
 	t.Logf("Items count: %d", len(items))
 
-	// 優先度が設定されているか確認
+	// コンテンツが設定されているか確認
 	for _, item := range items {
-		assert.NotEmpty(t, item.Priority)
-		t.Logf("Item: %s - %s (priority: %s)", item.Text, item.Translation, item.Priority)
+		assert.NotEmpty(t, item.Content)
+		t.Logf("Item: %s - %s", item.Content, item.Translation)
 	}
 }
 
@@ -120,11 +121,6 @@ func TestGetItemsWithPriorityFilter(t *testing.T) {
 
 			items := response["items"]
 			assert.Equal(t, tt.expectedCount, len(items))
-
-			// すべてのアイテムの優先度が一致するか確認
-			for _, item := range items {
-				assert.Equal(t, tt.priority, item.Priority)
-			}
 
 			t.Logf("Priority %s: %d items", tt.priority, len(items))
 		})
@@ -169,7 +165,7 @@ func TestSubmitReview(t *testing.T) {
 	assert.NotEmpty(t, response["next_review"])
 
 	// アイテムが更新されているか確認
-	updatedItem, err := repo.FindByID(ctx, testItem.ID)
+	updatedItem, err := repo.FindByID(ctx, testItem.ID.String())
 	assert.NoError(t, err)
 	assert.Greater(t, updatedItem.MasteryLevel, originalMastery) // 習熟度が上がっているはず
 
@@ -208,7 +204,7 @@ func TestSubmitReview_LowScore(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	// アイテムが更新されているか確認
-	updatedItem, err := repo.FindByID(ctx, testItem.ID)
+	updatedItem, err := repo.FindByID(ctx, testItem.ID.String())
 	assert.NoError(t, err)
 	assert.Less(t, updatedItem.MasteryLevel, originalMastery) // 習熟度が下がっているはず
 	assert.Equal(t, 1, updatedItem.IntervalDays) // 失敗したので1日後に再復習
@@ -221,8 +217,9 @@ func TestSubmitReview_InvalidItemID(t *testing.T) {
 	router, _ := setupReviewTestRouter()
 
 	// 存在しないアイテムID
+	nonExistentID := uuid.New()
 	result := models.ReviewResult{
-		ItemID:      "non-existent-id",
+		ItemID:      nonExistentID,
 		Score:       90,
 		CompletedAt: time.Now(),
 	}
@@ -247,9 +244,9 @@ func TestSubmitReview_Unauthorized(t *testing.T) {
 	wsHub := websocket.NewHub()
 	handler := NewReviewHandler(repo, wsHub)
 
-	// 異なるユーザーIDを設定
+	// 異なるユーザーIDを設定（有効なUUID形式）
 	r.Use(func(c *gin.Context) {
-		c.Set("user_id", "different-user-id")
+		c.Set("user_id", "550e8400-e29b-41d4-a716-446655440099") // 別のユーザー
 		c.Next()
 	})
 

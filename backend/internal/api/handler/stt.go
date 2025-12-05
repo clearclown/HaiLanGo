@@ -94,7 +94,7 @@ func (h *STTHandler) Recognize(c *gin.Context) {
 	// バックグラウンドでSTT処理を開始
 	go func() {
 		if inMemRepo, ok := h.repo.(*repository.InMemorySTTRepository); ok {
-			inMemRepo.SimulateSTTProcessing(c.Request.Context(), job.ID)
+			inMemRepo.SimulateSTTProcessing(c.Request.Context(), job.ID.String())
 		}
 	}()
 

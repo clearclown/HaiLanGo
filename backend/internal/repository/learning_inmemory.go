@@ -44,51 +44,51 @@ func NewInMemoryLearningRepository() *InMemoryLearningRepository {
 }
 
 func (r *InMemoryLearningRepository) initSampleData() {
-	testBookID := "550e8400-e29b-41d4-a716-446655440000"
-	testUserID := "550e8400-e29b-41d4-a716-446655440000"
+	testBookID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+	testUserID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 
 	// サンプルページデータ（1-150ページ）
 	for i := 1; i <= 150; i++ {
-		pageID := uuid.New().String()
-		pageKey := fmt.Sprintf("%s:%d", testBookID, i)
+		pageID := uuid.New()
+		pageKey := fmt.Sprintf("%s:%d", testBookID.String(), i)
 
 		r.pages[pageKey] = &models.PageWithOCR{
 			ID:          pageID,
 			BookID:      testBookID,
 			PageNumber:  i,
-			ImageURL:    fmt.Sprintf("/storage/books/%s/pages/%d.jpg", testBookID, i),
+			ImageURL:    fmt.Sprintf("/storage/books/%s/pages/%d.jpg", testBookID.String(), i),
 			OCRText:     "Здравствуйте! Как дела?",
 			Translation: "こんにちは！元気ですか？",
 			Language:    "ru",
 			HasAudio:    true,
-			AudioURL:    fmt.Sprintf("/storage/books/%s/pages/%d/audio.mp3", testBookID, i),
+			AudioURL:    fmt.Sprintf("/storage/books/%s/pages/%d/audio.mp3", testBookID.String(), i),
 		}
 
 		// フレーズデータ
-		phrasesKey := fmt.Sprintf("%s:%d", testBookID, i)
+		phrasesKey := fmt.Sprintf("%s:%d", testBookID.String(), i)
 		r.phrases[phrasesKey] = []models.Phrase{
 			{
-				ID:            uuid.New().String(),
+				ID:            uuid.New(),
 				Text:          "Здравствуйте!",
 				Translation:   "こんにちは",
 				Pronunciation: "zdravstvuyte",
-				AudioURL:      fmt.Sprintf("/storage/books/%s/pages/%d/phrase-1.mp3", testBookID, i),
+				AudioURL:      fmt.Sprintf("/storage/books/%s/pages/%d/phrase-1.mp3", testBookID.String(), i),
 			},
 			{
-				ID:            uuid.New().String(),
+				ID:            uuid.New(),
 				Text:          "Как дела?",
 				Translation:   "元気ですか？",
 				Pronunciation: "kak dela",
-				AudioURL:      fmt.Sprintf("/storage/books/%s/pages/%d/phrase-2.mp3", testBookID, i),
+				AudioURL:      fmt.Sprintf("/storage/books/%s/pages/%d/phrase-2.mp3", testBookID.String(), i),
 			},
 		}
 
 		// 進捗データ（最初の45ページは完了済み）
 		if i <= 45 {
-			progressKey := fmt.Sprintf("%s:%s:%d", testUserID, testBookID, i)
+			progressKey := fmt.Sprintf("%s:%s:%d", testUserID.String(), testBookID.String(), i)
 			now := time.Now()
 			r.progress[progressKey] = &models.PageProgressRecord{
-				ID:            uuid.New().String(),
+				ID:            uuid.New(),
 				UserID:        testUserID,
 				BookID:        testBookID,
 				PageNumber:    i,
@@ -188,9 +188,9 @@ func (r *InMemoryLearningRepository) CompletePage(ctx context.Context, userID, b
 	if progress == nil {
 		// 新規作成
 		progress = &models.PageProgressRecord{
-			ID:            uuid.New().String(),
-			UserID:        userID.String(),
-			BookID:        bookID.String(),
+			ID:            uuid.New(),
+			UserID:        userID,
+			BookID:        bookID,
 			PageNumber:    pageNumber,
 			IsCompleted:   true,
 			CompletedAt:   &now,
@@ -226,11 +226,12 @@ func (r *InMemoryLearningRepository) RecordSession(ctx context.Context, userID, 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	sessionKey := uuid.New().String()
+	sessionID := uuid.New()
+	sessionKey := sessionID.String()
 
 	if req.Action == "start" {
 		session := &models.SessionResponse{
-			SessionID: sessionKey,
+			SessionID: sessionID,
 			StartedAt: req.Timestamp,
 			EndedAt:   nil,
 		}
@@ -241,7 +242,7 @@ func (r *InMemoryLearningRepository) RecordSession(ctx context.Context, userID, 
 	// end の場合
 	// 実際にはsession_idをリクエストで受け取るべきだが、簡易実装
 	return &models.SessionResponse{
-		SessionID: sessionKey,
+		SessionID: sessionID,
 		StartedAt: req.Timestamp.Add(-5 * time.Minute),
 		EndedAt:   &req.Timestamp,
 	}, nil
@@ -299,7 +300,7 @@ func (r *InMemoryLearningRepository) GetBookProgress(ctx context.Context, userID
 	}
 
 	return &models.BookProgressSummary{
-		BookID:               bookID.String(),
+		BookID:               bookID,
 		TotalPages:           totalPages,
 		CompletedPages:       completedPages,
 		CompletionPercentage: completionPercentage,
@@ -468,7 +469,7 @@ func (r *LearningRepositoryPostgres) CompletePage(ctx context.Context, userID, b
 }
 
 func (r *LearningRepositoryPostgres) RecordSession(ctx context.Context, userID, bookID uuid.UUID, pageNumber int, req *models.SessionRequest) (*models.SessionResponse, error) {
-	sessionID := uuid.New().String()
+	sessionID := uuid.New()
 
 	if req.Action == "start" {
 		return &models.SessionResponse{
@@ -505,7 +506,7 @@ func (r *LearningRepositoryPostgres) GetBookProgress(ctx context.Context, userID
 		// No progress yet, get total pages from book
 		r.db.QueryRowContext(ctx, "SELECT total_pages FROM books WHERE id = $1", bookID).Scan(&totalPages)
 		return &models.BookProgressSummary{
-			BookID:               bookID.String(),
+			BookID:               bookID,
 			TotalPages:           totalPages,
 			CompletedPages:       0,
 			CompletionPercentage: 0,
@@ -556,7 +557,7 @@ func (r *LearningRepositoryPostgres) GetBookProgress(ctx context.Context, userID
 	}
 
 	return &models.BookProgressSummary{
-		BookID:               bookID.String(),
+		BookID:               bookID,
 		TotalPages:           totalPages,
 		CompletedPages:       completedPages,
 		CompletionPercentage: completionPercentage,

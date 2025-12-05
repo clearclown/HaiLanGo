@@ -93,6 +93,7 @@ type Page struct {
 	PageNumber    int        `json:"page_number" db:"page_number"`
 	ImageURL      string     `json:"image_url" db:"image_url"`
 	OCRText       string     `json:"ocr_text" db:"ocr_text"`
+	CorrectedText *string    `json:"corrected_text,omitempty" db:"corrected_text"` // 手動修正後のテキスト
 	OCRConfidence float64    `json:"ocr_confidence" db:"ocr_confidence"`
 	DetectedLang  string     `json:"detected_lang" db:"detected_lang"`
 	OCRStatus     OCRStatus  `json:"ocr_status" db:"ocr_status"`

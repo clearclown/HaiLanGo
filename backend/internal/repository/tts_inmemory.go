@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/pkg/language"
 	"github.com/google/uuid"
 )
 
@@ -77,35 +78,38 @@ func NewInMemoryTTSRepository() *InMemoryTTSRepository {
 }
 
 func (r *InMemoryTTSRepository) initSupportedLanguages() {
-	r.languages = []*models.TTSLanguage{
-		{Code: "ja", Name: "Japanese", NativeName: "日本語", Voices: []string{"ja-JP-Neural2-B", "ja-JP-Neural2-C"}, IsSupported: true},
-		{Code: "en", Name: "English", NativeName: "English", Voices: []string{"en-US-Neural2-A", "en-US-Neural2-C"}, IsSupported: true},
-		{Code: "zh", Name: "Chinese", NativeName: "中文", Voices: []string{"zh-CN-Neural2-A", "zh-CN-Neural2-B"}, IsSupported: true},
-		{Code: "ru", Name: "Russian", NativeName: "Русский", Voices: []string{"ru-RU-Wavenet-A", "ru-RU-Wavenet-B"}, IsSupported: true},
-		{Code: "fa", Name: "Persian", NativeName: "فارسی", Voices: []string{"fa-IR-Wavenet-A"}, IsSupported: true},
-		{Code: "he", Name: "Hebrew", NativeName: "עברית", Voices: []string{"he-IL-Wavenet-A"}, IsSupported: true},
-		{Code: "es", Name: "Spanish", NativeName: "Español", Voices: []string{"es-ES-Neural2-A", "es-ES-Neural2-B"}, IsSupported: true},
-		{Code: "fr", Name: "French", NativeName: "Français", Voices: []string{"fr-FR-Neural2-A", "fr-FR-Neural2-B"}, IsSupported: true},
-		{Code: "pt", Name: "Portuguese", NativeName: "Português", Voices: []string{"pt-BR-Neural2-A", "pt-BR-Neural2-B"}, IsSupported: true},
-		{Code: "de", Name: "German", NativeName: "Deutsch", Voices: []string{"de-DE-Neural2-A", "de-DE-Neural2-B"}, IsSupported: true},
-		{Code: "it", Name: "Italian", NativeName: "Italiano", Voices: []string{"it-IT-Neural2-A", "it-IT-Neural2-B"}, IsSupported: true},
-		{Code: "tr", Name: "Turkish", NativeName: "Türkçe", Voices: []string{"tr-TR-Wavenet-A"}, IsSupported: true},
+	// Use dynamic LanguageRegistry instead of hardcoded list
+	registry := language.GetRegistry()
+	allLangs := registry.GetAll()
+
+	r.languages = make([]*models.TTSLanguage, 0, len(allLangs))
+	for _, lang := range allLangs {
+		r.languages = append(r.languages, &models.TTSLanguage{
+			Code:        lang.Code,
+			Name:        lang.Name,
+			NativeName:  lang.NativeName,
+			Voices:      lang.TTSVoices,
+			IsSupported: true,
+			SupportTier: string(lang.SupportTier),
+		})
 	}
 }
 
 func (r *InMemoryTTSRepository) initSampleData() {
-	testUserID := "550e8400-e29b-41d4-a716-446655440000"
-	testBookID := "550e8400-e29b-41d4-a716-446655440000"
+	testUserID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+	testBookID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 
 	// 完了済みのTTSジョブ（最初の30ページ）
 	for i := 1; i <= 30; i++ {
-		jobID := uuid.New().String()
-		audioID := uuid.New().String()
+		jobID := uuid.New()
+		jobKey := jobID.String()
+		audioID := uuid.New()
+		audioKey := audioID.String()
 		now := time.Now().Add(-time.Duration(31-i) * time.Hour)
 		completedAt := now.Add(3 * time.Second)
 
-		audioURL := fmt.Sprintf("/storage/audio/%s.mp3", audioID)
-		r.audioCache[audioID] = audioURL
+		audioURL := fmt.Sprintf("/storage/audio/%s.mp3", audioKey)
+		r.audioCache[audioKey] = audioURL
 
 		job := &models.TTSJobDetail{
 			ID:          jobID,
@@ -122,14 +126,15 @@ func (r *InMemoryTTSRepository) initSampleData() {
 			CompletedAt: &completedAt,
 		}
 
-		r.jobs[jobID] = job
-		r.userJobs[testUserID] = append(r.userJobs[testUserID], jobID)
-		r.bookJobs[testBookID] = append(r.bookJobs[testBookID], jobID)
+		r.jobs[jobKey] = job
+		r.userJobs[testUserID.String()] = append(r.userJobs[testUserID.String()], jobKey)
+		r.bookJobs[testBookID.String()] = append(r.bookJobs[testBookID.String()], jobKey)
 	}
 
 	// 処理中のTTSジョブ（ページ31-33）
 	for i := 31; i <= 33; i++ {
-		jobID := uuid.New().String()
+		jobID := uuid.New()
+		jobKey := jobID.String()
 		now := time.Now().Add(-time.Duration(2) * time.Minute)
 
 		job := &models.TTSJobDetail{
@@ -144,14 +149,15 @@ func (r *InMemoryTTSRepository) initSampleData() {
 			UpdatedAt:  time.Now(),
 		}
 
-		r.jobs[jobID] = job
-		r.userJobs[testUserID] = append(r.userJobs[testUserID], jobID)
-		r.bookJobs[testBookID] = append(r.bookJobs[testBookID], jobID)
+		r.jobs[jobKey] = job
+		r.userJobs[testUserID.String()] = append(r.userJobs[testUserID.String()], jobKey)
+		r.bookJobs[testBookID.String()] = append(r.bookJobs[testBookID.String()], jobKey)
 	}
 
 	// ペンディングのTTSジョブ（ページ34-35）
 	for i := 34; i <= 35; i++ {
-		jobID := uuid.New().String()
+		jobID := uuid.New()
+		jobKey := jobID.String()
 		now := time.Now().Add(-time.Duration(30) * time.Second)
 
 		job := &models.TTSJobDetail{
@@ -166,9 +172,9 @@ func (r *InMemoryTTSRepository) initSampleData() {
 			UpdatedAt:  now,
 		}
 
-		r.jobs[jobID] = job
-		r.userJobs[testUserID] = append(r.userJobs[testUserID], jobID)
-		r.bookJobs[testBookID] = append(r.bookJobs[testBookID], jobID)
+		r.jobs[jobKey] = job
+		r.userJobs[testUserID.String()] = append(r.userJobs[testUserID.String()], jobKey)
+		r.bookJobs[testBookID.String()] = append(r.bookJobs[testBookID.String()], jobKey)
 	}
 }
 
@@ -176,12 +182,13 @@ func (r *InMemoryTTSRepository) CreateJob(ctx context.Context, userID, bookID uu
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	jobID := uuid.New().String()
+	jobID := uuid.New()
+	jobKey := jobID.String()
 	now := time.Now()
 
 	job := &models.TTSJobDetail{
 		ID:         jobID,
-		BookID:     bookID.String(),
+		BookID:     bookID,
 		PageNumber: pageNumber,
 		Text:       text,
 		Language:   language,
@@ -191,9 +198,9 @@ func (r *InMemoryTTSRepository) CreateJob(ctx context.Context, userID, bookID uu
 		UpdatedAt:  now,
 	}
 
-	r.jobs[jobID] = job
-	r.userJobs[userID.String()] = append(r.userJobs[userID.String()], jobID)
-	r.bookJobs[bookID.String()] = append(r.bookJobs[bookID.String()], jobID)
+	r.jobs[jobKey] = job
+	r.userJobs[userID.String()] = append(r.userJobs[userID.String()], jobKey)
+	r.bookJobs[bookID.String()] = append(r.bookJobs[bookID.String()], jobKey)
 
 	return job, nil
 }
@@ -240,7 +247,12 @@ func (r *InMemoryTTSRepository) UpdateJobResult(ctx context.Context, jobID strin
 		return fmt.Errorf("job not found: %s", jobID)
 	}
 
-	job.AudioID = audioID
+	parsedAudioID, err := uuid.Parse(audioID)
+	if err != nil {
+		return fmt.Errorf("invalid audio ID: %s", audioID)
+	}
+
+	job.AudioID = parsedAudioID
 	job.AudioURL = audioURL
 	job.Status = models.TTSStatusCompleted
 	job.Progress = 100
@@ -414,8 +426,8 @@ func (r *TTSRepositoryPostgres) CreateJob(ctx context.Context, userID, bookID uu
 	}
 
 	return &models.TTSJobDetail{
-		ID:         jobID.String(),
-		BookID:     bookID.String(),
+		ID:         jobID,
+		BookID:     bookID,
 		PageNumber: pageNumber,
 		Text:       text,
 		Language:   language,
@@ -627,20 +639,20 @@ func (r *TTSRepositoryPostgres) GetAudioURL(ctx context.Context, audioID string)
 }
 
 func (r *TTSRepositoryPostgres) GetSupportedLanguages(ctx context.Context) ([]*models.TTSLanguage, error) {
-	// Return hardcoded supported languages (could be from DB in future)
-	languages := []*models.TTSLanguage{
-		{Code: "ja", Name: "Japanese", NativeName: "日本語", Voices: []string{"ja-JP-Neural2-B"}, IsSupported: true},
-		{Code: "en", Name: "English", NativeName: "English", Voices: []string{"en-US-Neural2-A"}, IsSupported: true},
-		{Code: "zh", Name: "Chinese", NativeName: "中文", Voices: []string{"zh-CN-Neural2-A"}, IsSupported: true},
-		{Code: "ru", Name: "Russian", NativeName: "Русский", Voices: []string{"ru-RU-Wavenet-A"}, IsSupported: true},
-		{Code: "fa", Name: "Persian", NativeName: "فارسی", Voices: []string{"fa-IR-Wavenet-A"}, IsSupported: true},
-		{Code: "he", Name: "Hebrew", NativeName: "עברית", Voices: []string{"he-IL-Wavenet-A"}, IsSupported: true},
-		{Code: "es", Name: "Spanish", NativeName: "Español", Voices: []string{"es-ES-Neural2-A"}, IsSupported: true},
-		{Code: "fr", Name: "French", NativeName: "Français", Voices: []string{"fr-FR-Neural2-A"}, IsSupported: true},
-		{Code: "pt", Name: "Portuguese", NativeName: "Português", Voices: []string{"pt-BR-Neural2-A"}, IsSupported: true},
-		{Code: "de", Name: "German", NativeName: "Deutsch", Voices: []string{"de-DE-Neural2-A"}, IsSupported: true},
-		{Code: "it", Name: "Italian", NativeName: "Italiano", Voices: []string{"it-IT-Neural2-A"}, IsSupported: true},
-		{Code: "tr", Name: "Turkish", NativeName: "Türkçe", Voices: []string{"tr-TR-Wavenet-A"}, IsSupported: true},
+	// Use dynamic LanguageRegistry instead of hardcoded list
+	registry := language.GetRegistry()
+	allLangs := registry.GetAll()
+
+	languages := make([]*models.TTSLanguage, 0, len(allLangs))
+	for _, lang := range allLangs {
+		languages = append(languages, &models.TTSLanguage{
+			Code:        lang.Code,
+			Name:        lang.Name,
+			NativeName:  lang.NativeName,
+			Voices:      lang.TTSVoices,
+			IsSupported: true,
+			SupportTier: string(lang.SupportTier),
+		})
 	}
 	return languages, nil
 }

@@ -61,7 +61,12 @@ func (h *ReviewHandler) GetStats(c *gin.Context) {
 
 	// 優先度別にカウント
 	for _, item := range items {
-		priority := h.srsAlgo.CalculatePriority(item.NextReview)
+		var priority string
+		if item.NextReviewDate != nil {
+			priority = h.srsAlgo.CalculatePriority(*item.NextReviewDate)
+		} else {
+			priority = "urgent"
+		}
 		switch priority {
 		case "urgent":
 			stats.UrgentCount++
@@ -93,18 +98,21 @@ func (h *ReviewHandler) GetStats(c *gin.Context) {
 			// ReviewReminderMessageを送信
 			wsReviewItems := []websocket.ReviewItem{}
 			for _, item := range items {
-				priority := h.srsAlgo.CalculatePriority(item.NextReview)
+				var priority string
+				var dueDate time.Time
+				if item.NextReviewDate != nil {
+					priority = h.srsAlgo.CalculatePriority(*item.NextReviewDate)
+					dueDate = *item.NextReviewDate
+				} else {
+					priority = "urgent"
+					dueDate = time.Now()
+				}
 				if priority == "urgent" {
-					// UUIDに変換
-					itemUUID, err := uuid.Parse(item.ID)
-					if err != nil {
-						continue
-					}
 					wsItem := websocket.ReviewItem{
-						ID:          itemUUID,
-						Content:     item.Text,
+						ID:          item.ID,
+						Content:     item.Content,
 						Translation: item.Translation,
-						DueDate:     item.NextReview,
+						DueDate:     dueDate,
 						Priority:    priority,
 					}
 					wsReviewItems = append(wsReviewItems, wsItem)
@@ -152,8 +160,12 @@ func (h *ReviewHandler) GetItems(c *gin.Context) {
 	// 優先度でフィルタリング
 	var filteredItems []*models.ReviewItem
 	for _, item := range items {
-		priority := h.srsAlgo.CalculatePriority(item.NextReview)
-		item.Priority = priority
+		var priority string
+		if item.NextReviewDate != nil {
+			priority = h.srsAlgo.CalculatePriority(*item.NextReviewDate)
+		} else {
+			priority = "urgent"
+		}
 
 		if priorityFilter == "" || priority == priorityFilter {
 			filteredItems = append(filteredItems, item)
@@ -190,16 +202,21 @@ func (h *ReviewHandler) SubmitReview(c *gin.Context) {
 	}
 
 	userID := userIDStr.(string)
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
 
 	// 復習アイテムを取得
-	item, err := h.repo.FindByID(c.Request.Context(), result.ItemID)
+	item, err := h.repo.FindByID(c.Request.Context(), result.ItemID.String())
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Review item not found"})
 		return
 	}
 
 	// 所有権チェック
-	if item.UserID != userID {
+	if item.UserID != userUUID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
 		return
 	}
@@ -226,11 +243,12 @@ func (h *ReviewHandler) SubmitReview(c *gin.Context) {
 	}
 
 	// アイテムを更新
+	now := time.Now()
 	item.MasteryLevel = newMasteryLevel
 	item.IntervalDays = nextInterval
 	item.EaseFactor = nextEaseFactor
-	item.LastReviewed = time.Now()
-	item.NextReview = nextReview
+	item.LastReviewDate = &now
+	item.NextReviewDate = &nextReview
 	item.ReviewCount++
 
 	if err := h.repo.Update(c.Request.Context(), item); err != nil {
@@ -241,7 +259,7 @@ func (h *ReviewHandler) SubmitReview(c *gin.Context) {
 	// 履歴を保存
 	history := &models.ReviewHistory{
 		ReviewItemID: item.ID,
-		UserID:       userID,
+		UserID:       userUUID,
 		Score:        result.Score,
 		ReviewedAt:   time.Now(),
 	}

@@ -91,8 +91,8 @@ func (h *PaymentHandler) CreateSubscription(c *gin.Context) {
 	}
 
 	response := &models.SubscriptionResponse{
-		ID:                   subscription.ID.String(),
-		UserID:               subscription.UserID.String(),
+		ID:                   subscription.ID,
+		UserID:               subscription.UserID,
 		Plan:                 subscription.Plan,
 		Status:               subscription.Status,
 		StripeSubscriptionID: subscription.StripeSubscriptionID,
@@ -129,8 +129,8 @@ func (h *PaymentHandler) GetSubscription(c *gin.Context) {
 	}
 
 	response := &models.SubscriptionResponse{
-		ID:                   subscription.ID.String(),
-		UserID:               subscription.UserID.String(),
+		ID:                   subscription.ID,
+		UserID:               subscription.UserID,
 		Plan:                 subscription.Plan,
 		Status:               subscription.Status,
 		StripeSubscriptionID: subscription.StripeSubscriptionID,
@@ -184,8 +184,8 @@ func (h *PaymentHandler) CancelSubscription(c *gin.Context) {
 	subscription, _ = h.repo.GetSubscription(c.Request.Context(), subscription.ID)
 
 	response := &models.SubscriptionResponse{
-		ID:                   subscription.ID.String(),
-		UserID:               subscription.UserID.String(),
+		ID:                   subscription.ID,
+		UserID:               subscription.UserID,
 		Plan:                 subscription.Plan,
 		Status:               subscription.Status,
 		StripeSubscriptionID: subscription.StripeSubscriptionID,
@@ -268,7 +268,7 @@ func (h *PaymentHandler) GetPaymentHistory(c *gin.Context) {
 	items := make([]*models.PaymentHistoryItem, 0, len(payments))
 	for _, payment := range payments {
 		items = append(items, &models.PaymentHistoryItem{
-			ID:              payment.ID.String(),
+			ID:              payment.ID,
 			Amount:          payment.Amount,
 			Currency:        payment.Currency,
 			Status:          payment.Status,

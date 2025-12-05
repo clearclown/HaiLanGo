@@ -11,18 +11,18 @@ import (
 
 // MockStatsRepository is a mock implementation of StatsRepository
 type MockStatsRepository struct {
-	learningSessions   []models.LearningSession
-	vocabularyProgress []models.VocabularyProgress
-	phraseProgress     []models.PhraseProgress
-	pronunciationScores []models.PronunciationScore
+	learningSessions    []models.LearningSession
+	vocabularyProgress  []models.VocabularyProgress
+	phraseProgress      []models.PhraseProgress
+	pronunciationScores []models.PronunciationScoreRecord
 }
 
 func NewMockStatsRepository() *MockStatsRepository {
 	return &MockStatsRepository{
-		learningSessions:   []models.LearningSession{},
-		vocabularyProgress: []models.VocabularyProgress{},
-		phraseProgress:     []models.PhraseProgress{},
-		pronunciationScores: []models.PronunciationScore{},
+		learningSessions:    []models.LearningSession{},
+		vocabularyProgress:  []models.VocabularyProgress{},
+		phraseProgress:      []models.PhraseProgress{},
+		pronunciationScores: []models.PronunciationScoreRecord{},
 	}
 }
 
@@ -58,12 +58,12 @@ func (m *MockStatsRepository) GetPhraseProgress(ctx context.Context, userID uuid
 	return result, nil
 }
 
-func (m *MockStatsRepository) GetPronunciationScores(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]models.PronunciationScore, error) {
-	var result []models.PronunciationScore
+func (m *MockStatsRepository) GetPronunciationScores(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]models.PronunciationScoreRecord, error) {
+	var result []models.PronunciationScoreRecord
 	for _, score := range m.pronunciationScores {
 		if score.UserID == userID &&
-		   score.CreatedAt.After(startDate) &&
-		   score.CreatedAt.Before(endDate) {
+			score.CreatedAt.After(startDate) &&
+			score.CreatedAt.Before(endDate) {
 			result = append(result, score)
 		}
 	}
@@ -187,7 +187,7 @@ func TestGetDashboardStats_WithData(t *testing.T) {
 		},
 	}
 
-	repo.pronunciationScores = []models.PronunciationScore{
+	repo.pronunciationScores = []models.PronunciationScoreRecord{
 		{
 			ID:        uuid.New(),
 			UserID:    userID,

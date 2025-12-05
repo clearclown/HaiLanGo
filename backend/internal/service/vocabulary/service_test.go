@@ -5,8 +5,15 @@ import (
 	"testing"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+// テスト用の固定UUID
+var (
+	testVocabUserID = uuid.MustParse("550e8400-e29b-41d4-a716-446655440001")
+	testVocabBookID = uuid.MustParse("550e8400-e29b-41d4-a716-446655440002")
 )
 
 // TestVocabularyService_AutoCollectWords は自動単語収集のテスト
@@ -14,19 +21,17 @@ func TestVocabularyService_AutoCollectWords(t *testing.T) {
 	service := NewMockVocabularyService()
 	ctx := context.Background()
 
-	userID := "user-1"
-	bookID := "book-1"
 	pageNumber := 1
 	text := "Здравствуйте! Как дела? Меня зовут Иван."
 	language := "ru"
 
-	err := service.AutoCollectWords(ctx, userID, bookID, pageNumber, text, language)
+	err := service.AutoCollectWords(ctx, testVocabUserID, testVocabBookID, pageNumber, text, language)
 	require.NoError(t, err)
 
 	// 収集された単語を確認
 	filter := &models.WordFilter{
-		UserID: userID,
-		BookID: bookID,
+		UserID: testVocabUserID,
+		BookID: testVocabBookID,
 	}
 	words, err := service.GetWords(ctx, filter)
 	require.NoError(t, err)
@@ -39,8 +44,8 @@ func TestVocabularyService_AddWord(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testVocabUserID,
+		BookID:     testVocabBookID,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -49,7 +54,7 @@ func TestVocabularyService_AddWord(t *testing.T) {
 
 	err := service.AddWord(ctx, word)
 	require.NoError(t, err)
-	assert.NotEmpty(t, word.ID, "単語IDが生成されること")
+	assert.NotEqual(t, uuid.Nil, word.ID, "単語IDが生成されること")
 }
 
 // TestVocabularyService_AddWordDuplicate は重複単語追加のエラーテスト
@@ -58,8 +63,8 @@ func TestVocabularyService_AddWordDuplicate(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testVocabUserID,
+		BookID:     testVocabBookID,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -72,8 +77,8 @@ func TestVocabularyService_AddWordDuplicate(t *testing.T) {
 
 	// 同じ単語を再度追加するとエラー
 	duplicateWord := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testVocabUserID,
+		BookID:     testVocabBookID,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -91,16 +96,16 @@ func TestVocabularyService_GetWords(t *testing.T) {
 	// テストデータの作成
 	words := []*models.Word{
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: 1,
 			Text:       "Здравствуйте",
 			Meaning:    "こんにちは",
 			Language:   "ru",
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: 1,
 			Text:       "Привет",
 			Meaning:    "やあ",
@@ -115,8 +120,8 @@ func TestVocabularyService_GetWords(t *testing.T) {
 
 	// 取得
 	filter := &models.WordFilter{
-		UserID: "user-1",
-		BookID: "book-1",
+		UserID: testVocabUserID,
+		BookID: testVocabBookID,
 	}
 	result, err := service.GetWords(ctx, filter)
 	require.NoError(t, err)
@@ -131,16 +136,16 @@ func TestVocabularyService_SearchWords(t *testing.T) {
 	// テストデータの作成
 	words := []*models.Word{
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: 1,
 			Text:       "Здравствуйте",
 			Meaning:    "こんにちは",
 			Language:   "ru",
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: 1,
 			Text:       "Привет",
 			Meaning:    "やあ",
@@ -155,7 +160,7 @@ func TestVocabularyService_SearchWords(t *testing.T) {
 
 	// 検索
 	filter := &models.WordFilter{
-		UserID: "user-1",
+		UserID: testVocabUserID,
 		Query:  "Здрав",
 	}
 	result, err := service.GetWords(ctx, filter)
@@ -170,8 +175,8 @@ func TestVocabularyService_UpdateWord(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testVocabUserID,
+		BookID:     testVocabBookID,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -201,8 +206,8 @@ func TestVocabularyService_DeleteWord(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testVocabUserID,
+		BookID:     testVocabBookID,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -227,8 +232,8 @@ func TestVocabularyService_RecordReview(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:      "user-1",
-		BookID:      "book-1",
+		UserID:      testVocabUserID,
+		BookID:      testVocabBookID,
 		PageNumber:  1,
 		Text:        "Здравствуйте",
 		Meaning:     "こんにちは",
@@ -302,8 +307,8 @@ func TestVocabularyService_GetStats(t *testing.T) {
 	// テストデータの作成
 	words := []*models.Word{
 		{
-			UserID:      "user-1",
-			BookID:      "book-1",
+			UserID:      testVocabUserID,
+			BookID:      testVocabBookID,
 			PageNumber:  1,
 			Text:        "Здравствуйте",
 			Meaning:     "こんにちは",
@@ -312,8 +317,8 @@ func TestVocabularyService_GetStats(t *testing.T) {
 			ReviewCount: 5,
 		},
 		{
-			UserID:      "user-1",
-			BookID:      "book-1",
+			UserID:      testVocabUserID,
+			BookID:      testVocabBookID,
 			PageNumber:  1,
 			Text:        "Привет",
 			Meaning:     "やあ",
@@ -322,8 +327,8 @@ func TestVocabularyService_GetStats(t *testing.T) {
 			ReviewCount: 3,
 		},
 		{
-			UserID:      "user-1",
-			BookID:      "book-1",
+			UserID:      testVocabUserID,
+			BookID:      testVocabBookID,
 			PageNumber:  1,
 			Text:        "Спасибо",
 			Meaning:     "ありがとう",
@@ -339,7 +344,7 @@ func TestVocabularyService_GetStats(t *testing.T) {
 	}
 
 	// 統計取得
-	stats, err := service.GetStats(ctx, "user-1", "book-1")
+	stats, err := service.GetStats(ctx, testVocabUserID, testVocabBookID)
 	require.NoError(t, err)
 	assert.Equal(t, 3, stats.TotalWords, "全単語数が正しいこと")
 	assert.Equal(t, 2, stats.MasteredWords, "習得単語数が正しいこと（習得度80%以上）")
@@ -355,16 +360,16 @@ func TestVocabularyService_ExportWords(t *testing.T) {
 	// テストデータの作成
 	words := []*models.Word{
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: 1,
 			Text:       "Здравствуйте",
 			Meaning:    "こんにちは",
 			Language:   "ru",
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: 1,
 			Text:       "Привет",
 			Meaning:    "やあ",
@@ -379,8 +384,8 @@ func TestVocabularyService_ExportWords(t *testing.T) {
 
 	// エクスポート
 	filter := &models.WordFilter{
-		UserID: "user-1",
-		BookID: "book-1",
+		UserID: testVocabUserID,
+		BookID: testVocabBookID,
 	}
 	csvData, err := service.ExportWordsToCSV(ctx, filter)
 	require.NoError(t, err)
@@ -395,8 +400,8 @@ func TestVocabularyService_AddTags(t *testing.T) {
 	ctx := context.Background()
 
 	word := &models.Word{
-		UserID:     "user-1",
-		BookID:     "book-1",
+		UserID:     testVocabUserID,
+		BookID:     testVocabBookID,
 		PageNumber: 1,
 		Text:       "Здравствуйте",
 		Meaning:    "こんにちは",
@@ -426,8 +431,8 @@ func TestVocabularyService_FilterByTags(t *testing.T) {
 	// テストデータの作成
 	words := []*models.Word{
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: 1,
 			Text:       "Здравствуйте",
 			Meaning:    "こんにちは",
@@ -435,8 +440,8 @@ func TestVocabularyService_FilterByTags(t *testing.T) {
 			Tags:       []string{"挨拶", "基本"},
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: 1,
 			Text:       "Спасибо",
 			Meaning:    "ありがとう",
@@ -444,8 +449,8 @@ func TestVocabularyService_FilterByTags(t *testing.T) {
 			Tags:       []string{"感謝", "基本"},
 		},
 		{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: 1,
 			Text:       "Пожалуйста",
 			Meaning:    "どういたしまして",
@@ -461,7 +466,7 @@ func TestVocabularyService_FilterByTags(t *testing.T) {
 
 	// タグでフィルタ
 	filter := &models.WordFilter{
-		UserID: "user-1",
+		UserID: testVocabUserID,
 		Tags:   []string{"基本"},
 	}
 	result, err := service.GetWords(ctx, filter)
@@ -479,7 +484,7 @@ func BenchmarkVocabularyService_AutoCollectWords(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		service.AutoCollectWords(ctx, "user-1", "book-1", 1, text, language)
+		service.AutoCollectWords(ctx, testVocabUserID, testVocabBookID, 1, text, language)
 	}
 }
 
@@ -490,8 +495,8 @@ func BenchmarkVocabularyService_GetWords(b *testing.B) {
 	// テストデータの準備
 	for i := 0; i < 100; i++ {
 		word := &models.Word{
-			UserID:     "user-1",
-			BookID:     "book-1",
+			UserID:     testVocabUserID,
+			BookID:     testVocabBookID,
 			PageNumber: i,
 			Text:       "test-word",
 			Meaning:    "テスト",
@@ -501,7 +506,7 @@ func BenchmarkVocabularyService_GetWords(b *testing.B) {
 	}
 
 	filter := &models.WordFilter{
-		UserID: "user-1",
+		UserID: testVocabUserID,
 	}
 
 	b.ResetTimer()

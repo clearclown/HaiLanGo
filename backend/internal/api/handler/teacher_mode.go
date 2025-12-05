@@ -123,7 +123,7 @@ func (h *TeacherModeHandler) GeneratePlaylist(c *gin.Context) {
 
 	// レスポンスを作成
 	response := GeneratePlaylistResponse{
-		PlaylistID:        playlist.ID,
+		PlaylistID:        playlist.ID.String(),
 		TotalPages:        len(playlist.Pages),
 		EstimatedDuration: playlist.TotalDuration / 1000, // ミリ秒を秒に変換
 		Pages:             playlist.Pages,

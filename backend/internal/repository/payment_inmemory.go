@@ -14,7 +14,7 @@ import (
 // PaymentRepositoryInterface は決済リポジトリのインターフェース
 type PaymentRepositoryInterface interface {
 	// CreateSubscription はサブスクリプションを作成
-	CreateSubscription(ctx context.Context, userID uuid.UUID, plan models.SubscriptionPlan, stripeSubscriptionID, stripeCustomerID string) (*models.Subscription, error)
+	CreateSubscription(ctx context.Context, userID uuid.UUID, plan models.PlanType, stripeSubscriptionID, stripeCustomerID string) (*models.Subscription, error)
 
 	// GetSubscription はサブスクリプションを取得
 	GetSubscription(ctx context.Context, subscriptionID uuid.UUID) (*models.Subscription, error)
@@ -212,7 +212,7 @@ func (r *InMemoryPaymentRepository) initSampleData() {
 	}
 }
 
-func (r *InMemoryPaymentRepository) CreateSubscription(ctx context.Context, userID uuid.UUID, plan models.SubscriptionPlan, stripeSubscriptionID, stripeCustomerID string) (*models.Subscription, error) {
+func (r *InMemoryPaymentRepository) CreateSubscription(ctx context.Context, userID uuid.UUID, plan models.PlanType, stripeSubscriptionID, stripeCustomerID string) (*models.Subscription, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -249,7 +249,7 @@ func (r *InMemoryPaymentRepository) CreateSubscription(ctx context.Context, user
 	return subscription, nil
 }
 
-func (r *InMemoryPaymentRepository) initUsageForPlan(userID uuid.UUID, plan models.SubscriptionPlan) {
+func (r *InMemoryPaymentRepository) initUsageForPlan(userID uuid.UUID, plan models.PlanType) {
 	usage := &models.SubscriptionUsage{
 		Plan:             plan,
 		PagesUsedToday:   0,
@@ -426,7 +426,7 @@ func NewPaymentRepositoryPostgres(db *sql.DB) PaymentRepositoryInterface {
 	return &PaymentRepositoryPostgres{db: db}
 }
 
-func (r *PaymentRepositoryPostgres) CreateSubscription(ctx context.Context, userID uuid.UUID, plan models.SubscriptionPlan, stripeSubscriptionID, stripeCustomerID string) (*models.Subscription, error) {
+func (r *PaymentRepositoryPostgres) CreateSubscription(ctx context.Context, userID uuid.UUID, plan models.PlanType, stripeSubscriptionID, stripeCustomerID string) (*models.Subscription, error) {
 	subscriptionID := uuid.New()
 	now := time.Now()
 
