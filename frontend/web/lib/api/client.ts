@@ -178,8 +178,8 @@ class APIClient {
       });
     },
 
-    complete: async (bookId: string): Promise<{ success: boolean }> => {
-      // The backend doesn't have a complete endpoint, just return success
+    complete: async (_bookId: string): Promise<{ success: boolean }> => {
+      // TODO: Implement when backend endpoint is ready
       return Promise.resolve({ success: true });
     },
   };

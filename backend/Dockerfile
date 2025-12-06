@@ -31,10 +31,8 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /build/main .
 
-# Copy mocks directory (for development/testing)
-COPY --from=builder /build/mocks ./mocks
-
 # Create necessary directories
+# Note: mocks directory is mounted via docker-compose volume
 RUN mkdir -p /app/uploads /app/logs
 
 # Expose port
