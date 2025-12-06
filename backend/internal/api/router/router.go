@@ -88,7 +88,7 @@ func SetupRouter(
 	// ========================================
 	// サービスの初期化
 	// ========================================
-	uploadService := service.NewUploadService(localStorage, tempDir)
+	uploadService := service.NewUploadService(localStorage, bookRepo, tempDir)
 	teacherModeService := service.NewTeacherModeService(teacherModeRepo, pageRepo, bookRepo, ttsRepo)
 
 	// OCRサービスの初期化

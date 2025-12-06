@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/clearclown/HaiLanGo/backend/pkg/file"
 	"github.com/clearclown/HaiLanGo/backend/pkg/storage"
 	"github.com/google/uuid"
@@ -25,6 +26,7 @@ var (
 // UploadService はファイルアップロードのビジネスロジックを提供する
 type UploadService struct {
 	storage       storage.Storage
+	bookRepo      repository.BookRepository            // 書籍リポジトリ
 	progress      map[uuid.UUID]*models.UploadProgress // 進捗管理（実際の実装ではRedisなどを使用）
 	mu            sync.RWMutex                         // 進捗マップのロック
 	chunkService  *ChunkUploadService                  // チャンクアップロードサービス
@@ -32,9 +34,10 @@ type UploadService struct {
 }
 
 // NewUploadService はUploadServiceの新しいインスタンスを作成する
-func NewUploadService(storage storage.Storage, tempDir string) *UploadService {
+func NewUploadService(storage storage.Storage, bookRepo repository.BookRepository, tempDir string) *UploadService {
 	return &UploadService{
 		storage:      storage,
+		bookRepo:     bookRepo,
 		progress:     make(map[uuid.UUID]*models.UploadProgress),
 		chunkService: NewChunkUploadService(storage, tempDir),
 		chunkUploads: make(map[uuid.UUID]*models.ChunkUpload),
@@ -208,6 +211,14 @@ func (s *UploadService) UploadMultipleFiles(ctx context.Context, userID, bookID 
 	// 完了
 	progress.Status = "completed"
 	s.UpdateUploadProgress(ctx, progress)
+
+	// 書籍ステータスを「processing」に更新
+	if s.bookRepo != nil {
+		if err := s.bookRepo.UpdateStatus(ctx, bookID, models.BookStatusProcessing); err != nil {
+			// ステータス更新失敗はログに記録するが、アップロード自体は成功とする
+			fmt.Printf("warning: failed to update book status: %v\n", err)
+		}
+	}
 
 	return bookFiles, nil
 }
