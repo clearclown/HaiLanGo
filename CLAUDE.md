@@ -38,6 +38,48 @@
 - **サポートティア**: Verified (9), Supported (21), Experimental (無制限)
 - **対応言語**: ISO 639-1/2コードを持つすべての言語
 
+## 設計原則
+
+### LLMに任せる原則
+
+**最新のLLMは十分に賢いため、過剰な事前設計を避ける。**
+
+#### ❌ やらないこと
+- ドメイン特化のプロンプトテンプレートをハードコーディング
+- 固定のカテゴリリスト（例：「政治」「宗教」「SNS」等）の定義
+- LLMが自然に処理できることを事前にコードで制御
+
+#### ✅ やること
+- ユーザーの自然言語入力をそのままLLMに渡す
+- UIでドメイン選択が必要な場合は、自由入力またはLLMに選択肢生成を任せる
+- 新しいドメインやユースケースに柔軟に対応できるシンプルな設計
+
+#### 理由
+1. **柔軟性**: 新しいドメイン（例：「K-POPファンダム用語」）追加にコード変更不要
+2. **シンプル**: 余計な抽象化層が不要
+3. **保守性**: LLMの進化に自動的に追従
+
+#### 例
+```go
+// ❌ Bad: ハードコードされたドメイン
+type DomainType string
+const (
+    DomainPolitics DomainType = "politics"
+    DomainReligion DomainType = "religion"
+    // ... 10種類のドメイン定義
+)
+func GetPromptTemplate(domain DomainType) string { ... }
+
+// ✅ Good: LLMに任せる
+func ExplainWord(ctx context.Context, word, context string) (*Explanation, error) {
+    // ユーザーが「政治用語として説明して」と言えばLLMが対応
+    // ユーザーが「クルアーンの文脈で」と言えばLLMが対応
+    return llmClient.Chat(ctx, messages, options)
+}
+```
+
+この原則は、ドメイン特化機能だけでなく、LLMが処理可能なすべての機能に適用する。
+
 ## コーディング規約
 
 ### Go（バックエンド）
