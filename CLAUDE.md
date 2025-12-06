@@ -438,23 +438,24 @@ dlv debug cmd/server/main.go
 
 ## よくある問題と解決方法
 
-### Podmanコンテナが起動しない
+### コンテナが起動しない
 ```bash
 # コンテナを停止して再起動
-podman-compose down
-podman-compose up -d
+docker compose down
+docker compose up -d
+# Podman: podman-compose up -d
 
 # ログを確認
-podman-compose logs -f
+docker compose logs -f
 ```
 
 ### データベース接続エラー
 ```bash
 # PostgreSQLコンテナが起動しているか確認
-podman ps | grep postgres
+docker ps | grep postgres
 
 # 接続テスト
-podman exec -it HaiLanGo-postgres pg_isready
+docker exec -it hailango-postgres pg_isready
 ```
 
 ### ポートが既に使用されている

@@ -122,10 +122,9 @@ pnpm dev
 ### Development with Database (Optional)
 
 ```bash
-# Start PostgreSQL and Redis
-podman-compose up -d
-# or
-docker-compose up -d
+# Start full stack (PostgreSQL, Redis, Backend, Frontend)
+docker compose up -d
+# Podman: podman-compose up -d
 
 # Run migrations
 cd backend
@@ -138,17 +137,14 @@ go run cmd/migrate/main.go up
 
 ```bash
 # Stop all services
-podman-compose down
-# or
-docker-compose down
+docker compose down
+# Podman: podman-compose down
 
 # Remove project directory
 cd ..
 rm -rf HaiLanGo
 
 # Remove Docker/Podman volumes (optional)
-podman volume prune
-# or
 docker volume prune
 ```
 

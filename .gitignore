@@ -81,3 +81,6 @@ temp/
 credentials.json
 *-credentials.json
 *.pem
+gcp_hailingo.json
+backend/bin/
+pics/
