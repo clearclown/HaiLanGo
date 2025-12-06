@@ -1,4 +1,4 @@
-# HaiLanGo - Terraform Outputs
+# HaiLanGo - Terraform Outputs (Simplified)
 
 output "project_id" {
   description = "GCP Project ID"
@@ -27,18 +27,10 @@ output "setup_summary" {
     project     = var.project_id
     region      = var.region
     environment = var.environment
-
-    buckets = {
-      user_uploads = google_storage_bucket.user_uploads.name
-      audio_cache  = google_storage_bucket.audio_cache.name
-      ocr_cache    = google_storage_bucket.ocr_cache.name
-    }
-
-    service_account = var.create_api_keys ? google_service_account.hailango_api[0].email : null
+    budget      = "$${var.monthly_budget_amount} USD/month"
 
     console_links = {
       apis       = "https://console.cloud.google.com/apis/dashboard?project=${var.project_id}"
-      storage    = "https://console.cloud.google.com/storage/browser?project=${var.project_id}"
       billing    = "https://console.cloud.google.com/billing?project=${var.project_id}"
       monitoring = "https://console.cloud.google.com/monitoring?project=${var.project_id}"
     }
@@ -57,19 +49,7 @@ output "env_file_content" {
     GOOGLE_CLOUD_PROJECT=${var.project_id}
     GOOGLE_CLOUD_REGION=${var.region}
 
-    # Storage buckets
-    GCS_USER_UPLOADS_BUCKET=${google_storage_bucket.user_uploads.name}
-    GCS_AUDIO_CACHE_BUCKET=${google_storage_bucket.audio_cache.name}
-    GCS_OCR_CACHE_BUCKET=${google_storage_bucket.ocr_cache.name}
-
     # API Key (restricted for client-side use)
     ${var.create_api_keys ? "GOOGLE_CLOUD_API_KEY=${google_apikeys_key.hailango_web_key[0].key_string}" : "# GOOGLE_CLOUD_API_KEY=<not created>"}
-
-    # Service Account Email
-    ${var.create_api_keys ? "GOOGLE_SERVICE_ACCOUNT_EMAIL=${google_service_account.hailango_api[0].email}" : "# GOOGLE_SERVICE_ACCOUNT_EMAIL=<not created>"}
-
-    # For server-side authentication, use the service account key JSON
-    # Run: terraform output -raw service_account_key_json | base64 -d > credentials.json
-    # Then set: GOOGLE_APPLICATION_CREDENTIALS=./credentials.json
   EOT
 }

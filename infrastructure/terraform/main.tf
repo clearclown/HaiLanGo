@@ -25,30 +25,40 @@ terraform {
 
 # Provider configuration
 provider "google" {
-  project = var.project_id
-  region  = var.region
+  project               = var.project_id
+  region                = var.region
+  user_project_override = true
+  billing_project       = var.project_id
 }
 
 provider "google-beta" {
-  project = var.project_id
-  region  = var.region
+  project               = var.project_id
+  region                = var.region
+  user_project_override = true
+  billing_project       = var.project_id
 }
 
 # Local values
 locals {
-  # APIs required for HaiLanGo
+  # APIs required for HaiLanGo (API access only, no GCP hosting)
   required_apis = [
     "vision.googleapis.com",           # Cloud Vision API (OCR)
     "texttospeech.googleapis.com",     # Cloud Text-to-Speech API
     "speech.googleapis.com",           # Cloud Speech-to-Text API
     "translate.googleapis.com",        # Cloud Translation API
-    "storage.googleapis.com",          # Cloud Storage
-    "cloudbilling.googleapis.com",     # Cloud Billing API
+    "cloudbilling.googleapis.com",     # Cloud Billing API (for budget)
     "billingbudgets.googleapis.com",   # Cloud Billing Budget API
     "cloudresourcemanager.googleapis.com", # Resource Manager API
     "serviceusage.googleapis.com",     # Service Usage API
-    "iam.googleapis.com",              # IAM API
-    "secretmanager.googleapis.com",    # Secret Manager API
+    "iam.googleapis.com",              # IAM API (for API keys)
+    "apikeys.googleapis.com",          # API Keys API
+    "monitoring.googleapis.com",       # Cloud Monitoring API
+    "pubsub.googleapis.com",           # Pub/Sub API (for budget alerts)
+    "cloudfunctions.googleapis.com",   # Cloud Functions API (for auto-shutdown)
+    "cloudbuild.googleapis.com",       # Cloud Build API (for deploying functions)
+    "run.googleapis.com",              # Cloud Run API (for Gen2 functions)
+    "eventarc.googleapis.com",         # Eventarc API (for Gen2 functions)
+    "artifactregistry.googleapis.com", # Artifact Registry API (for Cloud Functions)
   ]
 
   # Common labels for all resources

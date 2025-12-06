@@ -1,4 +1,4 @@
-# HaiLanGo - Terraform Variables
+# HaiLanGo - Terraform Variables (Simplified)
 
 variable "project_id" {
   description = "GCP Project ID"
@@ -37,9 +37,9 @@ variable "billing_account_id" {
 
 # Budget configuration
 variable "monthly_budget_amount" {
-  description = "Monthly budget amount in USD"
+  description = "Monthly budget amount in USD (hard limit)"
   type        = number
-  default     = 50  # $50 USD monthly budget
+  default     = 100  # $100 USD monthly budget (hard limit)
 }
 
 variable "budget_alert_thresholds" {
@@ -53,24 +53,4 @@ variable "create_api_keys" {
   description = "Whether to create API keys"
   type        = bool
   default     = true
-}
-
-# Storage configuration
-variable "storage_location" {
-  description = "Location for Cloud Storage buckets"
-  type        = string
-  default     = "ASIA"
-}
-
-variable "storage_class" {
-  description = "Storage class for buckets"
-  type        = string
-  default     = "STANDARD"
-}
-
-# Alert notification emails
-variable "alert_notification_emails" {
-  description = "Email addresses for budget alerts"
-  type        = list(string)
-  default     = []  # Add email addresses for notifications
 }
