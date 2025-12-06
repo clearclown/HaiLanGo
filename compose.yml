@@ -1,6 +1,19 @@
-version: '3.8'
+# HaiLanGo - Docker/Podman Compose Configuration
+# ==============================================
+#
+# Usage:
+#   Full stack:    docker compose up -d
+#   Stop:          docker compose down
+#   Logs:          docker compose logs -f
+#
+# Podman users:
+#   podman-compose up -d
 
 services:
+  # ===========================================
+  # Database Services (default)
+  # ===========================================
+
   # PostgreSQL Database
   postgres:
     image: docker.io/library/postgres:15-alpine
@@ -36,6 +49,10 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # ===========================================
+  # Application Services
+  # ===========================================
+
   # Backend (Go)
   backend:
     build:
@@ -62,7 +79,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
 
       # Mock APIs
-      USE_MOCK_APIS: ${USE_MOCK_APIS:-true}
+      USE_MOCK_APIS: ${USE_MOCK_APIS:-false}
       MOCK_DATA_DIR: ${MOCK_DATA_DIR:-./mocks/data}
 
       # OCR
@@ -71,9 +88,13 @@ services:
       AZURE_COMPUTER_VISION_ENDPOINT: ${AZURE_COMPUTER_VISION_ENDPOINT:-}
       AZURE_COMPUTER_VISION_API_KEY: ${AZURE_COMPUTER_VISION_API_KEY:-}
 
-      # TTS/STT
+      # Google Cloud APIs
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      GOOGLE_CLOUD_REGION: ${GOOGLE_CLOUD_REGION:-}
+      GOOGLE_CLOUD_API_KEY: ${GOOGLE_CLOUD_API_KEY:-}
       GOOGLE_CLOUD_TTS_API_KEY: ${GOOGLE_CLOUD_TTS_API_KEY:-}
       GOOGLE_CLOUD_STT_API_KEY: ${GOOGLE_CLOUD_STT_API_KEY:-}
+      GOOGLE_CLOUD_TRANSLATE_API_KEY: ${GOOGLE_CLOUD_TRANSLATE_API_KEY:-}
 
       # OpenAI
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -84,8 +105,9 @@ services:
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     volumes:
-      - ./backend:/app
       - ./mocks:/app/mocks
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,17 +124,13 @@ services:
     environment:
       # Next.js
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-      NEXT_PUBLIC_USE_MOCK_APIS: ${USE_MOCK_APIS:-true}
+      NEXT_PUBLIC_USE_MOCK_APIS: ${USE_MOCK_APIS:-false}
 
       # Server
       PORT: ${FRONTEND_PORT:-3000}
       HOSTNAME: ${SERVER_HOST:-0.0.0.0}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
-    volumes:
-      - ./frontend/web:/app
-      - /app/node_modules
-      - /app/.next
     depends_on:
       - backend
     restart: unless-stopped
@@ -121,4 +139,8 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  backend_logs:
     driver: local
