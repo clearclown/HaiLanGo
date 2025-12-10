@@ -23,6 +23,7 @@
 
 ### 🌍 Supported Languages
 
+**Verified Languages (Fully Tested)**
 | Language | TTS | STT | OCR | | Language | TTS | STT | OCR |
 |:--------:|:---:|:---:|:---:|---|:--------:|:---:|:---:|:---:|
 | 🇯🇵 Japanese | ✅ | ✅ | ✅ | | 🇪🇸 Spanish | ✅ | ✅ | ✅ |
@@ -32,7 +33,12 @@
 | 🇮🇷 Persian | ✅ | ✅ | ✅ | | 🇮🇹 Italian | ✅ | ✅ | ✅ |
 | 🇮🇱 Hebrew | ✅ | ✅ | ✅ | | 🇹🇷 Turkish | ✅ | ✅ | ✅ |
 
-*Plus many more minor languages with varying accuracy*
+**Minor Languages (via Whisper STT)**
+| Kurdish | Amharic | Tibetan | Yiddish | Welsh | Mongolian |
+|:-------:|:-------:|:-------:|:-------:|:-----:|:---------:|
+| ✅ STT | ✅ STT | ✅ STT | ✅ STT | ✅ STT | ✅ STT |
+
+*99+ languages via Whisper STT • 140+ languages via Azure TTS*
 
 ---
 
@@ -51,7 +57,9 @@ HaiLanGo is an **AI-powered language learning platform** that breathes new life 
 **Key Features:**
 - 📖 **Digitize any language textbook** with AI-OCR (12+ languages)
 - 🎧 **AI Teacher Mode**: Automatic continuous playback with background support
-- 🗣️ **Pronunciation Evaluation**: Real-time feedback with 0-100 scoring
+- 🗣️ **Pronunciation Evaluation**: Real-time feedback with 0-100 scoring (99 languages via Whisper)
+- 🔊 **Text-to-Speech**: Natural voice synthesis (140+ languages via Azure/Google)
+- 🤖 **LLM Integration**: Claude, GPT-4, Gemini for intelligent learning assistance
 - 📊 **Spaced Repetition System (SRS)**: Scientifically optimized review scheduling
 - 🔒 **Privacy-First**: E2E encryption keeps your data completely private
 - 💾 **Database-Free Development**: Full InMemory fallbacks for testing without PostgreSQL
@@ -230,6 +238,26 @@ chore: Build/tool changes
 - **CI/CD**: GitHub Actions runs tests automatically
 - See [Mocking Strategy](docs/mocking_strategy.md) for details
 
+### API Package Architecture
+
+All external APIs follow a consistent factory pattern:
+
+```
+backend/pkg/{api}/
+├── {api}.go           # Interface definitions
+├── factory.go         # Environment-based provider selection
+├── mock.go            # Mock implementation (for testing)
+├── {provider}.go      # Provider implementations
+└── {api}_test.go      # TDD tests
+```
+
+| Package | Providers | Default | Languages |
+|---------|-----------|---------|-----------|
+| `pkg/tts` | Azure, Google, edge-tts | Azure | 140+ |
+| `pkg/stt` | Whisper, Azure, Google | Whisper | 99 |
+| `pkg/llm` | Claude, OpenAI, Gemini | Claude | Multi-language |
+| `pkg/ocr` | Google Vision, Azure | Google | 12+ |
+
 ## 📚 Resources
 
 ### Official Links
@@ -247,8 +275,11 @@ chore: Build/tool changes
 ### External APIs
 - [Google Cloud Vision](https://cloud.google.com/vision/docs) - OCR
 - [Google Cloud TTS](https://cloud.google.com/text-to-speech/docs) - Text-to-Speech
-- [Google Cloud STT](https://cloud.google.com/speech-to-text/docs) - Speech-to-Text
-- [OpenAI Realtime API](https://platform.openai.com/docs/) - Real-time voice interaction
+- [Azure Speech Services](https://azure.microsoft.com/en-us/products/ai-services/ai-speech) - TTS (140+ languages) & STT
+- [OpenAI Whisper](https://platform.openai.com/docs/guides/speech-to-text) - STT (99 languages)
+- [Anthropic Claude](https://docs.anthropic.com/) - LLM for pronunciation evaluation
+- [OpenAI GPT](https://platform.openai.com/docs/) - LLM support
+- [Google Gemini](https://ai.google.dev/docs) - LLM support
 - [DeepL API](https://www.deepl.com/docs-api) - High-quality translation
 - [Stripe API](https://stripe.com/docs/api) - Payment processing
 
@@ -267,6 +298,10 @@ chore: Build/tool changes
 - [x] Stripe payment integration
 - [x] UI Component Library with Storybook integration
 - [x] Dynamic language support system (30+ languages)
+- [x] TTS API package (Azure, Google, edge-tts support with 140+ languages)
+- [x] STT API package (Whisper, Azure support with 99 languages)
+- [x] LLM API package (Claude, OpenAI, Gemini support)
+- [x] Pronunciation evaluation system (Whisper + LLM approach for minor languages)
 
 ### 🚧 Phase 1: MVP (In Progress)
 - [ ] User authentication (OAuth + Email)

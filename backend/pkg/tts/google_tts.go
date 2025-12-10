@@ -11,8 +11,9 @@ import (
 	"github.com/clearclown/HaiLanGo/backend/pkg/language"
 )
 
-// TTSClient はTTS APIクライアントのインターフェース
-type TTSClient interface {
+// LegacyTTSClient は旧TTS APIクライアントのインターフェース（後方互換性のため保持）
+// 新規実装はTTSClient (tts.go) を使用してください
+type LegacyTTSClient interface {
 	Generate(ctx context.Context, text string, lang string, quality string, speed float64) ([]byte, error)
 }
 
