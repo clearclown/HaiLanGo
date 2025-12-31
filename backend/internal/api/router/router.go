@@ -9,6 +9,7 @@ import (
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/clearclown/HaiLanGo/backend/internal/service"
 	ocrservice "github.com/clearclown/HaiLanGo/backend/internal/service/ocr"
+	vocabularyservice "github.com/clearclown/HaiLanGo/backend/internal/service/vocabulary"
 	"github.com/clearclown/HaiLanGo/backend/internal/websocket"
 	"github.com/clearclown/HaiLanGo/backend/pkg/cache"
 	"github.com/clearclown/HaiLanGo/backend/pkg/ocr"
@@ -61,6 +62,7 @@ func SetupRouter(
 	var paymentRepo repository.PaymentRepositoryInterface
 	var dictionaryRepo repository.DictionaryRepositoryInterface
 	var patternRepo repository.PatternRepositoryInterface
+	var wordRepo repository.WordRepository
 
 	if err := db.Ping(); err != nil {
 		log.Println("⚠️  データベース接続失敗 - すべてのリポジトリでInMemory実装を使用します")
@@ -73,6 +75,7 @@ func SetupRouter(
 		paymentRepo = repository.NewInMemoryPaymentRepository()
 		dictionaryRepo = repository.NewInMemoryDictionaryRepository()
 		patternRepo = repository.NewInMemoryPatternRepository()
+		wordRepo = repository.NewMockWordRepository()
 	} else {
 		reviewRepo = repository.NewReviewRepositoryPostgres(db)
 		statsRepo = repository.NewStatsRepository(db)
@@ -83,6 +86,7 @@ func SetupRouter(
 		paymentRepo = repository.NewPaymentRepositoryPostgres(db)
 		dictionaryRepo = repository.NewDictionaryRepositoryPostgres(db)
 		patternRepo = repository.NewPatternRepositoryPostgres(db)
+		wordRepo = repository.NewWordRepositoryPostgres(db)
 	}
 
 	// PageRepository と TeacherModeRepository: InMemory fallback対応
@@ -102,6 +106,7 @@ func SetupRouter(
 	// ========================================
 	uploadService := service.NewUploadService(localStorage, bookRepo, tempDir)
 	teacherModeService := service.NewTeacherModeService(teacherModeRepo, pageRepo, bookRepo, ttsRepo)
+	vocabularyService := vocabularyservice.NewVocabularyService(wordRepo)
 
 	// OCRサービスの初期化
 	ocrClient, err := ocr.NewOCRClient() // 環境変数に基づいて実際のAPIまたはモックを返す
@@ -143,6 +148,7 @@ func SetupRouter(
 	dictionaryHandler := handler.NewDictionaryHandler(dictionaryRepo)
 	patternHandler := handler.NewPatternHandler(patternRepo)
 	teacherModeHandler := handler.NewTeacherModeHandler(teacherModeService)
+	vocabularyHandler := handler.NewVocabularyHandler(vocabularyService)
 
 	// ========================================
 	// ヘルスチェックエンドポイント
@@ -208,6 +214,9 @@ func SetupRouter(
 
 			// Teacher Mode API
 			teacherModeHandler.RegisterRoutes(authenticated)
+
+			// Vocabulary API
+			vocabularyHandler.RegisterRoutes(authenticated)
 
 			// WebSocket API
 			wsHandler.RegisterRoutes(authenticated)

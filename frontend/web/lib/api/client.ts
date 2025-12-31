@@ -3,6 +3,14 @@ import type { ReviewItem, ReviewResult, ReviewStats } from '@/types/review';
 import type { NotificationSettings, Plan, UserProfile, UserSettings } from '@/types/settings';
 import type { DashboardStats, LearningTimeData, ProgressData, WeakPointsData } from '@/types/stats';
 import type { UploadMetadata } from '@/types/upload';
+import type {
+  AddWordRequest,
+  RecordReviewRequest,
+  UpdateWordRequest,
+  Word,
+  WordFilter,
+  WordStats,
+} from '@/types/vocabulary';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -225,6 +233,89 @@ class APIClient {
 
     getWeakPoints: async (limit = 10): Promise<WeakPointsData> => {
       return this.fetch<WeakPointsData>(`/api/v1/stats/weak-points?limit=${limit}`);
+    },
+  };
+
+  vocabulary = {
+    list: async (filter?: WordFilter): Promise<{ words: Word[]; count: number }> => {
+      const params = new URLSearchParams();
+      if (filter?.book_id) params.set('book_id', filter.book_id);
+      if (filter?.language) params.set('language', filter.language);
+      if (filter?.query) params.set('query', filter.query);
+      if (filter?.tags?.length) params.set('tags', filter.tags.join(','));
+      if (filter?.min_mastery !== undefined) params.set('min_mastery', String(filter.min_mastery));
+      if (filter?.max_mastery !== undefined) params.set('max_mastery', String(filter.max_mastery));
+      if (filter?.limit) params.set('limit', String(filter.limit));
+      if (filter?.offset) params.set('offset', String(filter.offset));
+      if (filter?.sort_by) params.set('sort_by', filter.sort_by);
+      if (filter?.sort_order) params.set('sort_order', filter.sort_order);
+
+      const queryString = params.toString();
+      return this.fetch<{ words: Word[]; count: number }>(
+        `/api/v1/vocabulary${queryString ? `?${queryString}` : ''}`
+      );
+    },
+
+    get: async (wordId: string): Promise<Word> => {
+      return this.fetch<Word>(`/api/v1/vocabulary/${wordId}`);
+    },
+
+    add: async (word: AddWordRequest): Promise<Word> => {
+      return this.fetch<Word>('/api/v1/vocabulary', {
+        method: 'POST',
+        body: JSON.stringify(word),
+      });
+    },
+
+    update: async (wordId: string, word: UpdateWordRequest): Promise<Word> => {
+      return this.fetch<Word>(`/api/v1/vocabulary/${wordId}`, {
+        method: 'PUT',
+        body: JSON.stringify(word),
+      });
+    },
+
+    delete: async (wordId: string): Promise<{ message: string }> => {
+      return this.fetch<{ message: string }>(`/api/v1/vocabulary/${wordId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    recordReview: async (wordId: string, score: number): Promise<Word> => {
+      return this.fetch<Word>(`/api/v1/vocabulary/${wordId}/review`, {
+        method: 'POST',
+        body: JSON.stringify({ score } as RecordReviewRequest),
+      });
+    },
+
+    addTags: async (wordId: string, tags: string[]): Promise<Word> => {
+      return this.fetch<Word>(`/api/v1/vocabulary/${wordId}/tags`, {
+        method: 'POST',
+        body: JSON.stringify({ tags }),
+      });
+    },
+
+    getStats: async (bookId?: string): Promise<WordStats> => {
+      const query = bookId ? `?book_id=${bookId}` : '';
+      return this.fetch<WordStats>(`/api/v1/vocabulary/stats${query}`);
+    },
+
+    exportCSV: async (bookId?: string): Promise<Blob> => {
+      const query = bookId ? `?book_id=${bookId}` : '';
+      const token = getAuthToken();
+      const headers: HeadersInit = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/vocabulary/export${query}`, {
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
+      }
+
+      return response.blob();
     },
   };
 }
