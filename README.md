@@ -299,39 +299,37 @@ backend/pkg/{api}/
 
 ## 🗓️ Roadmap
 
-### ✅ Completed
+### ✅ Phase 1: MVP (Complete)
+- [x] User authentication (JWT with Register/Login/Refresh/Logout)
+- [x] PDF upload + OCR processing (Google Vision, Azure, Tesseract)
+- [x] TTS basic features (Azure, Google, edge-tts - 140+ languages)
+- [x] Simple vocabulary features (CRUD, stats, CSV export)
+- [x] Web version with Next.js 14
+
+### ✅ Phase 2: Core Features (Complete)
+- [x] Page-by-page learning mode
+- [x] Spaced repetition algorithm (SM-2)
+- [x] STT pronunciation evaluation (Whisper, Azure - 99 languages)
+- [x] Full payment integration (Stripe)
 - [x] WebSocket real-time notifications
-- [x] InMemory repository fallbacks (database-free development)
-- [x] STT pronunciation evaluation
+
+### ✅ Phase 3: Advanced Features (Complete)
+- [x] Teacher Mode (auto-learning with offline support)
+- [x] Dictionary API integration
+- [x] Learning analytics dashboard
 - [x] Conversation pattern extraction
-- [x] Stripe payment integration
+- [x] LLM integration (Claude, OpenAI, Gemini)
+
+### ✅ Infrastructure (Complete)
+- [x] InMemory repository fallbacks (database-free development)
 - [x] UI Component Library with Storybook integration
 - [x] Dynamic language support system (30+ languages)
-- [x] TTS API package (Azure, Google, edge-tts support with 140+ languages)
-- [x] STT API package (Whisper, Azure support with 99 languages)
-- [x] LLM API package (Claude, OpenAI, Gemini support)
-- [x] Pronunciation evaluation system (Whisper + LLM approach for minor languages)
-
-### 🚧 Phase 1: MVP (In Progress)
-- [ ] User authentication (OAuth + Email)
-- [ ] PDF upload + OCR processing
-- [ ] TTS basic features (5 major languages)
-- [ ] Simple vocabulary features
-- [ ] Web version only
-
-### 📋 Phase 2: Core Features
-- [ ] Page-by-page learning mode
-- [ ] Spaced repetition algorithm
-- [ ] Mobile app (Flutter)
-- [ ] Full payment integration
-
-### 🔮 Phase 3: Advanced Features
-- [ ] Teacher Mode (offline support)
-- [ ] Dictionary API integration
-- [ ] Learning analytics dashboard
-- [ ] Expanded language support
+- [x] TTS API package (Azure, Google, edge-tts)
+- [x] STT API package (Whisper, Azure)
+- [x] LLM API package (Claude, OpenAI, Gemini)
 
 ### 🌐 Phase 4: Community (TBD)
+- [ ] Mobile app (Flutter)
 - [ ] User-generated content
 - [ ] Blog platform
 - [ ] Community forum
