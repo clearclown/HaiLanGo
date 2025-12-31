@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { PageLearning } from './PageLearning';
 import * as learningApi from '@/services/learningApi';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PageLearning } from './PageLearning';
 
 // モックの設定
 vi.mock('@/services/learningApi');

@@ -1,4 +1,4 @@
-import { afterEach, vi } from "vitest";
+import { afterEach, vi } from 'vitest';
 
 // Mock WebSocket
 class MockWebSocket {
@@ -20,7 +20,7 @@ class MockWebSocket {
     // Simulate async connection
     setTimeout(() => {
       this.readyState = MockWebSocket.OPEN;
-      this.onopen?.(new Event("open"));
+      this.onopen?.(new Event('open'));
     }, 10);
   }
 
@@ -30,7 +30,7 @@ class MockWebSocket {
 
   close() {
     this.readyState = MockWebSocket.CLOSED;
-    this.onclose?.(new CloseEvent("close"));
+    this.onclose?.(new CloseEvent('close'));
   }
 }
 

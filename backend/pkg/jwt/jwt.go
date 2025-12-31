@@ -3,8 +3,13 @@ package jwt
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
+	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -160,4 +165,98 @@ func GenerateRefreshToken(userID string) (string, time.Time, error) {
 // IsTokenExpired はトークンが期限切れかどうかを確認する
 func IsTokenExpired(claims *Claims) bool {
 	return claims.ExpiresAt.Before(time.Now())
+}
+
+// LoadRSAKeysFromFiles はPEM形式のRSA鍵をファイルから読み込んで設定する
+// 本番環境では鍵を永続化し、この関数で読み込むことを推奨する
+func LoadRSAKeysFromFiles(privateKeyPath, publicKeyPath string) error {
+	if strings.TrimSpace(privateKeyPath) == "" || strings.TrimSpace(publicKeyPath) == "" {
+		return errors.New("JWT鍵ファイルパスが不正です（JWT_PRIVATE_KEY_PATH と JWT_PUBLIC_KEY_PATH を両方設定してください）")
+	}
+
+	privBytes, err := os.ReadFile(privateKeyPath)
+	if err != nil {
+		return fmt.Errorf("秘密鍵ファイル読み込み失敗: %w", err)
+	}
+
+	pubBytes, err := os.ReadFile(publicKeyPath)
+	if err != nil {
+		return fmt.Errorf("公開鍵ファイル読み込み失敗: %w", err)
+	}
+
+	return LoadRSAKeysFromPEM(privBytes, pubBytes)
+}
+
+// LoadRSAKeysFromPEM はPEM形式のRSA鍵を読み込んで設定する
+func LoadRSAKeysFromPEM(privateKeyPEM, publicKeyPEM []byte) error {
+	priv, err := parseRSAPrivateKeyFromPEM(privateKeyPEM)
+	if err != nil {
+		return fmt.Errorf("秘密鍵の解析に失敗: %w", err)
+	}
+
+	pub, err := parseRSAPublicKeyFromPEM(publicKeyPEM)
+	if err != nil {
+		return fmt.Errorf("公開鍵の解析に失敗: %w", err)
+	}
+
+	SetRSAKeys(priv, pub)
+	return nil
+}
+
+func parseRSAPrivateKeyFromPEM(pemBytes []byte) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode(pemBytes)
+	if block == nil {
+		return nil, errors.New("PEMデータが見つかりません")
+	}
+
+	switch block.Type {
+	case "RSA PRIVATE KEY":
+		return x509.ParsePKCS1PrivateKey(block.Bytes)
+	case "PRIVATE KEY":
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		rsaKey, ok := key.(*rsa.PrivateKey)
+		if !ok {
+			return nil, errors.New("RSA秘密鍵ではありません（PKCS#8）")
+		}
+		return rsaKey, nil
+	default:
+		return nil, fmt.Errorf("未対応の秘密鍵タイプ: %s", block.Type)
+	}
+}
+
+func parseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode(pemBytes)
+	if block == nil {
+		return nil, errors.New("PEMデータが見つかりません")
+	}
+
+	switch block.Type {
+	case "PUBLIC KEY":
+		pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		rsaPub, ok := pub.(*rsa.PublicKey)
+		if !ok {
+			return nil, errors.New("RSA公開鍵ではありません（PKIX）")
+		}
+		return rsaPub, nil
+	case "RSA PUBLIC KEY":
+		return x509.ParsePKCS1PublicKey(block.Bytes)
+	case "CERTIFICATE":
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		rsaPub, ok := cert.PublicKey.(*rsa.PublicKey)
+		if !ok {
+			return nil, errors.New("証明書の公開鍵がRSAではありません")
+		}
+		return rsaPub, nil
+	default:
+		return nil, fmt.Errorf("未対応の公開鍵タイプ: %s", block.Type)
+	}
 }

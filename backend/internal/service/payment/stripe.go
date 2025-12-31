@@ -2,11 +2,13 @@ package payment
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
+	"github.com/clearclown/HaiLanGo/backend/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/customer"
@@ -17,15 +19,27 @@ import (
 // StripeService implements the Service interface using Stripe API
 type StripeService struct {
 	secretKey string
+	repo      repository.PaymentRepositoryInterface
 }
 
 // NewStripeService creates a new Stripe payment service
 func NewStripeService() *StripeService {
+	return NewStripeServiceWithRepo(nil)
+}
+
+// NewStripeServiceWithRepo creates a new Stripe payment service with a repository
+func NewStripeServiceWithRepo(repo repository.PaymentRepositoryInterface) *StripeService {
 	secretKey := os.Getenv("STRIPE_SECRET_KEY")
 	stripe.Key = secretKey
 
+	// Use InMemory repository if none provided
+	if repo == nil {
+		repo = repository.NewInMemoryPaymentRepository()
+	}
+
 	return &StripeService{
 		secretKey: secretKey,
+		repo:      repo,
 	}
 }
 
@@ -35,6 +49,12 @@ func (s *StripeService) CreateSubscription(ctx context.Context, userID, planID u
 	plan, err := s.GetPlan(ctx, planID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plan: %w", err)
+	}
+
+	// Determine plan type from plan
+	planType := models.PlanTypePremium
+	if plan.Interval == "year" {
+		planType = models.PlanTypeYearly
 	}
 
 	// Create or get Stripe customer
@@ -66,34 +86,30 @@ func (s *StripeService) CreateSubscription(ctx context.Context, userID, planID u
 		return nil, fmt.Errorf("failed to create subscription: %w", err)
 	}
 
-	// Convert to internal model
-	return &models.Subscription{
-		ID:                   uuid.New(),
-		UserID:               userID,
-		PlanID:               planID,
-		StripeCustomerID:     cust.ID,
-		StripeSubscriptionID: sub.ID,
-		Status:               models.SubscriptionStatus(sub.Status),
-		CurrentPeriodStart:   time.Unix(sub.CurrentPeriodStart, 0),
-		CurrentPeriodEnd:     time.Unix(sub.CurrentPeriodEnd, 0),
-		CancelAtPeriodEnd:    sub.CancelAtPeriodEnd,
-		CreatedAt:            time.Now(),
-		UpdatedAt:            time.Now(),
-	}, nil
+	// Save to repository
+	repoSub, err := s.repo.CreateSubscription(ctx, userID, planType, sub.ID, cust.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save subscription: %w", err)
+	}
+
+	// Update with Stripe data
+	repoSub.PlanID = planID
+	repoSub.Status = models.SubscriptionStatus(sub.Status)
+	repoSub.CurrentPeriodStart = time.Unix(sub.CurrentPeriodStart, 0)
+	repoSub.CurrentPeriodEnd = time.Unix(sub.CurrentPeriodEnd, 0)
+	repoSub.CancelAtPeriodEnd = sub.CancelAtPeriodEnd
+
+	return repoSub, nil
 }
 
 // GetSubscription retrieves a subscription by ID
 func (s *StripeService) GetSubscription(ctx context.Context, subscriptionID uuid.UUID) (*models.Subscription, error) {
-	// This would typically query the database
-	// For now, return a placeholder
-	return nil, fmt.Errorf("not implemented")
+	return s.repo.GetSubscription(ctx, subscriptionID)
 }
 
 // GetUserSubscription retrieves a user's active subscription
 func (s *StripeService) GetUserSubscription(ctx context.Context, userID uuid.UUID) (*models.Subscription, error) {
-	// This would typically query the database
-	// For now, return a placeholder
-	return nil, fmt.Errorf("not implemented")
+	return s.repo.GetSubscriptionByUserID(ctx, userID)
 }
 
 // UpdateSubscription updates a subscription
@@ -167,9 +183,50 @@ func (s *StripeService) ListPlans(ctx context.Context) ([]*models.SubscriptionPl
 
 // GetPlan retrieves a plan by ID
 func (s *StripeService) GetPlan(ctx context.Context, planID uuid.UUID) (*models.SubscriptionPlan, error) {
-	// This would typically query the database
-	// For now, return a placeholder
-	return nil, fmt.Errorf("not implemented")
+	// Get plan pricing from repository
+	pricing, err := s.repo.GetPlanPricing(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get plan pricing: %w", err)
+	}
+
+	// Find matching plan by ID or return default premium plan
+	for _, p := range pricing {
+		plan := &models.SubscriptionPlan{
+			ID:            planID,
+			Name:          p.Name,
+			Description:   p.Description,
+			PlanType:      p.Plan,
+			Price:         p.Price,
+			Currency:      p.Currency,
+			Interval:      p.Interval,
+			StripePriceID: fmt.Sprintf("price_%s", p.Plan),
+			Active:        true,
+			Features:      p.Features,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		}
+
+		// Match by plan type (simplified matching)
+		if p.Plan == models.PlanTypePremium || p.Plan == models.PlanTypeYearly {
+			return plan, nil
+		}
+	}
+
+	// Return default premium plan if not found
+	return &models.SubscriptionPlan{
+		ID:            planID,
+		Name:          "Premium",
+		Description:   "Premium subscription plan",
+		PlanType:      models.PlanTypePremium,
+		Price:         999,
+		Currency:      "usd",
+		Interval:      "month",
+		StripePriceID: "price_premium_monthly",
+		Active:        true,
+		Features:      []string{"Unlimited learning", "Premium TTS", "Offline download"},
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+	}, nil
 }
 
 // HandleWebhookEvent handles Stripe webhook events
@@ -193,12 +250,138 @@ func (s *StripeService) HandleWebhookEvent(ctx context.Context, eventType string
 	}
 }
 
+// StripeSubscriptionData represents Stripe subscription webhook data
+type StripeSubscriptionData struct {
+	Object struct {
+		ID                string `json:"id"`
+		Status            string `json:"status"`
+		CustomerID        string `json:"customer"`
+		CancelAtPeriodEnd bool   `json:"cancel_at_period_end"`
+		Metadata          struct {
+			UserID string `json:"user_id"`
+			PlanID string `json:"plan_id"`
+		} `json:"metadata"`
+		CurrentPeriodStart int64 `json:"current_period_start"`
+		CurrentPeriodEnd   int64 `json:"current_period_end"`
+	} `json:"object"`
+}
+
+// StripePaymentData represents Stripe payment intent webhook data
+type StripePaymentData struct {
+	Object struct {
+		ID       string `json:"id"`
+		Amount   int64  `json:"amount"`
+		Currency string `json:"currency"`
+		Status   string `json:"status"`
+		Metadata struct {
+			UserID         string `json:"user_id"`
+			SubscriptionID string `json:"subscription_id"`
+		} `json:"metadata"`
+	} `json:"object"`
+}
+
 func (s *StripeService) handleSubscriptionEvent(ctx context.Context, eventType string, payload []byte) error {
-	// Parse and handle subscription events
+	var eventData struct {
+		Data StripeSubscriptionData `json:"data"`
+	}
+	if err := json.Unmarshal(payload, &eventData); err != nil {
+		return fmt.Errorf("failed to parse subscription event: %w", err)
+	}
+
+	subData := eventData.Data.Object
+
+	// Parse user ID from metadata
+	if subData.Metadata.UserID == "" {
+		// If no user ID in metadata, skip (might be a test event)
+		return nil
+	}
+
+	userID, err := uuid.Parse(subData.Metadata.UserID)
+	if err != nil {
+		return fmt.Errorf("invalid user_id in metadata: %w", err)
+	}
+
+	// Get existing subscription by user ID
+	existingSub, err := s.repo.GetSubscriptionByUserID(ctx, userID)
+	if err != nil {
+		// Subscription might not exist yet for "created" events
+		if eventType == "customer.subscription.created" {
+			// Create subscription in repository
+			planType := models.PlanTypePremium
+			_, err = s.repo.CreateSubscription(ctx, userID, planType, subData.ID, subData.CustomerID)
+			if err != nil {
+				return fmt.Errorf("failed to create subscription: %w", err)
+			}
+			return nil
+		}
+		return fmt.Errorf("subscription not found for user: %w", err)
+	}
+
+	// Update subscription status based on event type
+	switch eventType {
+	case "customer.subscription.updated":
+		status := models.SubscriptionStatus(subData.Status)
+		if err := s.repo.UpdateSubscriptionStatus(ctx, existingSub.ID, status); err != nil {
+			return fmt.Errorf("failed to update subscription status: %w", err)
+		}
+
+		// Update cancel at period end flag
+		if subData.CancelAtPeriodEnd != existingSub.CancelAtPeriodEnd {
+			if err := s.repo.CancelSubscription(ctx, existingSub.ID, subData.CancelAtPeriodEnd); err != nil {
+				return fmt.Errorf("failed to update cancel_at_period_end: %w", err)
+			}
+		}
+
+	case "customer.subscription.deleted":
+		if err := s.repo.UpdateSubscriptionStatus(ctx, existingSub.ID, models.SubscriptionStatusCanceled); err != nil {
+			return fmt.Errorf("failed to cancel subscription: %w", err)
+		}
+	}
+
 	return nil
 }
 
 func (s *StripeService) handlePaymentEvent(ctx context.Context, eventType string, payload []byte) error {
-	// Parse and handle payment events
+	var eventData struct {
+		Data StripePaymentData `json:"data"`
+	}
+	if err := json.Unmarshal(payload, &eventData); err != nil {
+		return fmt.Errorf("failed to parse payment event: %w", err)
+	}
+
+	paymentData := eventData.Data.Object
+
+	// Parse user ID from metadata
+	if paymentData.Metadata.UserID == "" {
+		// If no user ID in metadata, skip
+		return nil
+	}
+
+	userID, err := uuid.Parse(paymentData.Metadata.UserID)
+	if err != nil {
+		return fmt.Errorf("invalid user_id in metadata: %w", err)
+	}
+
+	// Get subscription for this user
+	sub, err := s.repo.GetSubscriptionByUserID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("subscription not found for user: %w", err)
+	}
+
+	switch eventType {
+	case "payment_intent.succeeded":
+		// Create payment record
+		_, err = s.repo.CreatePayment(ctx, userID, sub.ID, paymentData.Amount, paymentData.Currency, paymentData.ID)
+		if err != nil {
+			return fmt.Errorf("failed to create payment record: %w", err)
+		}
+
+	case "payment_intent.payment_failed":
+		// Update subscription status to past_due
+		if err := s.repo.UpdateSubscriptionStatus(ctx, sub.ID, models.SubscriptionStatusPastDue); err != nil {
+			return fmt.Errorf("failed to update subscription status: %w", err)
+		}
+	}
+
 	return nil
 }

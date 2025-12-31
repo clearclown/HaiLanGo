@@ -1,13 +1,34 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test.describe('OCR Editor', () => {
   const bookId = 'test-book-123';
-  const pageId = 'test-page-456';
+  const pageNumber = '1';
 
   test.beforeEach(async ({ page }) => {
-    // Mock API responses
+    // Mock page data API
+    await page.route(`**/api/v1/books/${bookId}/pages/${pageNumber}`, async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 'page-001',
+            book_id: bookId,
+            page_number: 1,
+            ocr_text: 'Original OCR text from the book page.',
+            corrected_text: null,
+            image_url: null,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
+          }),
+        });
+      }
+    });
+
+    // Mock OCR text update API
     await page.route('**/api/v1/books/*/pages/*/ocr-text', async (route) => {
       if (route.request().method() === 'PUT') {
+        const body = JSON.parse(route.request().postData() || '{}');
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -16,9 +37,9 @@ test.describe('OCR Editor', () => {
             correction: {
               id: 'correction-789',
               book_id: bookId,
-              page_id: pageId,
-              original_text: 'Original OCR text',
-              corrected_text: 'Corrected text',
+              page_id: pageNumber,
+              original_text: 'Original OCR text from the book page.',
+              corrected_text: body.corrected_text || 'Corrected text',
               user_id: 'user-001',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
@@ -30,8 +51,8 @@ test.describe('OCR Editor', () => {
     });
 
     // Navigate to the OCR editor page
-    // Note: This URL will need to be adjusted based on your actual routing
-    await page.goto(`http://localhost:3000/books/${bookId}/pages/${pageId}/edit`);
+    await page.goto(`/books/${bookId}/pages/${pageNumber}/edit`);
+    await page.waitForLoadState('networkidle');
   });
 
   test('displays the OCR text editor', async ({ page }) => {
@@ -85,8 +106,12 @@ test.describe('OCR Editor', () => {
 
   test('displays character count', async ({ page }) => {
     const textarea = page.getByTestId('text-editor-textarea');
-    await textarea.fill('Test text');
 
+    // Original text is loaded first
+    await expect(page.locator('.char-count')).toContainText('/ 10,000 characters');
+
+    // Fill with known text and verify count
+    await textarea.fill('Test text');
     await expect(page.locator('.char-count')).toContainText('9 / 10,000 characters');
   });
 
@@ -124,16 +149,26 @@ test.describe('OCR Editor', () => {
   });
 
   test('shows loading state while saving', async ({ page }) => {
-    // Mock slow API response
+    // Override with slow API response
     await page.route('**/api/v1/books/*/pages/*/ocr-text', async (route) => {
       if (route.request().method() === 'PUT') {
-        await page.waitForTimeout(1000);
+        // Add delay to simulate slow response
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
             success: true,
-            correction: {},
+            correction: {
+              id: 'correction-789',
+              book_id: 'test-book-123',
+              page_id: '1',
+              original_text: 'Original OCR text from the book page.',
+              corrected_text: 'Modified text',
+              user_id: 'user-001',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
           }),
         });
       }
@@ -145,15 +180,20 @@ test.describe('OCR Editor', () => {
     const saveButton = page.getByTestId('save-button');
     await saveButton.click();
 
+    // Check that it shows saving state
     await expect(saveButton).toContainText('Saving...');
     await expect(saveButton).toBeDisabled();
+
+    // Wait for save to complete
+    await expect(saveButton).toContainText('Save Changes', { timeout: 5000 });
   });
 });
 
 test.describe('Diff Viewer', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to a page with diff viewer
-    await page.goto('http://localhost:3000/test/diff-viewer');
+    // Navigate to the diff viewer test page
+    await page.goto('/test/diff-viewer');
+    await page.waitForLoadState('networkidle');
   });
 
   test('displays text differences', async ({ page }) => {
@@ -170,9 +210,12 @@ test.describe('Diff Viewer', () => {
   });
 
   test('displays "No changes" when texts are identical', async ({ page }) => {
-    // This would require setting up the component with identical texts
+    // Click the button to set identical texts
+    await page.click('text=Set Identical Texts');
+
+    // Wait for the no-changes indicator to appear
     const noChanges = page.getByTestId('no-changes');
-    // This assertion depends on how the test page is set up
-    // await expect(noChanges).toBeVisible();
+    await expect(noChanges).toBeVisible();
+    await expect(noChanges).toContainText('No changes');
   });
 });

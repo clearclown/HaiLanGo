@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout';
 import { Button, Card, CardContent } from '@/components/ui';
 import { apiClient } from '@/lib/api/client';
 import type { DashboardStats, LearningTimeData, ProgressData, WeakPointsData } from '@/types/stats';
+import { useEffect, useState } from 'react';
 
 export default function StatsPage() {
   const [dashboard, setDashboard] = useState<DashboardStats | null>(null);
@@ -80,153 +80,144 @@ export default function StatsPage() {
   return (
     <AppLayout>
       <div className="container-app py-6 lg:py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">学習統計</h1>
-        <p className="text-gray-600">あなたの学習状況を確認しましょう</p>
-      </div>
-
-      {/* Period Selector */}
-      <div className="mb-6 flex gap-2">
-        {(['week', 'month', 'year'] as const).map((p) => (
-          <button
-            key={p}
-            onClick={() => setPeriod(p)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              period === p
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {p === 'week' ? '週' : p === 'month' ? '月' : '年'}
-          </button>
-        ))}
-      </div>
-
-      {/* Dashboard Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatsCard
-          title="現在のストリーク"
-          value={`${dashboard.currentStreak}日`}
-          icon="🔥"
-          color="orange"
-        />
-        <StatsCard
-          title="最長ストリーク"
-          value={`${dashboard.longestStreak}日`}
-          icon="⭐"
-          color="yellow"
-        />
-        <StatsCard
-          title="完了ページ"
-          value={`${dashboard.completedPages}`}
-          subtitle={`全${dashboard.totalPages}ページ`}
-          icon="📄"
-          color="blue"
-        />
-        <StatsCard
-          title="習得単語数"
-          value={`${dashboard.masteredWords}`}
-          icon="📚"
-          color="green"
-        />
-      </div>
-
-      {/* Learning Time Chart */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4">今週の学習時間</h2>
-        <div className="flex items-end justify-between h-64 gap-2">
-          {learningTime.data.length > 0 ? (
-            learningTime.data.map((item, index) => {
-              const maxMinutes = Math.max(...learningTime.data.map((d) => d.minutes), 1);
-              const heightPercent = (item.minutes / maxMinutes) * 100;
-
-              return (
-                <div key={index} className="flex-1 flex flex-col items-center">
-                  <div
-                    className="w-full bg-blue-600 rounded-t transition-all hover:bg-blue-700"
-                    style={{ height: `${heightPercent}%`, minHeight: item.minutes > 0 ? '4px' : '0' }}
-                    title={`${item.minutes}分`}
-                  />
-                  <div className="text-xs text-gray-600 mt-2">{item.date.split('-')[2]}</div>
-                  <div className="text-xs text-gray-500">{item.minutes}分</div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="w-full flex items-center justify-center h-full text-gray-400">
-              データがありません
-            </div>
-          )}
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">学習統計</h1>
+          <p className="text-gray-600">あなたの学習状況を確認しましょう</p>
         </div>
-        <div className="mt-4 text-sm text-gray-600">
-          <p>総学習時間: {learningTime.totalMinutes}分</p>
-          <p>平均学習時間: {learningTime.averageMinutes.toFixed(1)}分/日</p>
-        </div>
-      </div>
 
-      {/* Progress Overview */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4">進捗状況</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <ProgressItem
-            title="単語"
-            data={progress.words}
+        {/* Period Selector */}
+        <div className="mb-6 flex gap-2">
+          {(['week', 'month', 'year'] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                period === p
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {p === 'week' ? '週' : p === 'month' ? '月' : '年'}
+            </button>
+          ))}
+        </div>
+
+        {/* Dashboard Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatsCard
+            title="現在のストリーク"
+            value={`${dashboard.currentStreak}日`}
+            icon="🔥"
+            color="orange"
+          />
+          <StatsCard
+            title="最長ストリーク"
+            value={`${dashboard.longestStreak}日`}
+            icon="⭐"
+            color="yellow"
+          />
+          <StatsCard
+            title="完了ページ"
+            value={`${dashboard.completedPages}`}
+            subtitle={`全${dashboard.totalPages}ページ`}
+            icon="📄"
             color="blue"
           />
-          <ProgressItem
-            title="フレーズ"
-            data={progress.phrases}
+          <StatsCard
+            title="習得単語数"
+            value={`${dashboard.masteredWords}`}
+            icon="📚"
             color="green"
           />
-          <ProgressItem
-            title="ページ"
-            data={progress.pages}
-            color="purple"
-          />
         </div>
-      </div>
 
-      {/* Weak Points */}
-      {weakPoints && (weakPoints.weakWords.length > 0 || weakPoints.weakPhrases.length > 0) && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold mb-4">苦手な項目</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {weakPoints.weakWords.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-3 text-gray-700">単語</h3>
-                <div className="space-y-2">
-                  {weakPoints.weakWords.map((item, index) => (
-                    <WeakPointItem
-                      key={index}
-                      text={item.word || ''}
-                      language={item.language}
-                      attempts={item.attempts}
-                      averageScore={item.averageScore}
+        {/* Learning Time Chart */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">今週の学習時間</h2>
+          <div className="flex items-end justify-between h-64 gap-2">
+            {learningTime.data.length > 0 ? (
+              learningTime.data.map((item, index) => {
+                const maxMinutes = Math.max(...learningTime.data.map((d) => d.minutes), 1);
+                const heightPercent = (item.minutes / maxMinutes) * 100;
+
+                return (
+                  <div key={index} className="flex-1 flex flex-col items-center">
+                    <div
+                      className="w-full bg-blue-600 rounded-t transition-all hover:bg-blue-700"
+                      style={{
+                        height: `${heightPercent}%`,
+                        minHeight: item.minutes > 0 ? '4px' : '0',
+                      }}
+                      title={`${item.minutes}分`}
                     />
-                  ))}
-                </div>
-              </div>
-            )}
-            {weakPoints.weakPhrases.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-3 text-gray-700">フレーズ</h3>
-                <div className="space-y-2">
-                  {weakPoints.weakPhrases.map((item, index) => (
-                    <WeakPointItem
-                      key={index}
-                      text={item.phrase || ''}
-                      language={item.language}
-                      attempts={item.attempts}
-                      averageScore={item.averageScore}
-                    />
-                  ))}
-                </div>
+                    <div className="text-xs text-gray-600 mt-2">{item.date.split('-')[2]}</div>
+                    <div className="text-xs text-gray-500">{item.minutes}分</div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="w-full flex items-center justify-center h-full text-gray-400">
+                データがありません
               </div>
             )}
           </div>
+          <div className="mt-4 text-sm text-gray-600">
+            <p>総学習時間: {learningTime.totalMinutes}分</p>
+            <p>平均学習時間: {learningTime.averageMinutes.toFixed(1)}分/日</p>
+          </div>
         </div>
-      )}
+
+        {/* Progress Overview */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">進捗状況</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <ProgressItem title="単語" data={progress.words} color="blue" />
+            <ProgressItem title="フレーズ" data={progress.phrases} color="green" />
+            <ProgressItem title="ページ" data={progress.pages} color="purple" />
+          </div>
+        </div>
+
+        {/* Weak Points */}
+        {weakPoints && (weakPoints.weakWords.length > 0 || weakPoints.weakPhrases.length > 0) && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-4">苦手な項目</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {weakPoints.weakWords.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3 text-gray-700">単語</h3>
+                  <div className="space-y-2">
+                    {weakPoints.weakWords.map((item, index) => (
+                      <WeakPointItem
+                        key={index}
+                        text={item.word || ''}
+                        language={item.language}
+                        attempts={item.attempts}
+                        averageScore={item.averageScore}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {weakPoints.weakPhrases.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3 text-gray-700">フレーズ</h3>
+                  <div className="space-y-2">
+                    {weakPoints.weakPhrases.map((item, index) => (
+                      <WeakPointItem
+                        key={index}
+                        text={item.phrase || ''}
+                        language={item.language}
+                        attempts={item.attempts}
+                        averageScore={item.averageScore}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   );

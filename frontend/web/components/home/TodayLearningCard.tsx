@@ -1,20 +1,20 @@
-import type { Book, LearningProgress } from "@/lib/types"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+import type { Book, LearningProgress } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface TodayLearningCardProps {
   data: {
-    book: Book
-    progress: LearningProgress
-  }
+    book: Book;
+    progress: LearningProgress;
+  };
 }
 
 export function TodayLearningCard({ data }: TodayLearningCardProps) {
-  const { book, progress } = data
-  const progressPercentage = (progress.completedPages / progress.totalPages) * 100
+  const { book, progress } = data;
+  const progressPercentage = (progress.completedPages / progress.totalPages) * 100;
 
   return (
-    <div className={cn("rounded-xl border border-border bg-white p-6 shadow-sm")}>
+    <div className={cn('rounded-xl border border-border bg-white p-6 shadow-sm')}>
       <div className="mb-4 flex items-center gap-2">
         <span className="text-2xl">📚</span>
         <h2 className="text-xl font-semibold text-text-primary">今日の学習</h2>
@@ -48,13 +48,13 @@ export function TodayLearningCard({ data }: TodayLearningCardProps) {
       <Link
         href={`/books/${book.id}/pages/${progress.currentPage}`}
         className={cn(
-          "block w-full rounded-lg bg-primary px-4 py-3 text-center font-medium text-white",
-          "transition-colors hover:bg-primary/90",
-          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          'block w-full rounded-lg bg-primary px-4 py-3 text-center font-medium text-white',
+          'transition-colors hover:bg-primary/90',
+          'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
         )}
       >
         続きから学習
       </Link>
     </div>
-  )
+  );
 }

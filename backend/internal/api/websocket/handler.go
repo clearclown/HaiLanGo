@@ -3,7 +3,10 @@ package websocket
 import (
 	"log"
 	"net/http"
+	"strings"
 
+	"github.com/clearclown/HaiLanGo/backend/internal/api/middleware"
+	"github.com/clearclown/HaiLanGo/backend/pkg/jwt"
 	"github.com/gorilla/websocket"
 )
 
@@ -11,8 +14,12 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		// TODO: Implement proper origin checking for production
-		return true
+		origin := r.Header.Get("Origin")
+		if middleware.IsOriginAllowed(origin) {
+			return true
+		}
+		log.Printf("WebSocket origin rejected (legacy handler): origin=%q host=%q path=%q", origin, r.Host, r.URL.Path)
+		return false
 	},
 }
 
@@ -30,11 +37,34 @@ func NewHandler(hub *Hub) *Handler {
 
 // ServeWS handles websocket requests from the peer.
 func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request) {
-	// TODO: Extract user ID from JWT token or session
-	// For now, we'll use a query parameter (not secure, just for testing)
-	userID := r.URL.Query().Get("user_id")
+	// Extract JWT token from query parameter or Authorization header
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				token = parts[1]
+			}
+		}
+	}
+
+	if token == "" {
+		http.Error(w, "token is required", http.StatusUnauthorized)
+		return
+	}
+
+	// Verify the JWT token
+	claims, err := jwt.VerifyToken(token)
+	if err != nil {
+		log.Printf("WebSocket token verification failed: %v", err)
+		http.Error(w, "invalid or expired token", http.StatusUnauthorized)
+		return
+	}
+
+	userID := claims.UserID
 	if userID == "" {
-		http.Error(w, "user_id is required", http.StatusBadRequest)
+		http.Error(w, "invalid token: missing user ID", http.StatusUnauthorized)
 		return
 	}
 

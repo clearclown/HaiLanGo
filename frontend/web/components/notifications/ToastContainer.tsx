@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import Toast from './Toast';
 import type { ToastProps } from './Toast';
@@ -90,7 +90,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
     }
     return () => {
       if (typeof window !== 'undefined') {
-        delete (window as any).__TEST_TOAST__;
+        (window as any).__TEST_TOAST__ = undefined;
       }
     };
   }, [showInfo, showSuccess, showWarning, showError, addToast, removeToast]);

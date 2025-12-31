@@ -15,7 +15,7 @@ import (
 
 // TTSService はTTS音声生成サービス
 type TTSService struct {
-	ttsClient tts.TTSClient
+	ttsClient tts.LegacyTTSClient
 	cache     cache.AudioCache
 	storage   storage.AudioStorage
 	useMock   bool

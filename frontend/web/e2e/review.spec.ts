@@ -1,7 +1,38 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test.describe('Review Page Tests', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock review API endpoints
+    await page.route('**/api/v1/review/stats', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          urgent: 3,
+          recommended: 5,
+          optional: 4,
+          total_completed_today: 10,
+          weekly_completion_rate: 65,
+        }),
+      });
+    });
+    await page.route('**/api/v1/review/items**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [
+            {
+              id: '1',
+              type: 'word',
+              content: 'Здравствуйте',
+              priority: 'urgent',
+              dueDate: new Date().toISOString(),
+            },
+          ],
+        }),
+      });
+    });
     await page.goto('/review');
   });
 
@@ -17,11 +48,17 @@ test.describe('Review Page Tests', () => {
 
   test('should show loading state initially', async ({ page }) => {
     // ローディング表示の確認（瞬間的なので、タイミングによっては見えないかも）
+    // モックによりすぐにデータが返されるため、ローディングはスキップされることが多い
     const loadingText = page.getByText(/読み込み中/i);
-    const isVisible = await loadingText.isVisible().catch(() => false);
+    const isLoadingVisible = await loadingText.isVisible().catch(() => false);
 
     // ローディングが表示されるか、すでにコンテンツが表示されているかどちらか
-    expect(isVisible || await page.getByText(/復習/).isVisible()).toBeTruthy();
+    // ページが完全に読み込まれるまで待つ
+    await page.waitForLoadState('networkidle');
+    const heading = page.getByRole('heading', { name: /復習/i });
+    const isHeadingVisible = await heading.isVisible().catch(() => false);
+
+    expect(isLoadingVisible || isHeadingVisible).toBeTruthy();
   });
 
   test('should display review statistics', async ({ page }) => {
@@ -30,7 +67,10 @@ test.describe('Review Page Tests', () => {
 
     // 「今週の進捗」または「今日の復習」が表示されることを確認
     const statsSection = page.locator('text=今週の進捗').or(page.locator('text=今日の復習'));
-    const hasStats = await statsSection.first().isVisible().catch(() => false);
+    const hasStats = await statsSection
+      .first()
+      .isVisible()
+      .catch(() => false);
 
     // 統計情報が表示されるか、空の状態メッセージが表示されるかどちらか
     if (!hasStats) {
@@ -48,7 +88,12 @@ test.describe('Review Page Tests', () => {
     const optionalLabel = page.getByText(/余裕あり/i);
 
     // いずれかのラベルが表示されているか、空の状態メッセージが表示されるか
-    const hasCards = await urgentLabel.or(recommendedLabel).or(optionalLabel).first().isVisible().catch(() => false);
+    const hasCards = await urgentLabel
+      .or(recommendedLabel)
+      .or(optionalLabel)
+      .first()
+      .isVisible()
+      .catch(() => false);
 
     if (!hasCards) {
       // カードがない場合、完了メッセージが表示されるはず
@@ -66,7 +111,10 @@ test.describe('Review Page Tests', () => {
 
     // どちらかが表示されているはず
     const hasEmptyMessage = await emptyMessage.isVisible().catch(() => false);
-    const hasReviewButton = await reviewButton.first().isVisible().catch(() => false);
+    const hasReviewButton = await reviewButton
+      .first()
+      .isVisible()
+      .catch(() => false);
 
     expect(hasEmptyMessage || hasReviewButton).toBeTruthy();
   });
@@ -96,8 +144,8 @@ test.describe('Review Page Tests', () => {
     const hasProgress = await progressSection.isVisible().catch(() => false);
 
     if (hasProgress) {
-      // 進捗バーの要素を確認（幅が設定されているdiv）
-      const progressBar = page.locator('div[class*="bg-blue-500"]').first();
+      // 進捗バーの要素を確認（progressbar roleを持つ要素）
+      const progressBar = page.locator('[role="progressbar"]').first();
       await expect(progressBar).toBeVisible();
     } else {
       // 進捗情報がない場合、空の状態メッセージを確認
@@ -115,7 +163,7 @@ test.describe('Review Page Tests', () => {
 
     if (hasToday) {
       // 完了項目数が表示されている（「X項目」の形式）
-      const itemsCount = page.locator('text=/\\d+項目/');
+      const itemsCount = page.locator('text=/\\d+項目/').first();
       await expect(itemsCount).toBeVisible();
     }
   });

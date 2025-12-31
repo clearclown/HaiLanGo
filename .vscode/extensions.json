@@ -1,20 +1,11 @@
 {
   "recommendations": [
-    // Backend (Go)
     "golang.go",
-
-    // Frontend (React/Next.js + Tooling)
     "biomejs.biome",
     "bradlc.vscode-tailwindcss",
-
-    // Infrastructure
     "ms-azuretools.vscode-docker",
-
-    // Testing
     "ms-playwright.playwright",
     "vitest.explorer",
-
-    // Collaboration & Utilities
     "eamodio.gitlens",
     "tamasfe.even-better-toml"
   ]

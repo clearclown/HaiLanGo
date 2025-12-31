@@ -1,8 +1,8 @@
-import type { NotificationSettings, Plan, UserProfile, UserSettings } from '@/types/settings';
 import type { Book, BookMetadata } from '@/types/book';
-import type { UploadMetadata } from '@/types/upload';
-import type { ReviewItem, ReviewStats, ReviewResult } from '@/types/review';
+import type { ReviewItem, ReviewResult, ReviewStats } from '@/types/review';
+import type { NotificationSettings, Plan, UserProfile, UserSettings } from '@/types/settings';
 import type { DashboardStats, LearningTimeData, ProgressData, WeakPointsData } from '@/types/stats';
+import type { UploadMetadata } from '@/types/upload';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -22,7 +22,7 @@ class APIClient {
 
     // Add Authorization header if token exists
     if (token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+      (headers as Record<string, string>).Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -111,7 +111,10 @@ class APIClient {
       });
     },
 
-    update: async (bookId: string, metadata: Partial<BookMetadata>): Promise<{ success: boolean }> => {
+    update: async (
+      bookId: string,
+      metadata: Partial<BookMetadata>
+    ): Promise<{ success: boolean }> => {
       return this.fetch<{ success: boolean }>(`/api/v1/books/${bookId}`, {
         method: 'PUT',
         body: JSON.stringify(metadata),
@@ -178,9 +181,10 @@ class APIClient {
       });
     },
 
-    complete: async (_bookId: string): Promise<{ success: boolean }> => {
-      // TODO: Implement when backend endpoint is ready
-      return Promise.resolve({ success: true });
+    complete: async (bookId: string): Promise<{ success: boolean }> => {
+      return this.fetch<{ success: boolean }>(`/api/v1/upload/books/${bookId}/complete`, {
+        method: 'POST',
+      });
     },
   };
 
@@ -189,7 +193,9 @@ class APIClient {
       return this.fetch<ReviewStats>('/api/v1/review/stats');
     },
 
-    getItems: async (priority?: 'urgent' | 'recommended' | 'optional'): Promise<{ items: ReviewItem[] }> => {
+    getItems: async (
+      priority?: 'urgent' | 'recommended' | 'optional'
+    ): Promise<{ items: ReviewItem[] }> => {
       const query = priority ? `?priority=${priority}` : '';
       return this.fetch<{ items: ReviewItem[] }>(`/api/v1/review/items${query}`);
     },
@@ -207,7 +213,9 @@ class APIClient {
       return this.fetch<DashboardStats>('/api/v1/stats/dashboard');
     },
 
-    getLearningTime: async (period: 'week' | 'month' | 'year' = 'week'): Promise<LearningTimeData> => {
+    getLearningTime: async (
+      period: 'week' | 'month' | 'year' = 'week'
+    ): Promise<LearningTimeData> => {
       return this.fetch<LearningTimeData>(`/api/v1/stats/learning-time?period=${period}`);
     },
 

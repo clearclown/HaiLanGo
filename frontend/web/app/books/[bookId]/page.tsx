@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
 import type { Book } from '@/types/book';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function BookDetailPage() {
   const params = useParams();
@@ -80,7 +80,7 @@ export default function BookDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
   }
@@ -98,9 +98,8 @@ export default function BookDetailPage() {
     );
   }
 
-  const progressPercentage = book.total_pages > 0
-    ? Math.round((book.processed_pages / book.total_pages) * 100)
-    : 0;
+  const progressPercentage =
+    book.total_pages > 0 ? Math.round((book.processed_pages / book.total_pages) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -135,7 +134,9 @@ export default function BookDetailPage() {
               <h1 className="text-3xl font-bold mb-4">{book.title}</h1>
 
               <div className="mb-6">
-                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(book.status)}`}>
+                <span
+                  className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(book.status)}`}
+                >
                   {getStatusText(book.status)}
                 </span>
               </div>
@@ -174,7 +175,9 @@ export default function BookDetailPage() {
                 <div className="mb-6">
                   <div className="flex justify-between text-sm text-gray-600 mb-2">
                     <span>学習進捗</span>
-                    <span>{progressPercentage}% ({book.processed_pages}/{book.total_pages}ページ)</span>
+                    <span>
+                      {progressPercentage}% ({book.processed_pages}/{book.total_pages}ページ)
+                    </span>
                   </div>
                   <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                     <div

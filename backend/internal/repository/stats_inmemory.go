@@ -231,10 +231,29 @@ func (r *InMemoryStatsRepository) GetProgressData(ctx context.Context, userID uu
 }
 
 func (r *InMemoryStatsRepository) GetWeakPoints(ctx context.Context, userID uuid.UUID, limit int) (*models.WeakPointsData, error) {
-	// TODO: 実装（STT/発音データが必要）
+	// モックデータを返す（実際はSTT/発音評価データから計算）
+	now := time.Now()
+	weakWords := []models.WeakItem{
+		{Word: "Здравствуйте", Language: "ru", AverageScore: 45.5, Attempts: 5, LastAttempt: now.AddDate(0, 0, -1)},
+		{Word: "Спасибо", Language: "ru", AverageScore: 52.3, Attempts: 3, LastAttempt: now.AddDate(0, 0, -2)},
+		{Word: "Пожалуйста", Language: "ru", AverageScore: 58.0, Attempts: 4, LastAttempt: now.AddDate(0, 0, -3)},
+	}
+	weakPhrases := []models.WeakItem{
+		{Phrase: "Как дела?", Language: "ru", AverageScore: 48.2, Attempts: 6, LastAttempt: now.AddDate(0, 0, -1)},
+		{Phrase: "До свидания", Language: "ru", AverageScore: 55.0, Attempts: 4, LastAttempt: now.AddDate(0, 0, -2)},
+	}
+
+	// limitに応じて制限
+	if limit > 0 && len(weakWords) > limit {
+		weakWords = weakWords[:limit]
+	}
+	if limit > 0 && len(weakPhrases) > limit {
+		weakPhrases = weakPhrases[:limit]
+	}
+
 	return &models.WeakPointsData{
-		WeakWords:   []models.WeakItem{},
-		WeakPhrases: []models.WeakItem{},
+		WeakWords:   weakWords,
+		WeakPhrases: weakPhrases,
 	}, nil
 }
 

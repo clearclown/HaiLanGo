@@ -9,19 +9,13 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', padding = 'md', children, ...props }, ref) => {
     const variants = {
-      default: cn(
-        'bg-white rounded-xl',
-        'shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
-      ),
+      default: cn('bg-white rounded-xl', 'shadow-[0_2px_8px_rgba(0,0,0,0.06)]'),
       bordered: cn(
         'bg-white rounded-xl',
         'border border-border',
         'hover:border-border-dark transition-colors'
       ),
-      elevated: cn(
-        'bg-white rounded-xl',
-        'shadow-[0_4px_16px_rgba(0,0,0,0.1)]'
-      ),
+      elevated: cn('bg-white rounded-xl', 'shadow-[0_4px_16px_rgba(0,0,0,0.1)]'),
       interactive: cn(
         'bg-white rounded-xl',
         'shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
@@ -43,11 +37,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     };
 
     return (
-      <div
-        ref={ref}
-        className={cn(variants[variant], paddings[padding], className)}
-        {...props}
-      >
+      <div ref={ref} className={cn(variants[variant], paddings[padding], className)} {...props}>
         {children}
       </div>
     );
@@ -115,7 +105,12 @@ interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'bordered' | 'actions';
 }
 
-export function CardFooter({ className, variant = 'default', children, ...props }: CardFooterProps) {
+export function CardFooter({
+  className,
+  variant = 'default',
+  children,
+  ...props
+}: CardFooterProps) {
   const variants = {
     default: 'mt-4',
     bordered: 'mt-4 pt-4 border-t border-border-light',
@@ -142,11 +137,7 @@ export function CardImage({ className, aspectRatio = 'auto', alt = '', ...props 
 
   return (
     <div className={cn('overflow-hidden rounded-t-xl -mx-6 -mt-6 mb-4', aspectRatios[aspectRatio])}>
-      <img
-        className={cn('w-full h-full object-cover', className)}
-        alt={alt}
-        {...props}
-      />
+      <img className={cn('w-full h-full object-cover', className)} alt={alt} {...props} />
     </div>
   );
 }

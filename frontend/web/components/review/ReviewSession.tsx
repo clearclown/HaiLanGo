@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import type { ReviewItem } from '@/types/review';
 import { apiClient } from '@/lib/api/client';
+import type { ReviewItem } from '@/types/review';
+import { useState } from 'react';
 
 interface ReviewSessionProps {
   items: ReviewItem[];
@@ -47,11 +47,7 @@ export function ReviewSession({ items, onComplete, onCancel }: ReviewSessionProp
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">復習セッション</h2>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-gray-500 hover:text-gray-700"
-          >
+          <button type="button" onClick={onCancel} className="text-gray-500 hover:text-gray-700">
             ✕
           </button>
         </div>
@@ -59,7 +55,9 @@ export function ReviewSession({ items, onComplete, onCancel }: ReviewSessionProp
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>{currentIndex + 1} / {items.length}</span>
+            <span>
+              {currentIndex + 1} / {items.length}
+            </span>
             <span>{Math.round(progress)}%</span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -77,9 +75,7 @@ export function ReviewSession({ items, onComplete, onCancel }: ReviewSessionProp
               {currentItem.type === 'word' ? '単語' : 'フレーズ'}
             </span>
           </div>
-          <div className="text-4xl font-bold text-center mb-4">
-            {currentItem.text}
-          </div>
+          <div className="text-4xl font-bold text-center mb-4">{currentItem.text}</div>
 
           {/* Show Translation Button */}
           {!showTranslation && (
@@ -94,9 +90,7 @@ export function ReviewSession({ items, onComplete, onCancel }: ReviewSessionProp
 
           {/* Translation */}
           {showTranslation && (
-            <div className="text-2xl text-center text-gray-700 mb-6">
-              {currentItem.translation}
-            </div>
+            <div className="text-2xl text-center text-gray-700 mb-6">{currentItem.translation}</div>
           )}
         </div>
 

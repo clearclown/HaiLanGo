@@ -66,6 +66,7 @@ type BookFile struct {
 // ChunkUpload はチャンクアップロードの情報を保持する
 type ChunkUpload struct {
 	ID             uuid.UUID `json:"id" db:"id"`
+	UserID         uuid.UUID `json:"user_id" db:"user_id"`
 	BookID         uuid.UUID `json:"book_id" db:"book_id"`
 	FileName       string    `json:"file_name" db:"file_name"`
 	TotalChunks    int       `json:"total_chunks" db:"total_chunks"`

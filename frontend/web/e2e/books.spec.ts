@@ -1,7 +1,18 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test.describe('Books Page Tests', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock books API
+    await page.route('**/api/v1/books**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          books: [],
+          total: 0,
+        }),
+      });
+    });
     await page.goto('/books');
   });
 
@@ -14,8 +25,8 @@ test.describe('Books Page Tests', () => {
     const subtitle = page.getByText(/あなたの学習教材/i);
     await expect(subtitle).toBeVisible();
 
-    // 追加ボタンの確認
-    const addButton = page.getByRole('link', { name: /本を追加/i });
+    // 追加ボタンの確認 (header button)
+    const addButton = page.getByRole('link', { name: /本を追加/i }).first();
     await expect(addButton).toBeVisible();
 
     // 検索バーの確認
@@ -24,15 +35,14 @@ test.describe('Books Page Tests', () => {
   });
 
   test('should show empty state when no books', async ({ page }) => {
-    // 空の状態のメッセージまたは本のリストを確認
+    // Wait for loading to complete (loading message to disappear)
+    await page
+      .waitForSelector('text=読み込み中...', { state: 'hidden', timeout: 10000 })
+      .catch(() => {});
+
+    // 空の状態のメッセージを確認
     const emptyMessage = page.getByText(/まだ本がありません/i);
-    const booksList = page.getByRole('article').or(page.locator('[class*="book"]'));
-
-    // どちらかが表示されているはず
-    const hasEmptyMessage = await emptyMessage.isVisible().catch(() => false);
-    const hasBooks = await booksList.first().isVisible().catch(() => false);
-
-    expect(hasEmptyMessage || hasBooks).toBeTruthy();
+    await expect(emptyMessage).toBeVisible({ timeout: 5000 });
   });
 
   test('should have functional search input', async ({ page }) => {

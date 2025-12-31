@@ -4,10 +4,11 @@
 
 'use client';
 
-import { useEffect } from 'react';
 import { useTeacherMode } from '@/hooks/useTeacherMode';
 import type { TeacherModeSettings } from '@/types/teacher-mode';
 import { DEFAULT_TEACHER_MODE_SETTINGS } from '@/types/teacher-mode';
+import { useEffect, useState } from 'react';
+import { TeacherModeSettingsDialog } from './TeacherModeSettingsDialog';
 
 /** Props */
 export interface TeacherModeProps {
@@ -20,18 +21,15 @@ export interface TeacherModeProps {
 /**
  * 教師モードコンポーネント
  */
-export function TeacherMode({ bookId, settings = DEFAULT_TEACHER_MODE_SETTINGS as TeacherModeSettings }: TeacherModeProps) {
-  const {
-    playbackState,
-    playlist,
-    loading,
-    error,
-    play,
-    pause,
-    stop,
-    next,
-    previous,
-  } = useTeacherMode(bookId, settings);
+export function TeacherMode({
+  bookId,
+  settings: initialSettings = DEFAULT_TEACHER_MODE_SETTINGS as TeacherModeSettings,
+}: TeacherModeProps) {
+  const [settings, setSettings] = useState<TeacherModeSettings>(initialSettings);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const { playbackState, playlist, loading, error, play, pause, stop, next, previous } =
+    useTeacherMode(bookId, settings);
 
   /**
    * Media Session API設定
@@ -99,9 +97,7 @@ export function TeacherMode({ bookId, settings = DEFAULT_TEACHER_MODE_SETTINGS a
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-          <h2 className="text-red-800 text-lg font-semibold mb-2">
-            エラーが発生しました
-          </h2>
+          <h2 className="text-red-800 text-lg font-semibold mb-2">エラーが発生しました</h2>
           <p className="text-red-600 mb-4">{error.message}</p>
           <button
             type="button"
@@ -141,14 +137,10 @@ export function TeacherMode({ bookId, settings = DEFAULT_TEACHER_MODE_SETTINGS a
           <button
             type="button"
             aria-label="設定"
+            onClick={() => setIsSettingsOpen(true)}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-full"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -187,12 +179,8 @@ export function TeacherMode({ bookId, settings = DEFAULT_TEACHER_MODE_SETTINGS a
         {/* ページ表示 */}
         {!isStopped && playbackState.currentPage > 0 && (
           <div className="text-center mb-8">
-            <p className="text-4xl font-bold text-gray-900">
-              ページ {playbackState.currentPage}
-            </p>
-            <p className="text-gray-600 mt-2">
-              全 {playlist.pages.length} ページ中
-            </p>
+            <p className="text-4xl font-bold text-gray-900">ページ {playbackState.currentPage}</p>
+            <p className="text-gray-600 mt-2">全 {playlist.pages.length} ページ中</p>
           </div>
         )}
 
@@ -242,11 +230,7 @@ export function TeacherMode({ bookId, settings = DEFAULT_TEACHER_MODE_SETTINGS a
               onClick={play}
               className="p-6 rounded-full bg-blue-500 text-white shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all"
             >
-              <svg
-                className="w-8 h-8"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
               <span className="sr-only">開始</span>
@@ -259,11 +243,7 @@ export function TeacherMode({ bookId, settings = DEFAULT_TEACHER_MODE_SETTINGS a
               onClick={pause}
               className="p-6 rounded-full bg-blue-500 text-white shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all"
             >
-              <svg
-                className="w-8 h-8"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
               </svg>
               <span className="sr-only">一時停止</span>
@@ -276,11 +256,7 @@ export function TeacherMode({ bookId, settings = DEFAULT_TEACHER_MODE_SETTINGS a
               onClick={play}
               className="p-6 rounded-full bg-blue-500 text-white shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all"
             >
-              <svg
-                className="w-8 h-8"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
               <span className="sr-only">再開</span>
@@ -301,12 +277,7 @@ export function TeacherMode({ bookId, settings = DEFAULT_TEACHER_MODE_SETTINGS a
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
@@ -322,6 +293,14 @@ export function TeacherMode({ bookId, settings = DEFAULT_TEACHER_MODE_SETTINGS a
           </button>
         )}
       </main>
+
+      {/* 設定ダイアログ */}
+      <TeacherModeSettingsDialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onSettingsChange={setSettings}
+      />
     </div>
   );
 }

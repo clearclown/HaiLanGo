@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 interface UseAudioPlayerProps {
   audioUrl: string;
@@ -20,10 +20,7 @@ interface UseAudioPlayerReturn {
 /**
  * 音声プレイヤーのカスタムフック
  */
-export function useAudioPlayer({
-  audioUrl,
-  onEnded,
-}: UseAudioPlayerProps): UseAudioPlayerReturn {
+export function useAudioPlayer({ audioUrl, onEnded }: UseAudioPlayerProps): UseAudioPlayerReturn {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);

@@ -23,9 +23,13 @@ func SetupRouter(
 	storagePath string,
 ) *gin.Engine {
 	// Ginエンジンの作成
-	r := gin.Default()
+	r := gin.New()
 
 	// ミドルウェアの設定
+	r.Use(middleware.RequestID())
+	r.Use(middleware.RequestLogger())
+	r.Use(gin.Recovery())
+	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORS())
 	r.Use(middleware.RateLimiter())
 
@@ -81,9 +85,17 @@ func SetupRouter(
 		patternRepo = repository.NewPatternRepositoryPostgres(db)
 	}
 
-	// 以下はPostgreSQL実装のみ（InMemory実装なし）
-	pageRepo := repository.NewPageRepositoryPostgres(db)
-	teacherModeRepo := repository.NewTeacherModeRepositoryPostgres(db)
+	// PageRepository と TeacherModeRepository: InMemory fallback対応
+	var pageRepo repository.PageRepository
+	var teacherModeRepo repository.TeacherModeRepository
+	if err := db.Ping(); err != nil {
+		log.Println("⚠️  データベース接続失敗 - PageRepository, TeacherModeRepositoryでInMemory実装を使用します")
+		pageRepo = repository.NewInMemoryPageRepository()
+		teacherModeRepo = repository.NewInMemoryTeacherModeRepository()
+	} else {
+		pageRepo = repository.NewPageRepositoryPostgres(db)
+		teacherModeRepo = repository.NewTeacherModeRepositoryPostgres(db)
+	}
 
 	// ========================================
 	// サービスの初期化
@@ -96,12 +108,17 @@ func SetupRouter(
 	if err != nil {
 		panic("Failed to initialize OCR client: " + err.Error())
 	}
-	mockCache := cache.NewMockCache() // TODO: Redisキャッシュの実装
-	ocrSvc := ocrservice.NewOCRService(ocrClient, mockCache)
+	// キャッシュの初期化（Redis優先、フォールバックでInMemory）
+	appCache, err := cache.NewCache()
+	if err != nil {
+		log.Printf("⚠️  キャッシュ初期化失敗（InMemoryを使用）: %v", err)
+		appCache = cache.NewInMemoryCache()
+	}
+	ocrSvc := ocrservice.NewOCRService(ocrClient, appCache)
 	ocrSvc.SetPageRepository(pageRepo)
 
-	// statsService := stats.NewService(statsRepo) // TODO: 実装必要
-	// srsService := srs.NewSRSService(reviewRepo) // TODO: 実装必要
+	// Note: Stats/Review handlers work directly with repositories
+	// SRS algorithm is embedded in ReviewHandler (service.SM2Algorithm)
 
 	// WebSocketハブを初期化（先に初期化してサービスで使用できるようにする）
 	wsHub := websocket.NewHub()

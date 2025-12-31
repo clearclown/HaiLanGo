@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ocrApiClient, type OCRTextCorrection } from '../../services/ocrApi';
+import { useEffect, useState } from 'react';
+import { type OCRTextCorrection, ocrApiClient } from '../../services/ocrApi';
 
 export interface OCRTextEditorProps {
   bookId: string;
@@ -104,9 +104,7 @@ export function OCRTextEditor({
       <div className="editor-header">
         <h3 className="editor-title">Edit OCR Text</h3>
         <div className="editor-info">
-          <span className="char-count">
-            {text.length} / 10,000 characters
-          </span>
+          <span className="char-count">{text.length} / 10,000 characters</span>
           {hasChanges && (
             <span className="unsaved-indicator" data-testid="unsaved-indicator">
               • Unsaved changes

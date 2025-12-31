@@ -7,6 +7,7 @@ import (
 
 	"github.com/clearclown/HaiLanGo/backend/internal/models"
 	"github.com/clearclown/HaiLanGo/backend/internal/repository"
+	"github.com/clearclown/HaiLanGo/backend/pkg/llm"
 	"github.com/google/uuid"
 )
 
@@ -16,6 +17,7 @@ type TeacherModeService struct {
 	pageRepo        repository.PageRepository
 	bookRepo        repository.BookRepository
 	ttsRepo         repository.TTSRepositoryInterface
+	llmClient       llm.LLMClient
 }
 
 // NewTeacherModeService は新しいTeacherModeServiceを作成する
@@ -25,11 +27,15 @@ func NewTeacherModeService(
 	bookRepo repository.BookRepository,
 	ttsRepo repository.TTSRepositoryInterface,
 ) *TeacherModeService {
+	// LLMクライアントを初期化（エラー時はモックが使用される）
+	llmClient, _ := llm.NewLLMClient()
+
 	return &TeacherModeService{
 		teacherModeRepo: teacherModeRepo,
 		pageRepo:        pageRepo,
 		bookRepo:        bookRepo,
 		ttsRepo:         ttsRepo,
+		llmClient:       llmClient,
 	}
 }
 
@@ -119,8 +125,12 @@ func (s *TeacherModeService) GeneratePlaylist(
 
 		// 2. 母国語訳（オプション）
 		if settings.Content.IncludeTranslation && page.OCRText != "" {
-			// TODO: 実際には翻訳APIを使用する
-			translationText := fmt.Sprintf("Translation of: %s", page.OCRText)
+			// LLMを使用して翻訳を生成
+			translationText, err := s.translateText(ctx, page.OCRText, book.TargetLanguage, book.NativeLanguage)
+			if err != nil {
+				// エラー時はフォールバック
+				translationText = fmt.Sprintf("Translation of: %s", page.OCRText)
+			}
 			translationSegment, duration, err := s.createAudioSegment(
 				ctx,
 				userID,
@@ -143,8 +153,12 @@ func (s *TeacherModeService) GeneratePlaylist(
 
 		// 3. 単語解説（オプション）
 		if settings.Content.IncludeWordExplanation && page.OCRText != "" {
-			// TODO: 実際には辞書APIを使用する
-			explanationText := fmt.Sprintf("Word explanation for: %s", page.OCRText)
+			// LLMを使用して単語解説を生成
+			explanationText, err := s.explainWords(ctx, page.OCRText, book.TargetLanguage, book.NativeLanguage)
+			if err != nil {
+				// エラー時はフォールバック
+				explanationText = fmt.Sprintf("Word explanation for: %s", page.OCRText)
+			}
 			explanationSegment, duration, err := s.createAudioSegment(
 				ctx,
 				userID,
@@ -324,4 +338,53 @@ func (s *TeacherModeService) GetPlaybackState(
 	}
 
 	return state, nil
+}
+
+// translateText はLLMを使用してテキストを翻訳する
+func (s *TeacherModeService) translateText(ctx context.Context, text, sourceLanguage, targetLanguage string) (string, error) {
+	if s.llmClient == nil {
+		return "", fmt.Errorf("LLM client not initialized")
+	}
+
+	prompt := fmt.Sprintf(`Translate the following text from %s to %s.
+Only provide the translation, nothing else.
+
+Text to translate:
+%s`, sourceLanguage, targetLanguage, text)
+
+	options := llm.DefaultGenerateOptions()
+	options.MaxTokens = 512
+	options.Temperature = 0.3 // Lower temperature for more accurate translation
+
+	result, err := s.llmClient.Generate(ctx, prompt, options)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate translation: %w", err)
+	}
+
+	return result.Content, nil
+}
+
+// explainWords はLLMを使用して単語の解説を生成する
+func (s *TeacherModeService) explainWords(ctx context.Context, text, sourceLanguage, targetLanguage string) (string, error) {
+	if s.llmClient == nil {
+		return "", fmt.Errorf("LLM client not initialized")
+	}
+
+	prompt := fmt.Sprintf(`Explain the key vocabulary words from the following %s text in %s.
+Focus on words that a language learner would find helpful.
+Keep the explanation concise and suitable for text-to-speech reading aloud.
+
+Text:
+%s`, sourceLanguage, targetLanguage, text)
+
+	options := llm.DefaultGenerateOptions()
+	options.MaxTokens = 512
+	options.Temperature = 0.5
+
+	result, err := s.llmClient.Generate(ctx, prompt, options)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate word explanation: %w", err)
+	}
+
+	return result.Content, nil
 }

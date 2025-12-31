@@ -271,9 +271,7 @@ export const PronunciationPractice: Story = {
   render: () => (
     <div className="flex flex-col gap-4 p-6 bg-white rounded-xl shadow-soft max-w-sm">
       <h3 className="text-lg font-semibold text-text-primary">Pronunciation Practice</h3>
-      <p className="text-text-secondary text-sm">
-        Press the button and speak clearly
-      </p>
+      <p className="text-text-secondary text-sm">Press the button and speak clearly</p>
       <Button variant="danger" size="lg" fullWidth leftIcon={<MicIcon />}>
         Start Recording
       </Button>

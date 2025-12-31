@@ -47,9 +47,7 @@ export function DiffViewer({ originalText, correctedText }: DiffViewerProps) {
             {diff.removedWords > 0 && (
               <span className="stat-removed">-{diff.removedWords} words</span>
             )}
-            {diff.addedWords > 0 && (
-              <span className="stat-added">+{diff.addedWords} words</span>
-            )}
+            {diff.addedWords > 0 && <span className="stat-added">+{diff.addedWords} words</span>}
           </div>
         )}
         {!hasChanges && (
@@ -62,10 +60,7 @@ export function DiffViewer({ originalText, correctedText }: DiffViewerProps) {
       <div className="diff-content">
         <div className="diff-section">
           <div className="section-label original-label">Original Text</div>
-          <div
-            className="section-text original-text"
-            data-testid="original-text"
-          >
+          <div className="section-text original-text" data-testid="original-text">
             {originalText || <em className="empty-text">No text</em>}
           </div>
         </div>
@@ -74,10 +69,7 @@ export function DiffViewer({ originalText, correctedText }: DiffViewerProps) {
 
         <div className="diff-section">
           <div className="section-label corrected-label">Corrected Text</div>
-          <div
-            className="section-text corrected-text"
-            data-testid="corrected-text"
-          >
+          <div className="section-text corrected-text" data-testid="corrected-text">
             {correctedText || <em className="empty-text">No text</em>}
           </div>
         </div>

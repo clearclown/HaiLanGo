@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/clearclown/HaiLanGo/backend/pkg/jwt"
@@ -32,6 +34,19 @@ func AuthRequired() gin.HandlerFunc {
 				c.Abort()
 				return
 			}
+
+			// tokenクエリは漏洩しやすい（ログ/履歴/Referer等）ため、原則WebSocketハンドシェイクのみ許可する
+			if !isTokenQueryAllowed(c) {
+				log.Printf(
+					"WARN request_id=%s token_query_rejected path=%s method=%s",
+					GetRequestID(c),
+					c.Request.URL.Path,
+					c.Request.Method,
+				)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+				c.Abort()
+				return
+			}
 		}
 
 		// トークンの検証
@@ -48,4 +63,23 @@ func AuthRequired() gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+func isTokenQueryAllowed(c *gin.Context) bool {
+	// 明示的な許可（主に開発/検証用）
+	if strings.EqualFold(os.Getenv("ALLOW_TOKEN_QUERY_PARAM"), "true") {
+		return true
+	}
+	return isWebSocketHandshake(c)
+}
+
+func isWebSocketHandshake(c *gin.Context) bool {
+	// RFC6455: Upgrade: websocket / Connection: Upgrade
+	upgrade := strings.ToLower(strings.TrimSpace(c.GetHeader("Upgrade")))
+	if upgrade != "websocket" {
+		return false
+	}
+
+	connection := strings.ToLower(c.GetHeader("Connection"))
+	return strings.Contains(connection, "upgrade")
 }

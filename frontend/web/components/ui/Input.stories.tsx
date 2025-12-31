@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Input, Textarea } from './Input';
 import { Button } from './Button';
+import { Input, Textarea } from './Input';
 
 const meta = {
   title: 'UI/Input',
@@ -157,14 +157,13 @@ export const LoginForm: Story = {
           </svg>
         }
       />
-      <Input
-        label="Password"
-        placeholder="Enter your password"
-        type="password"
-      />
+      <Input label="Password" placeholder="Enter your password" type="password" />
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" className="w-4 h-4 rounded border-border text-primary focus:ring-primary" />
+          <input
+            type="checkbox"
+            className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+          />
           <span className="text-sm text-text-secondary">Remember me</span>
         </label>
         <a href="#" className="text-sm text-primary hover:underline">
@@ -240,13 +239,7 @@ export const BookTitleInput: Story = {
 
 // Textarea Stories
 export const TextareaDefault: StoryObj<typeof Textarea> = {
-  render: () => (
-    <Textarea
-      label="Notes"
-      placeholder="Add your learning notes here..."
-      rows={4}
-    />
-  ),
+  render: () => <Textarea label="Notes" placeholder="Add your learning notes here..." rows={4} />,
 };
 
 export const TextareaWithError: StoryObj<typeof Textarea> = {
@@ -296,8 +289,12 @@ export const OCRCorrectionForm: Story = {
         defaultValue="Hello! (formal)"
       />
       <div className="flex gap-3">
-        <Button variant="outline" className="flex-1">Cancel</Button>
-        <Button variant="primary" className="flex-1">Save Correction</Button>
+        <Button variant="outline" className="flex-1">
+          Cancel
+        </Button>
+        <Button variant="primary" className="flex-1">
+          Save Correction
+        </Button>
       </div>
     </div>
   ),

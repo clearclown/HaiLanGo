@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { OCRTextEditor } from './OCRTextEditor';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ocrApiClient } from '../../services/ocrApi';
+import { OCRTextEditor } from './OCRTextEditor';
 
 // Mock the OCR API client
 vi.mock('../../services/ocrApi', () => ({
@@ -63,9 +63,7 @@ describe('OCRTextEditor', () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(screen.getByTestId('error-message')).toHaveTextContent(
-        'Text cannot be empty'
-      );
+      expect(screen.getByTestId('error-message')).toHaveTextContent('Text cannot be empty');
     });
   });
 
@@ -125,9 +123,7 @@ describe('OCRTextEditor', () => {
   });
 
   it('shows error message on API failure', async () => {
-    (ocrApiClient.updateOCRText as Mock).mockRejectedValue(
-      new Error('API Error')
-    );
+    (ocrApiClient.updateOCRText as Mock).mockRejectedValue(new Error('API Error'));
 
     const onError = vi.fn();
     render(<OCRTextEditor {...mockProps} onError={onError} />);

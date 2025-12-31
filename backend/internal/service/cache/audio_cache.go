@@ -1,12 +1,15 @@
 package cache
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 // AudioCache は音声キャッシュのインターフェース
@@ -123,13 +126,109 @@ func (c *InMemoryAudioCache) cleanupExpired() {
 }
 
 // RedisAudioCache はRedis音声キャッシュ（本番用）
-// TODO: Redis実装
 type RedisAudioCache struct {
-	// redis client
+	client *redis.Client
 }
 
 // NewRedisAudioCache は新しいRedis音声キャッシュを作成
-func NewRedisAudioCache() AudioCache {
-	// TODO: Redis実装
-	return NewAudioCache() // 現在はインメモリを返す
+func NewRedisAudioCache(addr, password string, db int) (AudioCache, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       db,
+	})
+
+	// 接続テスト
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+
+	return &RedisAudioCache{
+		client: client,
+	}, nil
+}
+
+// NewRedisAudioCacheFromEnv は環境変数からRedis音声キャッシュを作成
+func NewRedisAudioCacheFromEnv() (AudioCache, error) {
+	addr := os.Getenv("REDIS_ADDR")
+	if addr == "" {
+		addr = "localhost:6379"
+	}
+	password := os.Getenv("REDIS_PASSWORD")
+
+	return NewRedisAudioCache(addr, password, 1) // DB 1 for audio cache
+}
+
+// Get はキャッシュから値を取得
+func (c *RedisAudioCache) Get(key string) (string, bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	val, err := c.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return "", false
+	}
+	if err != nil {
+		return "", false
+	}
+	return val, true
+}
+
+// Set はキャッシュに値を保存
+func (c *RedisAudioCache) Set(key string, audioURL string, ttl time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return c.client.Set(ctx, key, audioURL, ttl).Err()
+}
+
+// Delete はキャッシュから値を削除
+func (c *RedisAudioCache) Delete(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return c.client.Del(ctx, key).Err()
+}
+
+// GenerateKey はキャッシュキーを生成
+func (c *RedisAudioCache) GenerateKey(text string, lang string, quality string, speed float64) string {
+	data := fmt.Sprintf("tts:%s:%s:%s:%.2f", text, lang, quality, speed)
+	hash := sha256.Sum256([]byte(data))
+	return "audio:" + hex.EncodeToString(hash[:])
+}
+
+// Clear はすべてのキャッシュをクリア
+func (c *RedisAudioCache) Clear() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// audio:* のパターンでキーを検索して削除
+	iter := c.client.Scan(ctx, 0, "audio:*", 100).Iterator()
+	for iter.Next(ctx) {
+		if err := c.client.Del(ctx, iter.Val()).Err(); err != nil {
+			return err
+		}
+	}
+	return iter.Err()
+}
+
+// NewAudioCacheWithFallback は環境変数に基づいて適切なAudioCacheを返す
+func NewAudioCacheWithFallback() AudioCache {
+	useMock := os.Getenv("USE_MOCK_APIS") == "true" ||
+		os.Getenv("TEST_USE_MOCKS") == "true"
+
+	if useMock {
+		return NewAudioCache()
+	}
+
+	cache, err := NewRedisAudioCacheFromEnv()
+	if err != nil {
+		// Redisに接続できない場合はインメモリにフォールバック
+		return NewAudioCache()
+	}
+
+	return cache
 }

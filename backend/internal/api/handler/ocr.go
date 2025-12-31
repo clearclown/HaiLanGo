@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -97,13 +98,62 @@ func (h *OCRHandler) ProcessPage(c *gin.Context) {
 		return
 	}
 
-	// バックグラウンドでOCR処理を開始（実際にはワーカーキューに投げる）
+	// バックグラウンドでOCR処理を開始
 	go func() {
-		// InMemoryリポジトリの場合はシミュレーション
-		if inMemRepo, ok := h.repo.(*repository.InMemoryOCRRepository); ok {
-			inMemRepo.SimulateOCRProcessing(c.Request.Context(), job.ID.String())
+		ctx := c.Request.Context()
+		jobIDStr := job.ID.String()
+
+		// ジョブステータスを処理中に更新
+		h.repo.UpdateJobStatus(ctx, jobIDStr, models.OCRStatusProcessing, 10)
+
+		// 画像データを取得（実際の実装ではストレージから取得）
+		imageData := h.getImageData(ctx, imageURL)
+		if imageData == nil {
+			h.repo.UpdateJobStatus(ctx, jobIDStr, models.OCRStatusFailed, 0)
+			h.repo.UpdateJobError(ctx, jobIDStr, "Failed to load image data")
+			return
 		}
-		// TODO: 実際のOCR処理は ocrService.ProcessPage を使用する
+
+		h.repo.UpdateJobStatus(ctx, jobIDStr, models.OCRStatusProcessing, 30)
+
+		// OCRサービスを使用してOCR処理を実行
+		if h.ocrService != nil {
+			languages := []string{req.Language}
+			page, err := h.ocrService.ProcessPage(ctx, job.ID, imageData, languages)
+			if err != nil {
+				h.repo.UpdateJobStatus(ctx, jobIDStr, models.OCRStatusFailed, 0)
+				h.repo.UpdateJobError(ctx, jobIDStr, err.Error())
+				return
+			}
+
+			// 結果を設定
+			result := &models.OCRResult{
+				Text:             page.OCRText,
+				Confidence:       page.OCRConfidence,
+				DetectedLanguage: page.DetectedLang,
+			}
+			h.repo.UpdateJobResult(ctx, jobIDStr, result)
+			h.repo.UpdateJobStatus(ctx, jobIDStr, models.OCRStatusCompleted, 100)
+
+			// WebSocket経由で完了を通知
+			if h.wsHub != nil {
+				message, err := websocket.NewOCRProgressMessage(
+					bookID,
+					1,
+					pageNumber,
+					"completed",
+					fmt.Sprintf("OCR completed for page %d", pageNumber),
+				)
+				if err == nil {
+					h.wsHub.SendToUser(userID, message)
+				}
+			}
+		} else {
+			// OCRサービスがない場合はInMemoryシミュレーション
+			if inMemRepo, ok := h.repo.(*repository.InMemoryOCRRepository); ok {
+				inMemRepo.SimulateOCRProcessing(ctx, jobIDStr)
+			}
+		}
 	}()
 
 	response := &models.OCRJobResponse{
@@ -163,11 +213,41 @@ func (h *OCRHandler) BatchProcess(c *gin.Context) {
 		jobIDs = append(jobIDs, job.ID)
 
 		// バックグラウンドでOCR処理を開始
-		go func(jobID uuid.UUID, pageNum int) {
-			if inMemRepo, ok := h.repo.(*repository.InMemoryOCRRepository); ok {
-				inMemRepo.SimulateOCRProcessing(c.Request.Context(), jobID.String())
+		go func(jobID uuid.UUID, pageNum int, imgURL string) {
+			ctx := context.Background()
+			jobIDStr := jobID.String()
+
+			// OCRサービスを使用して処理
+			if h.ocrService != nil {
+				h.repo.UpdateJobStatus(ctx, jobIDStr, models.OCRStatusProcessing, 10)
+
+				imageData := h.getImageData(ctx, imgURL)
+				if imageData == nil {
+					h.repo.UpdateJobStatus(ctx, jobIDStr, models.OCRStatusFailed, 0)
+					h.repo.UpdateJobError(ctx, jobIDStr, "Failed to load image data")
+					return
+				}
+
+				languages := []string{req.Language}
+				page, err := h.ocrService.ProcessPage(ctx, jobID, imageData, languages)
+				if err != nil {
+					h.repo.UpdateJobStatus(ctx, jobIDStr, models.OCRStatusFailed, 0)
+					h.repo.UpdateJobError(ctx, jobIDStr, err.Error())
+					return
+				}
+
+				result := &models.OCRResult{
+					Text:             page.OCRText,
+					Confidence:       page.OCRConfidence,
+					DetectedLanguage: page.DetectedLang,
+				}
+				h.repo.UpdateJobResult(ctx, jobIDStr, result)
+				h.repo.UpdateJobStatus(ctx, jobIDStr, models.OCRStatusCompleted, 100)
+			} else {
+				if inMemRepo, ok := h.repo.(*repository.InMemoryOCRRepository); ok {
+					inMemRepo.SimulateOCRProcessing(ctx, jobIDStr)
+				}
 			}
-			// TODO: 実際のOCR処理は ocrService.ProcessPage を使用する
 
 			// WebSocket経由で進捗を通知
 			if h.wsHub != nil {
@@ -182,7 +262,7 @@ func (h *OCRHandler) BatchProcess(c *gin.Context) {
 					h.wsHub.SendToUser(userID, message)
 				}
 			}
-		}(job.ID, i)
+		}(job.ID, i, imageURL)
 	}
 
 	response := &models.BatchOCRResponse{
@@ -300,6 +380,13 @@ func (h *OCRHandler) GetBookJobs(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, responses)
+}
+
+// getImageData は画像データを取得するヘルパー関数
+func (h *OCRHandler) getImageData(ctx context.Context, imageURL string) []byte {
+	// 実際の実装ではストレージ（S3、R2など）から画像を取得
+	// 現在はモックデータを返す
+	return []byte("mock-image-data-for-ocr-processing")
 }
 
 // GetStatistics はOCR統計情報を取得

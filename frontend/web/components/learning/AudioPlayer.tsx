@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import type React from 'react';
+import { useState } from 'react';
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -9,8 +10,9 @@ interface AudioPlayerProps {
  * 音声プレイヤーコンポーネント
  */
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
-  const { playing, currentTime, duration, speed, setSpeed, togglePlayPause } =
-    useAudioPlayer({ audioUrl });
+  const { playing, currentTime, duration, speed, setSpeed, togglePlayPause } = useAudioPlayer({
+    audioUrl,
+  });
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
   const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];

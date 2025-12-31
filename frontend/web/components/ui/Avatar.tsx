@@ -112,12 +112,7 @@ interface AvatarGroupProps {
   className?: string;
 }
 
-export function AvatarGroup({
-  children,
-  max = 5,
-  size = 'md',
-  className,
-}: AvatarGroupProps) {
+export function AvatarGroup({ children, max = 5, size = 'md', className }: AvatarGroupProps) {
   const childArray = Array.isArray(children) ? children : [children];
   const visibleAvatars = childArray.slice(0, max);
   const remainingCount = childArray.length - max;

@@ -93,10 +93,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-text-primary mb-2"
-          >
+          <label htmlFor={inputId} className="block text-sm font-medium text-text-primary mb-2">
             {label}
           </label>
         )}
@@ -131,7 +128,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         </div>
         {error && (
           <p className="mt-2 text-sm text-error flex items-center gap-1.5">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -142,9 +144,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {error}
           </p>
         )}
-        {hint && !error && (
-          <p className="mt-2 text-sm text-text-secondary">{hint}</p>
-        )}
+        {hint && !error && <p className="mt-2 text-sm text-text-secondary">{hint}</p>}
       </div>
     );
   }
@@ -179,10 +179,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="w-full">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-text-primary mb-2"
-          >
+          <label htmlFor={inputId} className="block text-sm font-medium text-text-primary mb-2">
             {label}
           </label>
         )}
@@ -201,7 +198,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         />
         {error && (
           <p className="mt-2 text-sm text-error flex items-center gap-1.5">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -212,9 +214,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             {error}
           </p>
         )}
-        {hint && !error && (
-          <p className="mt-2 text-sm text-text-secondary">{hint}</p>
-        )}
+        {hint && !error && <p className="mt-2 text-sm text-text-secondary">{hint}</p>}
       </div>
     );
   }

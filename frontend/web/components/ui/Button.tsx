@@ -88,11 +88,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const LoadingSpinner = () => (
-      <svg
-        className={cn('animate-spin', iconSizes[size])}
-        fill="none"
-        viewBox="0 0 24 24"
-      >
+      <svg className={cn('animate-spin', iconSizes[size])} fill="none" viewBox="0 0 24 24">
         <circle
           className="opacity-25"
           cx="12"
@@ -112,13 +108,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        className={cn(
-          baseStyles,
-          variants[variant],
-          sizes[size],
-          fullWidth && 'w-full',
-          className
-        )}
+        className={cn(baseStyles, variants[variant], sizes[size], fullWidth && 'w-full', className)}
         disabled={disabled || isLoading}
         {...props}
       >
@@ -129,17 +119,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           </>
         ) : (
           <>
-            {leftIcon && (
-              <span className={cn('flex-shrink-0', iconSizes[size])}>
-                {leftIcon}
-              </span>
-            )}
+            {leftIcon && <span className={cn('flex-shrink-0', iconSizes[size])}>{leftIcon}</span>}
             {children}
-            {rightIcon && (
-              <span className={cn('flex-shrink-0', iconSizes[size])}>
-                {rightIcon}
-              </span>
-            )}
+            {rightIcon && <span className={cn('flex-shrink-0', iconSizes[size])}>{rightIcon}</span>}
           </>
         )}
       </button>

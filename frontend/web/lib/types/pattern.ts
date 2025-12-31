@@ -1,10 +1,10 @@
 export type PatternType =
-  | "greeting"
-  | "question"
-  | "response"
-  | "request"
-  | "confirmation"
-  | "other";
+  | 'greeting'
+  | 'question'
+  | 'response'
+  | 'request'
+  | 'confirmation'
+  | 'other';
 
 export interface Pattern {
   id: string;

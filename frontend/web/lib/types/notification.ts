@@ -1,10 +1,10 @@
 export type NotificationType =
-  | "ocr_progress"
-  | "tts_progress"
-  | "learning_update"
-  | "error"
-  | "ping"
-  | "pong";
+  | 'ocr_progress'
+  | 'tts_progress'
+  | 'learning_update'
+  | 'error'
+  | 'ping'
+  | 'pong';
 
 export interface Notification<T = unknown> {
   type: NotificationType;
@@ -19,7 +19,7 @@ export interface OCRProgressData {
   current_page: number;
   progress: number; // 0-100
   estimated_time_ms: number;
-  status: "processing" | "completed" | "failed";
+  status: 'processing' | 'completed' | 'failed';
 }
 
 export interface TTSProgressData {
@@ -28,7 +28,7 @@ export interface TTSProgressData {
   total_segments: number;
   processed_segments: number;
   progress: number; // 0-100
-  status: "processing" | "completed" | "failed";
+  status: 'processing' | 'completed' | 'failed';
 }
 
 export interface LearningUpdateData {

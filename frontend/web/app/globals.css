@@ -1,5 +1,5 @@
 /* Import fonts - must be before @tailwind directives */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -18,7 +18,7 @@
   }
 
   * {
-    border-color: #E0E6ED;
+    border-color: #e0e6ed;
   }
 
   html {
@@ -28,9 +28,9 @@
   }
 
   body {
-    background-color: #F5F7FA;
-    color: #2C3E50;
-    font-family: 'Inter', 'Noto Sans JP', system-ui, sans-serif;
+    background-color: #f5f7fa;
+    color: #2c3e50;
+    font-family: "Inter", "Noto Sans JP", system-ui, sans-serif;
   }
 
   /* Safe area padding for mobile */
@@ -75,7 +75,7 @@
   /* Scrollbar styles */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #D1D5DB transparent;
+    scrollbar-color: #d1d5db transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
@@ -88,12 +88,12 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #D1D5DB;
+    background-color: #d1d5db;
     border-radius: 9999px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: #9CA3AF;
+    background-color: #9ca3af;
   }
 }
 
@@ -105,7 +105,7 @@
 
   /* Gradient text */
   .text-gradient {
-    background: linear-gradient(to right, #4A90E2, #50C878);
+    background: linear-gradient(to right, #4a90e2, #50c878);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

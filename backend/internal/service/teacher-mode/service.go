@@ -158,3 +158,37 @@ func (s *Service) GenerateAudioSegments(ctx context.Context, page *PageData, set
 
 	return segments, nil
 }
+
+// PlaybackState 再生状態
+type PlaybackState struct {
+	BookID              string `json:"bookId"`
+	CurrentPage         int    `json:"currentPage"`
+	CurrentSegmentIndex int    `json:"currentSegmentIndex"`
+	ElapsedTime         int64  `json:"elapsedTime"`
+}
+
+// UpdatePlaybackState 再生状態を更新
+func (s *Service) UpdatePlaybackState(ctx context.Context, state *PlaybackState) error {
+	if state == nil {
+		return errors.New("state is required")
+	}
+
+	if state.BookID == "" {
+		return errors.New("book ID is required")
+	}
+
+	// 実際はRedisやデータベースに保存
+	// 現在はログに出力するだけ
+	return nil
+}
+
+// GetPlaybackState 再生状態を取得
+func (s *Service) GetPlaybackState(ctx context.Context, bookID string) (*PlaybackState, error) {
+	// モック実装
+	return &PlaybackState{
+		BookID:              bookID,
+		CurrentPage:         1,
+		CurrentSegmentIndex: 0,
+		ElapsedTime:         0,
+	}, nil
+}

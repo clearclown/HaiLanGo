@@ -1,10 +1,10 @@
 'use client';
 
 import { AppLayout } from '@/components/layout';
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import AccountSettings from '@/components/settings/AccountSettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import PlanSettings from '@/components/settings/PlanSettings';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { apiClient } from '@/lib/api/client';
 import type {
   NotificationSettings as NotificationSettingsType,
@@ -112,13 +112,22 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <a href="/help" className="block text-primary hover:text-primary-dark transition-colors">
+                <a
+                  href="/help"
+                  className="block text-primary hover:text-primary-dark transition-colors"
+                >
                   ヘルプ・サポート
                 </a>
-                <a href="/terms" className="block text-primary hover:text-primary-dark transition-colors">
+                <a
+                  href="/terms"
+                  className="block text-primary hover:text-primary-dark transition-colors"
+                >
                   利用規約
                 </a>
-                <a href="/privacy" className="block text-primary hover:text-primary-dark transition-colors">
+                <a
+                  href="/privacy"
+                  className="block text-primary hover:text-primary-dark transition-colors"
+                >
                   プライバシーポリシー
                 </a>
                 <button
@@ -146,11 +155,7 @@ export default function SettingsPage() {
                   >
                     キャンセル
                   </Button>
-                  <Button
-                    variant="danger"
-                    onClick={handleLogout}
-                    className="flex-1"
-                  >
+                  <Button variant="danger" onClick={handleLogout} className="flex-1">
                     ログアウト
                   </Button>
                 </div>

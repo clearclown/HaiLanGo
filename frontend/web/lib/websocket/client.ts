@@ -1,15 +1,11 @@
-import type {
-  Message,
-  MessageType,
-  MessageHandler,
-  WebSocketConfig,
-} from './types';
+import type { Message, MessageHandler, MessageType, WebSocketConfig } from './types';
 
 const DEFAULT_CONFIG: Required<WebSocketConfig> = {
-  url: process.env.NEXT_PUBLIC_WS_URL ||
-       (typeof window !== 'undefined'
-         ? `ws://${window.location.hostname}:8080/api/v1/ws`
-         : 'ws://localhost:8080/api/v1/ws'),
+  url:
+    process.env.NEXT_PUBLIC_WS_URL ||
+    (typeof window !== 'undefined'
+      ? `ws://${window.location.hostname}:8080/api/v1/ws`
+      : 'ws://localhost:8080/api/v1/ws'),
   reconnectInterval: 1000,
   maxReconnectAttempts: 5,
   heartbeatInterval: 30000,
@@ -91,7 +87,7 @@ export class WebSocketClient {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());
     }
-    this.listeners.get(type)!.add(handler as MessageHandler);
+    this.listeners.get(type)?.add(handler as MessageHandler);
   }
 
   /**
@@ -117,7 +113,7 @@ export class WebSocketClient {
     }
 
     try {
-      this.ws!.send(JSON.stringify(message));
+      this.ws?.send(JSON.stringify(message));
     } catch (error) {
       console.error('Failed to send message:', error);
     }
@@ -166,10 +162,12 @@ export class WebSocketClient {
 
     this.clearReconnectTimeout();
 
-    const delay = this.config.reconnectInterval * Math.pow(2, this.reconnectAttempts);
+    const delay = this.config.reconnectInterval * 2 ** this.reconnectAttempts;
     this.reconnectAttempts++;
 
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`);
+    console.log(
+      `Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
+    );
 
     this.reconnectTimeout = setTimeout(() => {
       if (this.token && !this.isIntentionallyClosed) {
@@ -207,7 +205,7 @@ export class WebSocketClient {
   private dispatchMessage(message: Message): void {
     const handlers = this.listeners.get(message.type);
     if (handlers && handlers.size > 0) {
-      handlers.forEach(handler => {
+      handlers.forEach((handler) => {
         try {
           handler(message.payload);
         } catch (error) {

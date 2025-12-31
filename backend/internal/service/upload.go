@@ -45,8 +45,8 @@ func NewUploadService(storage storage.Storage, bookRepo repository.BookRepositor
 }
 
 // InitiateChunkUpload はチャンクアップロードを開始する
-func (s *UploadService) InitiateChunkUpload(ctx context.Context, bookID uuid.UUID, fileName string, totalChunks int, fileSize int64) (*models.ChunkUpload, error) {
-	return s.chunkService.InitiateChunkUpload(ctx, bookID, fileName, totalChunks, fileSize)
+func (s *UploadService) InitiateChunkUpload(ctx context.Context, userID, bookID uuid.UUID, fileName string, totalChunks int, fileSize int64) (*models.ChunkUpload, error) {
+	return s.chunkService.InitiateChunkUpload(ctx, userID, bookID, fileName, totalChunks, fileSize)
 }
 
 // UploadChunk はチャンクをアップロードする
@@ -230,4 +230,41 @@ func getFileType(fileName string) string {
 		return ext[1:] // 先頭のドットを削除
 	}
 	return ext
+}
+
+// CompleteUpload はアップロードを完了し、書籍を処理準備完了状態にする
+func (s *UploadService) CompleteUpload(ctx context.Context, userID, bookID uuid.UUID) error {
+	// 進捗を確認
+	s.mu.RLock()
+	progress, exists := s.progress[bookID]
+	s.mu.RUnlock()
+
+	if !exists {
+		// 進捗がなくても、書籍が存在すれば完了として扱う
+		if s.bookRepo != nil {
+			if err := s.bookRepo.UpdateStatus(ctx, bookID, models.BookStatusReady); err != nil {
+				return fmt.Errorf("failed to update book status: %w", err)
+			}
+		}
+		return nil
+	}
+
+	// アップロードがまだ進行中の場合はエラー
+	if progress.Status == "uploading" && progress.UploadedFiles < progress.TotalFiles {
+		return errors.New("upload is still in progress")
+	}
+
+	// 書籍のステータスを「ready」に更新
+	if s.bookRepo != nil {
+		if err := s.bookRepo.UpdateStatus(ctx, bookID, models.BookStatusReady); err != nil {
+			return fmt.Errorf("failed to update book status: %w", err)
+		}
+	}
+
+	// 進捗を完了状態に更新
+	s.mu.Lock()
+	progress.Status = "ready"
+	s.mu.Unlock()
+
+	return nil
 }

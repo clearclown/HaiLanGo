@@ -31,6 +31,100 @@ type TeacherModeRepository interface {
 	UpdatePlaybackState(ctx context.Context, userID uuid.UUID, bookID uuid.UUID, currentPage int, currentSegmentIndex int, elapsedTime int) error
 }
 
+// InMemoryTeacherModeRepository はインメモリ教師モードリポジトリ
+type InMemoryTeacherModeRepository struct {
+	downloads      map[uuid.UUID]*models.TeacherModeDownload
+	playbackStates map[string]*models.TeacherModePlaybackHistory // key: userID:bookID
+}
+
+// NewInMemoryTeacherModeRepository は新しいインメモリ教師モードリポジトリを作成する
+func NewInMemoryTeacherModeRepository() TeacherModeRepository {
+	return &InMemoryTeacherModeRepository{
+		downloads:      make(map[uuid.UUID]*models.TeacherModeDownload),
+		playbackStates: make(map[string]*models.TeacherModePlaybackHistory),
+	}
+}
+
+// playbackStateKey はユーザーIDと書籍IDからキーを生成する
+func playbackStateKey(userID, bookID uuid.UUID) string {
+	return userID.String() + ":" + bookID.String()
+}
+
+// SaveDownload はダウンロード履歴を保存する
+func (r *InMemoryTeacherModeRepository) SaveDownload(ctx context.Context, download *models.TeacherModeDownload) error {
+	r.downloads[download.ID] = download
+	return nil
+}
+
+// GetDownloadByID はIDでダウンロード履歴を取得する
+func (r *InMemoryTeacherModeRepository) GetDownloadByID(ctx context.Context, id uuid.UUID) (*models.TeacherModeDownload, error) {
+	download, ok := r.downloads[id]
+	if !ok {
+		return nil, nil
+	}
+	return download, nil
+}
+
+// GetDownloadsByUserID はユーザーIDでダウンロード履歴を取得する
+func (r *InMemoryTeacherModeRepository) GetDownloadsByUserID(ctx context.Context, userID uuid.UUID) ([]*models.TeacherModeDownload, error) {
+	var downloads []*models.TeacherModeDownload
+	for _, download := range r.downloads {
+		if download.UserID == userID {
+			downloads = append(downloads, download)
+		}
+	}
+	return downloads, nil
+}
+
+// SavePlaybackState は再生状態を保存する
+func (r *InMemoryTeacherModeRepository) SavePlaybackState(ctx context.Context, state *models.TeacherModePlaybackHistory) error {
+	key := playbackStateKey(state.UserID, state.BookID)
+	r.playbackStates[key] = state
+	return nil
+}
+
+// GetPlaybackState は再生状態を取得する
+func (r *InMemoryTeacherModeRepository) GetPlaybackState(ctx context.Context, userID uuid.UUID, bookID uuid.UUID) (*models.TeacherModePlaybackHistory, error) {
+	key := playbackStateKey(userID, bookID)
+	state, ok := r.playbackStates[key]
+	if !ok {
+		return nil, nil
+	}
+	return state, nil
+}
+
+// UpdatePlaybackState は再生状態を更新する
+func (r *InMemoryTeacherModeRepository) UpdatePlaybackState(ctx context.Context, userID uuid.UUID, bookID uuid.UUID, currentPage int, currentSegmentIndex int, elapsedTime int) error {
+	key := playbackStateKey(userID, bookID)
+	state, ok := r.playbackStates[key]
+	if !ok {
+		// レコードが存在しない場合は新規作成
+		state = &models.TeacherModePlaybackHistory{
+			ID:                   uuid.New(),
+			UserID:               userID,
+			BookID:               bookID,
+			CurrentPage:          currentPage,
+			CurrentSegmentIndex:  currentSegmentIndex,
+			ElapsedTime:          elapsedTime,
+			TotalPlayTimeSeconds: 0,
+			LastPlayedAt:         time.Now(),
+			CreatedAt:            time.Now(),
+			UpdatedAt:            time.Now(),
+		}
+		r.playbackStates[key] = state
+		return nil
+	}
+
+	// 既存レコードを更新
+	state.CurrentPage = currentPage
+	state.CurrentSegmentIndex = currentSegmentIndex
+	state.ElapsedTime = elapsedTime
+	state.LastPlayedAt = time.Now()
+	state.UpdatedAt = time.Now()
+
+	return nil
+}
+
 // teacherModeRepositoryPostgres はPostgreSQLベースの教師モードリポジトリ実装
 type teacherModeRepositoryPostgres struct {
 	db *sql.DB

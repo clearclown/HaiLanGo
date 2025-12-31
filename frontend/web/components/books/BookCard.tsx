@@ -7,9 +7,8 @@ interface BookCardProps {
 }
 
 export function BookCard({ book, onDelete }: BookCardProps) {
-  const progressPercentage = book.total_pages > 0
-    ? Math.round((book.processed_pages / book.total_pages) * 100)
-    : 0;
+  const progressPercentage =
+    book.total_pages > 0 ? Math.round((book.processed_pages / book.total_pages) * 100) : 0;
 
   const getStatusText = (status: Book['status']) => {
     switch (status) {
@@ -78,7 +77,9 @@ export function BookCard({ book, onDelete }: BookCardProps) {
 
           {/* Status Badge */}
           <div className="mb-3">
-            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(book.status)}`}>
+            <span
+              className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(book.status)}`}
+            >
               {getStatusText(book.status)}
             </span>
           </div>
@@ -88,13 +89,12 @@ export function BookCard({ book, onDelete }: BookCardProps) {
             <div className="mb-3">
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>進捗</span>
-                <span>{progressPercentage}% ({book.processed_pages}/{book.total_pages}ページ)</span>
+                <span>
+                  {progressPercentage}% ({book.processed_pages}/{book.total_pages}ページ)
+                </span>
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-500"
-                  style={{ width: `${progressPercentage}%` }}
-                />
+                <div className="h-full bg-blue-500" style={{ width: `${progressPercentage}%` }} />
               </div>
             </div>
           )}

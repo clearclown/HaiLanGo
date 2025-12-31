@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout';
-import { Button, Card, CardContent, CardHeader, CardTitle, Progress } from '@/components/ui';
 import { ReviewCard } from '@/components/review/ReviewCard';
 import { ReviewSession } from '@/components/review/ReviewSession';
-import type { ReviewItem, ReviewStats } from '@/types/review';
+import { Button, Card, CardContent, CardHeader, CardTitle, Progress } from '@/components/ui';
 import { apiClient } from '@/lib/api/client';
+import type { ReviewItem, ReviewStats } from '@/types/review';
+import { useEffect, useState } from 'react';
 
 export default function ReviewPage() {
   const [stats, setStats] = useState<ReviewStats | null>(null);
@@ -108,9 +108,7 @@ export default function ReviewPage() {
           {stats && (
             <div className="text-left sm:text-right">
               <p className="text-sm text-gray-500">今日の復習</p>
-              <p className="text-2xl font-bold text-secondary">
-                {stats.total_completed_today}項目
-              </p>
+              <p className="text-2xl font-bold text-secondary">{stats.total_completed_today}項目</p>
             </div>
           )}
         </div>
@@ -122,12 +120,7 @@ export default function ReviewPage() {
               <CardTitle className="text-lg">今週の進捗</CardTitle>
             </CardHeader>
             <CardContent>
-              <Progress
-                value={stats.weekly_completion_rate}
-                showLabel
-                color="primary"
-                size="md"
-              />
+              <Progress value={stats.weekly_completion_rate} showLabel color="primary" size="md" />
             </CardContent>
           </Card>
         )}

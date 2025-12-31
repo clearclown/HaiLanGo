@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -21,9 +21,7 @@ export default function LoginPage() {
 
     try {
       const endpoint = isLogin ? '/api/v1/auth/login' : '/api/v1/auth/register';
-      const body = isLogin
-        ? { email, password }
-        : { email, password, display_name: displayName };
+      const body = isLogin ? { email, password } : { email, password, display_name: displayName };
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
@@ -63,9 +61,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h1 className="text-center text-3xl font-bold text-gray-900">
-            HaiLanGo
-          </h1>
+          <h1 className="text-center text-3xl font-bold text-gray-900">HaiLanGo</h1>
           <h2 className="mt-6 text-center text-xl font-semibold text-gray-700">
             {isLogin ? 'Sign in to your account' : 'Create a new account'}
           </h2>
@@ -151,9 +147,7 @@ export default function LoginPage() {
               }}
               className="text-sm text-blue-600 hover:text-blue-500"
             >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : 'Already have an account? Sign in'}
+              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
           </div>
         </form>

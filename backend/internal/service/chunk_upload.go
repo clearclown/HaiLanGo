@@ -49,13 +49,14 @@ func NewChunkUploadService(storage storage.Storage, tempDir string) *ChunkUpload
 }
 
 // InitiateChunkUpload はチャンクアップロードを開始する
-func (s *ChunkUploadService) InitiateChunkUpload(ctx context.Context, bookID uuid.UUID, fileName string, totalChunks int, fileSize int64) (*models.ChunkUpload, error) {
+func (s *ChunkUploadService) InitiateChunkUpload(ctx context.Context, userID, bookID uuid.UUID, fileName string, totalChunks int, fileSize int64) (*models.ChunkUpload, error) {
 	if totalChunks <= 0 {
 		return nil, fmt.Errorf("total chunks must be greater than 0")
 	}
 
 	chunkUpload := &models.ChunkUpload{
 		ID:             uuid.New(),
+		UserID:         userID,
 		BookID:         bookID,
 		FileName:       fileName,
 		TotalChunks:    totalChunks,
@@ -160,11 +161,9 @@ func (s *ChunkUploadService) mergeChunks(ctx context.Context, chunkUpload *model
 	}
 
 	// 結合したファイルをストレージに保存
-	// TODO: userIDを適切に取得する
-	userID := uuid.New()
 	mergedFile.Seek(0, 0)
 
-	_, err = s.storage.SaveFile(ctx, userID, chunkUpload.BookID, chunkUpload.FileName, mergedFile)
+	_, err = s.storage.SaveFile(ctx, chunkUpload.UserID, chunkUpload.BookID, chunkUpload.FileName, mergedFile)
 	if err != nil {
 		return fmt.Errorf("failed to save merged file to storage: %w", err)
 	}

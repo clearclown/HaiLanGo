@@ -143,7 +143,7 @@ async function createBook(token, title = 'テスト書籍') {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       title,
@@ -168,7 +168,7 @@ async function waitForMessage(messages, predicate, timeout = 5000) {
     if (message) {
       return message;
     }
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   throw new Error(`Message not received within ${timeout}ms`);
@@ -199,7 +199,7 @@ async function runTests() {
     try {
       const notification = await waitForMessage(
         messages,
-        msg => msg.type === 'notification' && msg.payload?.level === 'success'
+        (msg) => msg.type === 'notification' && msg.payload?.level === 'success'
       );
 
       assert(notification !== undefined, '書籍作成の通知が届く');
@@ -214,7 +214,7 @@ async function runTests() {
     // 4. WebSocket統計確認
     log('\n=== WebSocket統計確認 ===');
     const statsResponse = await fetch(`${API_BASE}/ws/stats`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     const stats = await statsResponse.json();
     log(`接続中のクライアント数: ${stats.total_clients}`, 'info');
@@ -226,13 +226,14 @@ async function runTests() {
     ws.close();
 
     // 結果表示
-    log('\n' + '='.repeat(50));
-    log(`テスト結果: ${testsPassed} 成功, ${testsFailed} 失敗`,
-        testsFailed === 0 ? 'success' : 'error');
+    log(`\n${'='.repeat(50)}`);
+    log(
+      `テスト結果: ${testsPassed} 成功, ${testsFailed} 失敗`,
+      testsFailed === 0 ? 'success' : 'error'
+    );
     log('='.repeat(50));
 
     process.exit(testsFailed === 0 ? 0 : 1);
-
   } catch (error) {
     log(`\nテスト実行エラー: ${error.message}`, 'error');
     log(error.stack, 'error');

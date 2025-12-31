@@ -25,13 +25,26 @@ func NewUploadHandler(uploadService *service.UploadService) *UploadHandler {
 // CreateBook は新しい書籍を作成するハンドラー
 // POST /api/v1/books
 func (h *UploadHandler) CreateBook(c *gin.Context) {
-	// TODO: 実際の実装では認証ミドルウェアからユーザーIDを取得
-	userID := uuid.New()
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userIDStr, ok := userIDVal.(string)
+	if !ok || userIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
 
 	var metadata models.BookMetadata
 	if err := c.ShouldBindJSON(&metadata); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid request body",
+			"error":   "invalid request body",
 			"details": err.Error(),
 		})
 		return
@@ -40,7 +53,7 @@ func (h *UploadHandler) CreateBook(c *gin.Context) {
 	book, err := h.uploadService.CreateBook(c.Request.Context(), userID, metadata)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to create book",
+			"error":   "failed to create book",
 			"details": err.Error(),
 		})
 		return
@@ -62,14 +75,27 @@ func (h *UploadHandler) UploadFiles(c *gin.Context) {
 		return
 	}
 
-	// TODO: 実際の実装では認証ミドルウェアからユーザーIDを取得
-	userID := uuid.New()
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userIDStr, ok := userIDVal.(string)
+	if !ok || userIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
 
 	// マルチパートフォームを解析
 	form, err := c.MultipartForm()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to parse multipart form",
+			"error":   "failed to parse multipart form",
 			"details": err.Error(),
 		})
 		return
@@ -87,7 +113,7 @@ func (h *UploadHandler) UploadFiles(c *gin.Context) {
 	bookFiles, err := h.uploadService.UploadMultipleFiles(c.Request.Context(), userID, bookID, files)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to upload files",
+			"error":   "failed to upload files",
 			"details": err.Error(),
 		})
 		return
@@ -95,8 +121,8 @@ func (h *UploadHandler) UploadFiles(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "files uploaded successfully",
-		"files": bookFiles,
-		"count": len(bookFiles),
+		"files":   bookFiles,
+		"count":   len(bookFiles),
 	})
 }
 
@@ -122,7 +148,7 @@ func (h *UploadHandler) GetUploadProgress(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to get upload progress",
+			"error":   "failed to get upload progress",
 			"details": err.Error(),
 		})
 		return
@@ -143,6 +169,22 @@ func (h *UploadHandler) InitiateChunkUpload(c *gin.Context) {
 		return
 	}
 
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userIDStr, ok := userIDVal.(string)
+	if !ok || userIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	var req struct {
 		FileName    string `json:"file_name" binding:"required"`
 		TotalChunks int    `json:"total_chunks" binding:"required"`
@@ -151,16 +193,16 @@ func (h *UploadHandler) InitiateChunkUpload(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid request body",
+			"error":   "invalid request body",
 			"details": err.Error(),
 		})
 		return
 	}
 
-	chunkUpload, err := h.uploadService.InitiateChunkUpload(c.Request.Context(), bookID, req.FileName, req.TotalChunks, req.FileSize)
+	chunkUpload, err := h.uploadService.InitiateChunkUpload(c.Request.Context(), userID, bookID, req.FileName, req.TotalChunks, req.FileSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to initiate chunk upload",
+			"error":   "failed to initiate chunk upload",
 			"details": err.Error(),
 		})
 		return
@@ -193,7 +235,7 @@ func (h *UploadHandler) UploadChunk(c *gin.Context) {
 	file, err := c.FormFile("chunk")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "chunk file is required",
+			"error":   "chunk file is required",
 			"details": err.Error(),
 		})
 		return
@@ -203,7 +245,7 @@ func (h *UploadHandler) UploadChunk(c *gin.Context) {
 	reader, err := file.Open()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to open chunk file",
+			"error":   "failed to open chunk file",
 			"details": err.Error(),
 		})
 		return
@@ -213,7 +255,7 @@ func (h *UploadHandler) UploadChunk(c *gin.Context) {
 	// チャンクをアップロード
 	if err := h.uploadService.UploadChunk(c.Request.Context(), uploadID, chunkNumber, reader); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to upload chunk",
+			"error":   "failed to upload chunk",
 			"details": err.Error(),
 		})
 		return
@@ -223,10 +265,10 @@ func (h *UploadHandler) UploadChunk(c *gin.Context) {
 	chunkUpload, _ := h.uploadService.GetChunkUpload(c.Request.Context(), uploadID)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "chunk uploaded successfully",
-		"status": chunkUpload.Status,
+		"message":         "chunk uploaded successfully",
+		"status":          chunkUpload.Status,
 		"uploaded_chunks": chunkUpload.UploadedChunks,
-		"total_chunks": chunkUpload.TotalChunks,
+		"total_chunks":    chunkUpload.TotalChunks,
 	})
 }
 
@@ -253,12 +295,62 @@ func (h *UploadHandler) GetChunkUploadStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, chunkUpload)
 }
 
+// CompleteUpload はアップロードを完了するハンドラー
+// POST /api/v1/books/:book_id/complete
+func (h *UploadHandler) CompleteUpload(c *gin.Context) {
+	bookIDStr := c.Param("book_id")
+	bookID, err := uuid.Parse(bookIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid book_id",
+		})
+		return
+	}
+
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userIDStr, ok := userIDVal.(string)
+	if !ok || userIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// アップロード完了処理（書籍のステータスを更新）
+	if err := h.uploadService.CompleteUpload(c.Request.Context(), userID, bookID); err != nil {
+		if err == service.ErrBookNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "book not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to complete upload",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "upload completed successfully",
+	})
+}
+
 // RegisterRoutes はルートを登録する
 func (h *UploadHandler) RegisterRoutes(router *gin.RouterGroup) {
 	upload := router.Group("/upload")
 	{
 		upload.POST("/books/:book_id/files", h.UploadFiles)
 		upload.GET("/books/:book_id/status", h.GetUploadProgress)
+		upload.POST("/books/:book_id/complete", h.CompleteUpload)
 
 		// チャンクアップロード
 		upload.POST("/books/:book_id/chunk/initiate", h.InitiateChunkUpload)

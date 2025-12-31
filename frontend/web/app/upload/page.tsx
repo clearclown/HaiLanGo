@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout';
 import { Button, Card, CardContent, Input } from '@/components/ui';
-import { apiClient } from '@/lib/api/client';
-import type { UploadFile } from '@/types/upload';
 import { FileDropzone } from '@/components/upload/FileDropzone';
 import { UploadProgress } from '@/components/upload/UploadProgress';
+import { apiClient } from '@/lib/api/client';
+import type { UploadFile } from '@/types/upload';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -64,7 +64,7 @@ export default function UploadPage() {
   };
 
   const handleFilesSelected = (files: File[]) => {
-    const uploadFiles: UploadFile[] = files.map(file => ({
+    const uploadFiles: UploadFile[] = files.map((file) => ({
       file,
       id: crypto.randomUUID(),
       status: 'pending',
@@ -82,32 +82,24 @@ export default function UploadPage() {
     for (const file of files) {
       try {
         // Update status to uploading
-        setUploadFiles(prev =>
-          prev.map(f => f.id === file.id ? { ...f, status: 'uploading' } : f)
+        setUploadFiles((prev) =>
+          prev.map((f) => (f.id === file.id ? { ...f, status: 'uploading' } : f))
         );
 
         // Upload file
-        await apiClient.upload.uploadFile(
-          bookId,
-          file.file,
-          (progress) => {
-            setUploadFiles(prev =>
-              prev.map(f => f.id === file.id ? { ...f, progress } : f)
-            );
-          }
-        );
+        await apiClient.upload.uploadFile(bookId, file.file, (progress) => {
+          setUploadFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, progress } : f)));
+        });
 
         // Mark as completed
-        setUploadFiles(prev =>
-          prev.map(f => f.id === file.id ? { ...f, status: 'completed', progress: 100 } : f)
+        setUploadFiles((prev) =>
+          prev.map((f) => (f.id === file.id ? { ...f, status: 'completed', progress: 100 } : f))
         );
       } catch (error) {
         console.error('Upload failed:', file.file.name, error);
-        setUploadFiles(prev =>
-          prev.map(f =>
-            f.id === file.id
-              ? { ...f, status: 'failed', error: 'アップロードに失敗しました' }
-              : f
+        setUploadFiles((prev) =>
+          prev.map((f) =>
+            f.id === file.id ? { ...f, status: 'failed', error: 'アップロードに失敗しました' } : f
           )
         );
       }
@@ -125,7 +117,7 @@ export default function UploadPage() {
   };
 
   const handleRemoveFile = (fileId: string) => {
-    setUploadFiles(prev => prev.filter(f => f.id !== fileId));
+    setUploadFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
 
   const handleGoToBooks = () => {
@@ -140,14 +132,17 @@ export default function UploadPage() {
           <div className="flex items-center justify-between">
             {['メタデータ', 'ファイル選択', 'アップロード', '完了'].map((label, index) => {
               const stepNumber = index + 1;
-              const currentStepIndex = ['metadata', 'files', 'uploading', 'completed'].indexOf(step) + 1;
+              const currentStepIndex =
+                ['metadata', 'files', 'uploading', 'completed'].indexOf(step) + 1;
               const isActive = stepNumber <= currentStepIndex;
 
               return (
                 <div key={label} className="flex-1 flex items-center">
                   <div className={`flex items-center ${index > 0 ? 'w-full' : ''}`}>
                     {index > 0 && (
-                      <div className={`flex-1 h-1 transition-colors ${isActive ? 'bg-primary' : 'bg-gray-200'}`} />
+                      <div
+                        className={`flex-1 h-1 transition-colors ${isActive ? 'bg-primary' : 'bg-gray-200'}`}
+                      />
                     )}
                     <div
                       className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
@@ -157,7 +152,9 @@ export default function UploadPage() {
                       {stepNumber}
                     </div>
                   </div>
-                  <span className={`ml-2 text-xs sm:text-sm hidden sm:block ${isActive ? 'text-primary font-medium' : 'text-gray-500'}`}>
+                  <span
+                    className={`ml-2 text-xs sm:text-sm hidden sm:block ${isActive ? 'text-primary font-medium' : 'text-gray-500'}`}
+                  >
                     {label}
                   </span>
                 </div>
@@ -195,8 +192,10 @@ export default function UploadPage() {
                     required
                   >
                     <option value="">選択してください</option>
-                    {languages.map(lang => (
-                      <option key={lang.code} value={lang.code}>{lang.name}</option>
+                    {languages.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -212,8 +211,10 @@ export default function UploadPage() {
                     className="input"
                     required
                   >
-                    {languages.map(lang => (
-                      <option key={lang.code} value={lang.code}>{lang.name}</option>
+                    {languages.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -229,8 +230,10 @@ export default function UploadPage() {
                     className="input"
                   >
                     <option value="">選択してください</option>
-                    {languages.map(lang => (
-                      <option key={lang.code} value={lang.code}>{lang.name}</option>
+                    {languages.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </option>
                     ))}
                   </select>
                   <p className="text-sm text-gray-500 mt-1">
@@ -239,11 +242,7 @@ export default function UploadPage() {
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => router.push('/books')}
-                  >
+                  <Button type="button" variant="ghost" onClick={() => router.push('/books')}>
                     キャンセル
                   </Button>
                   <Button type="submit" variant="primary" className="flex-1">
@@ -270,7 +269,10 @@ export default function UploadPage() {
           <Card>
             <CardContent className="pt-6">
               <h1 className="text-xl lg:text-2xl font-bold mb-6">アップロード中</h1>
-              <UploadProgress files={uploadFiles} onRemove={isUploading ? undefined : handleRemoveFile} />
+              <UploadProgress
+                files={uploadFiles}
+                onRemove={isUploading ? undefined : handleRemoveFile}
+              />
             </CardContent>
           </Card>
         )}

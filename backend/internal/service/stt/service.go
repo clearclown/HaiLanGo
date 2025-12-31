@@ -15,7 +15,7 @@ import (
 
 // STTService は音声認識・発音評価サービス
 type STTService struct {
-	sttClient      stt.STTClient
+	sttClient      stt.LegacySTTClient
 	audioProcessor *audio.AudioProcessor
 }
 
@@ -25,7 +25,7 @@ func NewSTTService() *STTService {
 	apiKey := os.Getenv("GOOGLE_CLOUD_STT_API_KEY")
 
 	return &STTService{
-		sttClient:      stt.NewSTTClient(useMock, apiKey),
+		sttClient:      stt.NewLegacySTTClient(useMock, apiKey),
 		audioProcessor: audio.NewAudioProcessor(),
 	}
 }
@@ -148,8 +148,8 @@ func parseWords(text string) []models.WordInfo {
 	for i, word := range words {
 		wordInfo := models.WordInfo{
 			Word:       word,
-			StartTime:  float64(i) * 0.5,      // 仮の開始時間
-			EndTime:    float64(i+1) * 0.5,    // 仮の終了時間
+			StartTime:  float64(i) * 0.5,   // 仮の開始時間
+			EndTime:    float64(i+1) * 0.5, // 仮の終了時間
 			Confidence: 1.0,
 		}
 		wordInfos = append(wordInfos, wordInfo)

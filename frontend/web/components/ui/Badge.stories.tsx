@@ -135,9 +135,15 @@ export const AllVariants: Story = {
 export const AllSizes: Story = {
   render: () => (
     <div className="flex items-center gap-3">
-      <Badge size="sm" variant="primary">Small</Badge>
-      <Badge size="md" variant="primary">Medium</Badge>
-      <Badge size="lg" variant="primary">Large</Badge>
+      <Badge size="sm" variant="primary">
+        Small
+      </Badge>
+      <Badge size="md" variant="primary">
+        Medium
+      </Badge>
+      <Badge size="lg" variant="primary">
+        Large
+      </Badge>
     </div>
   ),
 };
@@ -159,10 +165,18 @@ export const LanguageLabels: Story = {
 export const LearningStatus: Story = {
   render: () => (
     <div className="flex flex-wrap gap-2">
-      <Badge variant="success" dot>Completed</Badge>
-      <Badge variant="primary" dot>In Progress</Badge>
-      <Badge variant="warning" dot>Review Due</Badge>
-      <Badge variant="danger" dot>Urgent Review</Badge>
+      <Badge variant="success" dot>
+        Completed
+      </Badge>
+      <Badge variant="primary" dot>
+        In Progress
+      </Badge>
+      <Badge variant="warning" dot>
+        Review Due
+      </Badge>
+      <Badge variant="danger" dot>
+        Urgent Review
+      </Badge>
     </div>
   ),
 };
@@ -197,9 +211,15 @@ export const BookCategories: Story = {
     <div className="p-4 bg-white rounded-xl shadow-soft space-y-4">
       <h3 className="font-semibold text-text-primary">Russian Language 101</h3>
       <BadgeGroup>
-        <Badge variant="primary" size="md">Beginner</Badge>
-        <Badge variant="secondary" size="md">Vocabulary</Badge>
-        <Badge variant="info" size="md">150 pages</Badge>
+        <Badge variant="primary" size="md">
+          Beginner
+        </Badge>
+        <Badge variant="secondary" size="md">
+          Vocabulary
+        </Badge>
+        <Badge variant="info" size="md">
+          150 pages
+        </Badge>
       </BadgeGroup>
     </div>
   ),
@@ -211,11 +231,15 @@ export const BookCategories: Story = {
 // Streak Badge
 export const StreakBadge: Story = {
   render: () => (
-    <Badge variant="warning" size="lg" icon={
-      <svg fill="currentColor" viewBox="0 0 24 24">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.88-2.88 7.19-5 9.88C9.92 16.21 7 11.85 7 9z"/>
-      </svg>
-    }>
+    <Badge
+      variant="warning"
+      size="lg"
+      icon={
+        <svg fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.88-2.88 7.19-5 9.88C9.92 16.21 7 11.85 7 9z" />
+        </svg>
+      }
+    >
       7 Day Streak
     </Badge>
   ),
@@ -229,19 +253,27 @@ export const AchievementBadges: Story = {
       <div className="grid grid-cols-2 gap-3">
         <div className="flex items-center gap-2 p-3 bg-success/5 rounded-lg">
           <span className="text-2xl">100</span>
-          <Badge variant="success" size="sm">Words Learned</Badge>
+          <Badge variant="success" size="sm">
+            Words Learned
+          </Badge>
         </div>
         <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg">
           <span className="text-2xl">85</span>
-          <Badge variant="primary" size="sm">Avg. Score</Badge>
+          <Badge variant="primary" size="sm">
+            Avg. Score
+          </Badge>
         </div>
         <div className="flex items-center gap-2 p-3 bg-warning/5 rounded-lg">
           <span className="text-2xl">7</span>
-          <Badge variant="warning" size="sm">Day Streak</Badge>
+          <Badge variant="warning" size="sm">
+            Day Streak
+          </Badge>
         </div>
         <div className="flex items-center gap-2 p-3 bg-secondary/5 rounded-lg">
           <span className="text-2xl">3</span>
-          <Badge variant="secondary" size="sm">Books</Badge>
+          <Badge variant="secondary" size="sm">
+            Books
+          </Badge>
         </div>
       </div>
     </div>

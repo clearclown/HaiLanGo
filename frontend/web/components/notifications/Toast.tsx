@@ -69,12 +69,7 @@ const Toast = ({ type, title, message, duration = 5000, onClose }: ToastProps) =
           className="text-gray-500 hover:text-gray-700 transition-colors"
           aria-label="Close"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

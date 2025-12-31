@@ -2,11 +2,7 @@
  * 教師モードAPIサービス
  */
 
-import type {
-  TeacherModePlaylist,
-  TeacherModeSettings,
-  PlaybackState,
-} from '@/types/teacher-mode';
+import type { PlaybackState, TeacherModePlaylist, TeacherModeSettings } from '@/types/teacher-mode';
 
 /** APIベースURL */
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -16,7 +12,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public statusCode: number,
-    public response?: unknown,
+    public response?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
@@ -26,10 +22,7 @@ export class ApiError extends Error {
 /**
  * APIリクエストを実行する
  */
-async function fetchApi<T>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -39,7 +32,7 @@ async function fetchApi<T>(
   // 認証トークンがあれば追加
   const token = localStorage.getItem('auth_token');
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
 
   try {
@@ -53,7 +46,7 @@ async function fetchApi<T>(
       throw new ApiError(
         errorData.message || `HTTP Error ${response.status}`,
         response.status,
-        errorData,
+        errorData
       );
     }
 
@@ -62,10 +55,7 @@ async function fetchApi<T>(
     if (error instanceof ApiError) {
       throw error;
     }
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Network error',
-      0,
-    );
+    throw new ApiError(error instanceof Error ? error.message : 'Network error', 0);
   }
 }
 
@@ -83,6 +73,7 @@ interface GeneratePlaylistResponse {
       audioUrl: string;
       duration: number;
       text: string;
+      language: string;
     }>;
   }>;
 }
@@ -104,10 +95,7 @@ export const teacherModeApi = {
   /**
    * プレイリストを取得
    */
-  async fetchPlaylist(
-    bookId: string,
-    settings: TeacherModeSettings,
-  ): Promise<TeacherModePlaylist> {
+  async fetchPlaylist(bookId: string, settings: TeacherModeSettings): Promise<TeacherModePlaylist> {
     const response = await fetchApi<GeneratePlaylistResponse>(
       `/api/v1/books/${bookId}/teacher-mode/generate`,
       {
@@ -119,7 +107,7 @@ export const teacherModeApi = {
             end: 999,
           },
         }),
-      },
+      }
     );
 
     // レスポンスを内部形式に変換
@@ -134,7 +122,7 @@ export const teacherModeApi = {
           audioUrl: seg.audioUrl,
           duration: seg.duration,
           text: seg.text,
-          language: 'en', // TODO: 実際の言語を返すようにバックエンド修正
+          language: seg.language,
         })),
         totalDuration: page.segments.reduce((sum, seg) => sum + seg.duration, 0),
       })),
@@ -148,24 +136,21 @@ export const teacherModeApi = {
    */
   async generateDownloadPackage(
     bookId: string,
-    settings: TeacherModeSettings,
+    settings: TeacherModeSettings
   ): Promise<GenerateDownloadPackageResponse> {
     return fetchApi<GenerateDownloadPackageResponse>(
       `/api/v1/books/${bookId}/teacher-mode/download-package`,
       {
         method: 'POST',
         body: JSON.stringify({ settings }),
-      },
+      }
     );
   },
 
   /**
    * 再生状態を保存
    */
-  async updatePlaybackState(
-    bookId: string,
-    state: Partial<PlaybackState>,
-  ): Promise<void> {
+  async updatePlaybackState(bookId: string, state: Partial<PlaybackState>): Promise<void> {
     await fetchApi(`/api/v1/books/${bookId}/teacher-mode/playback-state`, {
       method: 'PUT',
       body: JSON.stringify({
@@ -181,9 +166,7 @@ export const teacherModeApi = {
    */
   async getPlaybackState(bookId: string): Promise<PlaybackState | null> {
     try {
-      return await fetchApi<PlaybackState>(
-        `/api/v1/books/${bookId}/teacher-mode/playback-state`,
-      );
+      return await fetchApi<PlaybackState>(`/api/v1/books/${bookId}/teacher-mode/playback-state`);
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 404) {
         return null;

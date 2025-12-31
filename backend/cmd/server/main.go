@@ -1,10 +1,15 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/clearclown/HaiLanGo/backend/internal/api/handler"
 	"github.com/clearclown/HaiLanGo/backend/internal/api/router"
@@ -23,6 +28,7 @@ func main() {
 
 	// 環境変数の読み込み
 	port := getEnv("BACKEND_PORT", "8080")
+	host := getEnv("SERVER_HOST", "0.0.0.0")
 	dbURL := getEnv("DATABASE_URL", "postgresql://HaiLanGo:password@localhost:5432/HaiLanGo_dev?sslmode=disable")
 	storagePath := getEnv("STORAGE_PATH", "./storage")
 
@@ -51,12 +57,23 @@ func main() {
 		userRepo = repository.NewUserRepository(db)
 	}
 
-	// RSA鍵ペアの生成（本番環境では事前に生成した鍵を読み込むこと）
-	if err := jwt.GenerateRSAKeys(); err != nil {
-		log.Fatalf("RSA鍵生成エラー: %v", err)
+	// JWT署名鍵の初期化（本番では永続化した鍵を読み込むこと）
+	privPath := os.Getenv("JWT_PRIVATE_KEY_PATH")
+	pubPath := os.Getenv("JWT_PUBLIC_KEY_PATH")
+	if privPath != "" || pubPath != "" {
+		if privPath == "" || pubPath == "" {
+			log.Fatal("JWT_PRIVATE_KEY_PATH と JWT_PUBLIC_KEY_PATH は両方設定してください")
+		}
+		if err := jwt.LoadRSAKeysFromFiles(privPath, pubPath); err != nil {
+			log.Fatalf("JWT鍵読み込みエラー: %v", err)
+		}
+		log.Println("✅ JWT RSA鍵をファイルから読み込みました")
+	} else {
+		if err := jwt.GenerateRSAKeys(); err != nil {
+			log.Fatalf("RSA鍵生成エラー: %v", err)
+		}
+		log.Println("⚠️  JWT RSA鍵を起動時に生成しました（開発向け）。本番では JWT_PRIVATE_KEY_PATH/JWT_PUBLIC_KEY_PATH を設定してください。")
 	}
-
-	log.Println("RSA鍵ペアを生成しました")
 
 	// サービスの初期化
 	authService := service.NewAuthService(userRepo)
@@ -67,14 +84,40 @@ func main() {
 	// ルーターのセットアップ
 	r := router.SetupRouter(db, authHandler, storagePath)
 
-	// サーバー起動
-	addr := fmt.Sprintf("0.0.0.0:%s", port)
+	// サーバー起動（タイムアウト設定で Slowloris 等に耐性を付ける）
+	addr := fmt.Sprintf("%s:%s", host, port)
 	log.Printf("HaiLanGo APIサーバーを起動します: %s", addr)
 	log.Printf("ストレージパス: %s", storagePath)
 
-	if err := r.Run(addr); err != nil {
-		log.Fatalf("サーバー起動エラー: %v", err)
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1MB
 	}
+
+	// サーバーはゴルーチンで起動し、シグナルでgraceful shutdownする
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("サーバー起動エラー: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("🛑 シャットダウンシグナルを受信しました。サーバーを停止します...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("サーバー停止エラー: %v", err)
+	}
+
+	log.Println("✅ サーバーを正常に停止しました")
 }
 
 // getEnv は環境変数を取得し、存在しない場合はデフォルト値を返す

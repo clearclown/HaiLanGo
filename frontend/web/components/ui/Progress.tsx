@@ -58,11 +58,7 @@ export function Progress({
         </div>
       )}
       <div
-        className={cn(
-          'w-full rounded-full overflow-hidden',
-          sizes[size],
-          trackColors[variant]
-        )}
+        className={cn('w-full rounded-full overflow-hidden', sizes[size], trackColors[variant])}
         role="progressbar"
         aria-valuenow={value}
         aria-valuemin={0}
@@ -133,11 +129,7 @@ export function ProgressCircle({
       aria-valuemax={max}
       {...props}
     >
-      <svg
-        className="transform -rotate-90"
-        width={sizeValue}
-        height={sizeValue}
-      >
+      <svg className="transform -rotate-90" width={sizeValue} height={sizeValue}>
         <circle
           cx={sizeValue / 2}
           cy={sizeValue / 2}
@@ -160,12 +152,7 @@ export function ProgressCircle({
         />
       </svg>
       {showLabel && (
-        <span
-          className={cn(
-            'absolute font-semibold text-text-primary tabular-nums',
-            fontSize
-          )}
-        >
+        <span className={cn('absolute font-semibold text-text-primary tabular-nums', fontSize)}>
           {Math.round(percentage)}
         </span>
       )}

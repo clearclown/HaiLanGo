@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { WebSocketProvider } from '@/components/WebSocketProvider';
-import { ToastProvider } from '@/components/notifications/ToastContainer';
-import { NotificationManager } from '@/components/notifications/NotificationManager';
 import { AuthProvider } from '@/components/AuthProvider';
+import { WebSocketProvider } from '@/components/WebSocketProvider';
+import { NotificationManager } from '@/components/notifications/NotificationManager';
+import { ToastProvider } from '@/components/notifications/ToastContainer';
 
 export const metadata: Metadata = {
   title: 'HaiLanGo - AI-Powered Language Learning',

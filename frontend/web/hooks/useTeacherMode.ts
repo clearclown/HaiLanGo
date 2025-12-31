@@ -2,14 +2,10 @@
  * 教師モードカスタムフック
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
 import { teacherModeApi } from '@/services/teacherModeApi';
-import type {
-  TeacherModePlaylist,
-  PlaybackState,
-  TeacherModeSettings,
-} from '@/types/teacher-mode';
+import type { PlaybackState, TeacherModePlaylist, TeacherModeSettings } from '@/types/teacher-mode';
 import { DEFAULT_TEACHER_MODE_SETTINGS } from '@/types/teacher-mode';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** useTeacherModeの戻り値 */
 export interface UseTeacherModeReturn {
@@ -40,7 +36,7 @@ export interface UseTeacherModeReturn {
  */
 export function useTeacherMode(
   bookId: string,
-  settings: TeacherModeSettings = DEFAULT_TEACHER_MODE_SETTINGS as TeacherModeSettings,
+  settings: TeacherModeSettings = DEFAULT_TEACHER_MODE_SETTINGS as TeacherModeSettings
 ): UseTeacherModeReturn {
   // 状態管理
   const [playbackState, setPlaybackState] = useState<PlaybackState>({
@@ -100,54 +96,55 @@ export function useTeacherMode(
   /**
    * 音声を再生
    */
-  const playAudio = useCallback((audioUrl: string, _duration: number) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+  const playAudio = useCallback(
+    (audioUrl: string, _duration: number) => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
 
-    audioRef.current = new Audio(audioUrl);
-    audioRef.current.playbackRate = settings.speed;
-    audioRef.current.play();
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.playbackRate = settings.speed;
+      audioRef.current.play();
 
-    // セグメント再生完了後に次のセグメントへ
-    audioRef.current.onended = () => {
-      // タイマーをセット（ページ間隔）
-      timerRef.current = setTimeout(() => {
-        setPlaybackState((prev) => {
-          const currentPageData = playlist?.pages.find(
-            (p) => p.pageNumber === prev.currentPage,
-          );
+      // セグメント再生完了後に次のセグメントへ
+      audioRef.current.onended = () => {
+        // タイマーをセット（ページ間隔）
+        timerRef.current = setTimeout(() => {
+          setPlaybackState((prev) => {
+            const currentPageData = playlist?.pages.find((p) => p.pageNumber === prev.currentPage);
 
-          if (!currentPageData) return prev;
+            if (!currentPageData) return prev;
 
-          // 次のセグメントがあるか確認
-          if (prev.currentSegmentIndex < currentPageData.segments.length - 1) {
+            // 次のセグメントがあるか確認
+            if (prev.currentSegmentIndex < currentPageData.segments.length - 1) {
+              return {
+                ...prev,
+                currentSegmentIndex: prev.currentSegmentIndex + 1,
+              };
+            }
+
+            // 次のページがあるか確認
+            if (playlist && prev.currentPage < playlist.pages.length) {
+              return {
+                ...prev,
+                currentPage: prev.currentPage + 1,
+                currentSegmentIndex: 0,
+              };
+            }
+
+            // 最後のページなので停止
             return {
               ...prev,
-              currentSegmentIndex: prev.currentSegmentIndex + 1,
-            };
-          }
-
-          // 次のページがあるか確認
-          if (playlist && prev.currentPage < playlist.pages.length) {
-            return {
-              ...prev,
-              currentPage: prev.currentPage + 1,
+              status: 'stopped',
+              currentPage: 0,
               currentSegmentIndex: 0,
             };
-          }
-
-          // 最後のページなので停止
-          return {
-            ...prev,
-            status: 'stopped',
-            currentPage: 0,
-            currentSegmentIndex: 0,
-          };
-        });
-      }, settings.pageInterval * 1000);
-    };
-  }, [playlist, settings.speed, settings.pageInterval]);
+          });
+        }, settings.pageInterval * 1000);
+      };
+    },
+    [playlist, settings.speed, settings.pageInterval]
+  );
 
   /**
    * 現在のセグメントを再生
@@ -157,9 +154,7 @@ export function useTeacherMode(
       return;
     }
 
-    const currentPageData = playlist.pages.find(
-      (p) => p.pageNumber === playbackState.currentPage,
-    );
+    const currentPageData = playlist.pages.find((p) => p.pageNumber === playbackState.currentPage);
 
     if (!currentPageData) {
       return;
@@ -307,7 +302,7 @@ export function useTeacherMode(
         currentSegmentIndex: 0,
       }));
     },
-    [playlist],
+    [playlist]
   );
 
   /**

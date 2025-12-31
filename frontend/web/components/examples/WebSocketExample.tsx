@@ -1,16 +1,8 @@
 'use client';
 
+import { useBookReady, useNotification, useOCRProgress } from '@/hooks/useWebSocket';
+import type { BookReadyPayload, NotificationPayload, OCRProgressPayload } from '@/lib/websocket';
 import { useCallback } from 'react';
-import {
-  useOCRProgress,
-  useBookReady,
-  useNotification,
-} from '@/hooks/useWebSocket';
-import type {
-  OCRProgressPayload,
-  BookReadyPayload,
-  NotificationPayload,
-} from '@/lib/websocket';
 
 /**
  * WebSocket通知を受信する例のコンポーネント
@@ -45,9 +37,7 @@ export function WebSocketExample() {
   return (
     <div className="p-4 border rounded-lg bg-gray-50">
       <h3 className="text-lg font-semibold mb-2">WebSocket通知</h3>
-      <p className="text-sm text-gray-600">
-        WebSocket経由でリアルタイム通知を受信しています。
-      </p>
+      <p className="text-sm text-gray-600">WebSocket経由でリアルタイム通知を受信しています。</p>
       <div className="mt-4 text-xs text-gray-500">
         <p>購読中のイベント:</p>
         <ul className="list-disc list-inside">

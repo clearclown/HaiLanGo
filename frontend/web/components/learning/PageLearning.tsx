@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
 import { usePageLearning } from '@/hooks/usePageLearning';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { AudioPlayer } from './AudioPlayer';
 
 interface PageLearningProps {

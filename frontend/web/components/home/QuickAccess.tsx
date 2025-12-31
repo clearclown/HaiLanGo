@@ -1,11 +1,11 @@
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface QuickAccessProps {
   data: {
-    booksCount: number
-    reviewItemsCount: number
-  }
+    booksCount: number;
+    reviewItemsCount: number;
+  };
 }
 
 export function QuickAccess({ data }: QuickAccessProps) {
@@ -14,10 +14,10 @@ export function QuickAccess({ data }: QuickAccessProps) {
       <Link
         href="/books"
         className={cn(
-          "flex flex-col items-center justify-center rounded-xl border border-border",
-          "bg-white p-6 shadow-sm transition-all",
-          "hover:border-primary hover:shadow-md",
-          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          'flex flex-col items-center justify-center rounded-xl border border-border',
+          'bg-white p-6 shadow-sm transition-all',
+          'hover:border-primary hover:shadow-md',
+          'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
         )}
       >
         <span className="mb-2 text-3xl">📖</span>
@@ -28,10 +28,10 @@ export function QuickAccess({ data }: QuickAccessProps) {
       <Link
         href="/review"
         className={cn(
-          "flex flex-col items-center justify-center rounded-xl border border-border",
-          "bg-white p-6 shadow-sm transition-all",
-          "hover:border-primary hover:shadow-md",
-          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          'flex flex-col items-center justify-center rounded-xl border border-border',
+          'bg-white p-6 shadow-sm transition-all',
+          'hover:border-primary hover:shadow-md',
+          'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
         )}
       >
         <span className="mb-2 text-3xl">🎯</span>
@@ -39,5 +39,5 @@ export function QuickAccess({ data }: QuickAccessProps) {
         <p className="text-sm text-text-secondary">{data.reviewItemsCount}項目</p>
       </Link>
     </div>
-  )
+  );
 }

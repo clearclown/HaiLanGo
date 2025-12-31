@@ -64,12 +64,8 @@ export function Badge({
       )}
       {...props}
     >
-      {dot && (
-        <span className={cn('rounded-full', dotColors[variant], dotSizes[size])} />
-      )}
-      {icon && (
-        <span className={cn('flex-shrink-0', iconSizes[size])}>{icon}</span>
-      )}
+      {dot && <span className={cn('rounded-full', dotColors[variant], dotSizes[size])} />}
+      {icon && <span className={cn('flex-shrink-0', iconSizes[size])}>{icon}</span>}
       {children}
     </span>
   );
@@ -81,9 +77,5 @@ interface BadgeGroupProps {
 }
 
 export function BadgeGroup({ children, className }: BadgeGroupProps) {
-  return (
-    <div className={cn('flex flex-wrap gap-2', className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn('flex flex-wrap gap-2', className)}>{children}</div>;
 }

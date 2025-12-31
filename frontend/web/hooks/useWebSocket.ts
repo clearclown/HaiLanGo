@@ -1,18 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  getWebSocketClient,
-  type MessageType,
-  type MessageHandler,
-  type WebSocketConfig,
-  type OCRProgressPayload,
   type BookReadyPayload,
-  type ReviewReminderPayload,
-  type LearningUpdatePayload,
-  type NotificationPayload,
   type ErrorPayload,
+  type LearningUpdatePayload,
+  type MessageHandler,
+  type MessageType,
+  type NotificationPayload,
+  type OCRProgressPayload,
+  type ReviewReminderPayload,
+  type WebSocketConfig,
+  getWebSocketClient,
 } from '@/lib/websocket';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseWebSocketOptions {
   config?: WebSocketConfig;
@@ -58,14 +58,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   }, []);
 
   // WebSocket接続
-  const connect = useCallback((token: string) => {
-    try {
-      clientRef.current.connect(token);
-      startConnectionCheck();
-    } catch (error) {
-      console.error('Failed to connect WebSocket:', error);
-    }
-  }, [startConnectionCheck]);
+  const connect = useCallback(
+    (token: string) => {
+      try {
+        clientRef.current.connect(token);
+        startConnectionCheck();
+      } catch (error) {
+        console.error('Failed to connect WebSocket:', error);
+      }
+    },
+    [startConnectionCheck]
+  );
 
   // WebSocket切断
   const disconnect = useCallback(() => {
@@ -75,28 +78,28 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   }, [stopConnectionCheck]);
 
   // メッセージハンドラーを購読
-  const subscribe = useCallback(<T = unknown>(
-    type: MessageType,
-    handler: MessageHandler<T>
-  ): (() => void) => {
-    // 購読者を追跡
-    if (!subscribersRef.current.has(type)) {
-      subscribersRef.current.set(type, new Set());
-    }
-    subscribersRef.current.get(type)!.add(handler as MessageHandler);
-
-    // WebSocketクライアントに登録
-    clientRef.current.on(type, handler);
-
-    // クリーンアップ関数を返す
-    return () => {
-      const subscribers = subscribersRef.current.get(type);
-      if (subscribers) {
-        subscribers.delete(handler as MessageHandler);
+  const subscribe = useCallback(
+    <T = unknown>(type: MessageType, handler: MessageHandler<T>): (() => void) => {
+      // 購読者を追跡
+      if (!subscribersRef.current.has(type)) {
+        subscribersRef.current.set(type, new Set());
       }
-      clientRef.current.off(type, handler);
-    };
-  }, []);
+      subscribersRef.current.get(type)?.add(handler as MessageHandler);
+
+      // WebSocketクライアントに登録
+      clientRef.current.on(type, handler);
+
+      // クリーンアップ関数を返す
+      return () => {
+        const subscribers = subscribersRef.current.get(type);
+        if (subscribers) {
+          subscribers.delete(handler as MessageHandler);
+        }
+        clientRef.current.off(type, handler);
+      };
+    },
+    []
+  );
 
   // 自動接続
   useEffect(() => {
@@ -114,7 +117,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
       // 全ての購読を解除
       subscribersRef.current.forEach((handlers, type) => {
-        handlers.forEach(handler => {
+        handlers.forEach((handler) => {
           clientRef.current.off(type, handler);
         });
       });
@@ -162,7 +165,7 @@ export function useWebSocketSubscriptions(
     );
 
     return () => {
-      unsubscribers.forEach(unsubscribe => unsubscribe());
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
   }, [subscriptions, subscribe]);
 }

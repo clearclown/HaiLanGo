@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/clearclown/HaiLanGo/backend/internal/api/middleware"
 	"github.com/clearclown/HaiLanGo/backend/internal/websocket"
 	"github.com/clearclown/HaiLanGo/backend/pkg/jwt"
 	"github.com/gin-gonic/gin"
@@ -16,9 +17,8 @@ var upgrader = gorillaws.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		// 本番環境では適切なオリジンチェックを実装
-		// 開発環境では全てのオリジンを許可
-		return true
+		// 本番環境では適切なオリジンチェックが必須（CSRF/乗っ取り対策）
+		return isWebSocketOriginAllowed(r)
 	},
 }
 
@@ -36,38 +36,53 @@ func NewWebSocketHandler(hub *websocket.Hub) *WebSocketHandler {
 
 // HandleWebSocket はWebSocket接続をアップグレードして処理する
 func (h *WebSocketHandler) HandleWebSocket(c *gin.Context) {
-	// トークンの取得（クエリパラメータまたはヘッダー）
-	token := c.Query("token")
-	if token == "" {
-		// ヘッダーからトークンを取得
-		authHeader := c.GetHeader("Authorization")
-		if authHeader != "" {
-			parts := strings.Split(authHeader, " ")
-			if len(parts) == 2 && parts[0] == "Bearer" {
-				token = parts[1]
+	// まずは AuthRequired ミドルウェアが設定した user_id を優先して使用する
+	var userID uuid.UUID
+	if userIDStr, exists := c.Get("user_id"); exists {
+		s, ok := userIDStr.(string)
+		if !ok || s == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+		parsed, err := uuid.Parse(s)
+		if err != nil {
+			log.Printf("Invalid user ID in context: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+			return
+		}
+		userID = parsed
+	} else {
+		// フォールバック: トークンを自前で抽出・検証（ルーティング構成変更に備えた保険）
+		token := c.Query("token")
+		if token == "" {
+			authHeader := c.GetHeader("Authorization")
+			if authHeader != "" {
+				parts := strings.Split(authHeader, " ")
+				if len(parts) == 2 && parts[0] == "Bearer" {
+					token = parts[1]
+				}
 			}
 		}
-	}
+		if token == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token required"})
+			return
+		}
 
-	if token == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token required"})
-		return
-	}
+		claims, err := jwt.VerifyToken(token)
+		if err != nil {
+			log.Printf("Token verification failed: %v", err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			return
+		}
 
-	// トークンの検証
-	claims, err := jwt.VerifyToken(token)
-	if err != nil {
-		log.Printf("Token verification failed: %v", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
-		return
-	}
-
-	// ユーザーIDをUUIDに変換
-	userID, err := uuid.Parse(claims.UserID)
-	if err != nil {
-		log.Printf("Invalid user ID in token: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
+		parsed, err := uuid.Parse(claims.UserID)
+		if err != nil {
+			log.Printf("Invalid user ID in token: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+			return
+		}
+		userID = parsed
+		log.Printf("WebSocket auth fallback used (no middleware user_id): user=%s", userID)
 	}
 
 	// WebSocket接続へアップグレード
@@ -78,14 +93,7 @@ func (h *WebSocketHandler) HandleWebSocket(c *gin.Context) {
 	}
 
 	// クライアントを作成
-	client := &websocket.Client{
-		// hub, conn, userID は外部からアクセス可能なフィールドとして定義されている必要がある
-		// hub.goで定義されているClient構造体を使用
-	}
-
-	// クライアント構造体の初期化
-	// 注: hub.goのClient構造体のフィールドがエクスポートされていることを前提
-	client = h.createClient(conn, userID)
+	client := h.createClient(conn, userID)
 
 	// Hubにクライアントを登録
 	h.hub.Register(client)
@@ -130,4 +138,14 @@ func (h *WebSocketHandler) GetStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
+}
+
+func isWebSocketOriginAllowed(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if middleware.IsOriginAllowed(origin) {
+		return true
+	}
+
+	log.Printf("WebSocket origin rejected: origin=%q host=%q path=%q", origin, r.Host, r.URL.Path)
+	return false
 }

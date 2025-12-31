@@ -34,16 +34,15 @@ export function UploadProgress({ files, onRemove }: UploadProgressProps) {
     }
   };
 
-  const totalProgress = files.length > 0
-    ? files.reduce((sum, file) => sum + file.progress, 0) / files.length
-    : 0;
+  const totalProgress =
+    files.length > 0 ? files.reduce((sum, file) => sum + file.progress, 0) / files.length : 0;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">アップロード進捗</h3>
         <span className="text-sm text-gray-600">
-          {files.filter(f => f.status === 'completed').length} / {files.length} ファイル完了
+          {files.filter((f) => f.status === 'completed').length} / {files.length} ファイル完了
         </span>
       </div>
 
@@ -63,7 +62,7 @@ export function UploadProgress({ files, onRemove }: UploadProgressProps) {
 
       {/* Individual File Progress */}
       <div className="space-y-2 max-h-96 overflow-y-auto">
-        {files.map(file => (
+        {files.map((file) => (
           <div key={file.id} className="bg-white border rounded-lg p-4">
             <div className="flex items-center gap-3">
               <span className="text-2xl">{getStatusIcon(file.status)}</span>

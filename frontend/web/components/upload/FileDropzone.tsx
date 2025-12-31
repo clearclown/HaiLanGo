@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, DragEvent } from 'react';
+import { type DragEvent, useRef, useState } from 'react';
 
 interface FileDropzoneProps {
   onFilesSelected: (files: File[]) => void;
@@ -57,9 +57,7 @@ export function FileDropzone({
       onDrop={handleDrop}
       onClick={handleClick}
       className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-        isDragging
-          ? 'border-blue-500 bg-blue-50'
-          : 'border-gray-300 hover:border-gray-400'
+        isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
       }`}
     >
       <input
@@ -74,15 +72,9 @@ export function FileDropzone({
       <div className="flex flex-col items-center gap-4">
         <div className="text-6xl">📁</div>
         <div>
-          <p className="text-lg font-medium mb-2">
-            ファイルを選択またはドラッグ&ドロップ
-          </p>
-          <p className="text-sm text-gray-600">
-            PDF / PNG / JPG / HEIC
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            最大{maxFiles}ファイルまで
-          </p>
+          <p className="text-lg font-medium mb-2">ファイルを選択またはドラッグ&ドロップ</p>
+          <p className="text-sm text-gray-600">PDF / PNG / JPG / HEIC</p>
+          <p className="text-xs text-gray-500 mt-1">最大{maxFiles}ファイルまで</p>
         </div>
       </div>
     </div>

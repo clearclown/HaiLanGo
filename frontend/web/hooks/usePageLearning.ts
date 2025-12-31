@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
 import type { PageWithProgress } from '@/lib/api/types';
 import { getPage, markPageCompleted } from '@/services/learningApi';
+import { useEffect, useState } from 'react';
 
 interface UsePageLearningProps {
   bookId: string;

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
 import type { Book } from '@/types/book';
+import { useEffect, useState } from 'react';
 import { BookCard } from './BookCard';
 
 export function BooksList() {
@@ -40,7 +40,7 @@ export function BooksList() {
 
     try {
       await apiClient.books.delete(bookToDelete);
-      setBooks(books.filter(book => book.id !== bookToDelete));
+      setBooks(books.filter((book) => book.id !== bookToDelete));
       setShowDeleteDialog(false);
       setBookToDelete(null);
     } catch (err) {
@@ -83,10 +83,7 @@ export function BooksList() {
         <div className="text-6xl mb-4">📚</div>
         <h3 className="text-xl font-semibold mb-2">まだ本がありません</h3>
         <p className="text-gray-600 mb-6">新しい本を追加して学習を始めましょう！</p>
-        <a
-          href="/upload"
-          className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-        >
+        <a href="/upload" className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
           本を追加
         </a>
       </div>
@@ -96,12 +93,8 @@ export function BooksList() {
   return (
     <>
       <div className="space-y-4">
-        {books.map(book => (
-          <BookCard
-            key={book.id}
-            book={book}
-            onDelete={handleDeleteClick}
-          />
+        {books.map((book) => (
+          <BookCard key={book.id} book={book} onDelete={handleDeleteClick} />
         ))}
       </div>
 
@@ -110,9 +103,7 @@ export function BooksList() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
             <h3 className="text-lg font-semibold mb-4">本を削除しますか？</h3>
-            <p className="text-gray-600 mb-6">
-              学習記録も削除されます。この操作は取り消せません。
-            </p>
+            <p className="text-gray-600 mb-6">学習記録も削除されます。この操作は取り消せません。</p>
             <div className="flex gap-4">
               <button
                 type="button"

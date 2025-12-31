@@ -1,8 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardImage } from './Card';
-import { Button } from './Button';
-import { Progress } from './Progress';
 import { Badge } from './Badge';
+import { Button } from './Button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardImage,
+  CardTitle,
+} from './Card';
+import { Progress } from './Progress';
 
 const meta = {
   title: 'UI/Card',
@@ -118,7 +126,9 @@ export const Highlight: Story = {
           <CardTitle>Highlighted Card</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-text-secondary">A card with gradient background for special content.</p>
+          <p className="text-text-secondary">
+            A card with gradient background for special content.
+          </p>
         </CardContent>
       </>
     ),
@@ -140,8 +150,12 @@ export const WithFooter: Story = {
           <p className="text-text-primary">Main content area of the card.</p>
         </CardContent>
         <CardFooter variant="actions">
-          <Button variant="primary" size="sm">Save</Button>
-          <Button variant="ghost" size="sm">Cancel</Button>
+          <Button variant="primary" size="sm">
+            Save
+          </Button>
+          <Button variant="ghost" size="sm">
+            Cancel
+          </Button>
         </CardFooter>
       </>
     ),
@@ -155,7 +169,13 @@ export const WithHeaderAction: Story = {
     padding: 'md',
     children: (
       <>
-        <CardHeader action={<Button variant="ghost" size="sm">Edit</Button>}>
+        <CardHeader
+          action={
+            <Button variant="ghost" size="sm">
+              Edit
+            </Button>
+          }
+        >
           <CardTitle>Editable Card</CardTitle>
           <CardDescription>Card with action button in header.</CardDescription>
         </CardHeader>
@@ -185,7 +205,9 @@ export const BookCard: Story = {
       </div>
       <CardFooter variant="bordered" className="flex justify-between items-center">
         <span className="text-xs text-text-secondary">Last studied: 2 hours ago</span>
-        <Badge variant="primary" size="sm">45%</Badge>
+        <Badge variant="primary" size="sm">
+          45%
+        </Badge>
       </CardFooter>
     </Card>
   ),
@@ -277,25 +299,39 @@ export const PhraseCard: Story = {
   render: () => (
     <Card variant="bordered" padding="lg" className="w-96">
       <div className="text-center space-y-4">
-        <div className="text-3xl font-medium text-text-primary">
-          Здравствуйте!
-        </div>
-        <div className="text-lg text-text-secondary">
-          Hello! (formal)
-        </div>
+        <div className="text-3xl font-medium text-text-primary">Здравствуйте!</div>
+        <div className="text-lg text-text-secondary">Hello! (formal)</div>
         <div className="pt-4 flex justify-center gap-3">
-          <Button variant="outline" size="md" leftIcon={
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.828-2.828" />
-            </svg>
-          }>
+          <Button
+            variant="outline"
+            size="md"
+            leftIcon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.828-2.828"
+                />
+              </svg>
+            }
+          >
             Listen
           </Button>
-          <Button variant="primary" size="md" leftIcon={
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-          }>
+          <Button
+            variant="primary"
+            size="md"
+            leftIcon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                />
+              </svg>
+            }
+          >
             Speak
           </Button>
         </div>
@@ -332,8 +368,12 @@ export const PronunciationScoreCard: Story = {
           <Progress value={78} variant="primary" size="sm" />
         </div>
         <div className="flex gap-2 pt-2">
-          <Button variant="outline" size="md" className="flex-1">Try Again</Button>
-          <Button variant="primary" size="md" className="flex-1">Next</Button>
+          <Button variant="outline" size="md" className="flex-1">
+            Try Again
+          </Button>
+          <Button variant="primary" size="md" className="flex-1">
+            Next
+          </Button>
         </div>
       </div>
     </Card>

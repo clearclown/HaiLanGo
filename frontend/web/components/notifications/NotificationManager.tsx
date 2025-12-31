@@ -1,20 +1,20 @@
 'use client';
 
-import { useToast } from './ToastContainer';
 import {
-  useOCRProgress,
   useBookReady,
-  useNotification,
-  useReviewReminder,
   useLearningUpdate,
+  useNotification,
+  useOCRProgress,
+  useReviewReminder,
 } from '@/hooks/useWebSocket';
 import type {
-  OCRProgressPayload,
   BookReadyPayload,
-  NotificationPayload,
-  ReviewReminderPayload,
   LearningUpdatePayload,
+  NotificationPayload,
+  OCRProgressPayload,
+  ReviewReminderPayload,
 } from '@/lib/websocket/types';
+import { useToast } from './ToastContainer';
 
 /**
  * NotificationManager
@@ -63,18 +63,12 @@ export const NotificationManager = () => {
 
   // 復習リマインダー通知
   useReviewReminder((payload: ReviewReminderPayload) => {
-    toast.showInfo(
-      '復習の時間です！',
-      `${payload.count}個の復習項目があります`
-    );
+    toast.showInfo('復習の時間です！', `${payload.count}個の復習項目があります`);
   });
 
   // 学習進捗更新通知
   useLearningUpdate((payload: LearningUpdatePayload) => {
-    toast.showSuccess(
-      '学習進捗を更新しました',
-      payload.message || '統計情報が更新されました'
-    );
+    toast.showSuccess('学習進捗を更新しました', payload.message || '統計情報が更新されました');
   });
 
   return null; // このコンポーネントはUIを持たない

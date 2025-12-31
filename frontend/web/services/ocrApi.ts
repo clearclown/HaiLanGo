@@ -60,7 +60,7 @@ export class OCRApiClient {
     };
 
     if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
+      headers.Authorization = `Bearer ${this.authToken}`;
     }
 
     return headers;
@@ -72,7 +72,7 @@ export class OCRApiClient {
   async updateOCRText(
     bookId: string,
     pageId: string,
-    correctedText: string,
+    correctedText: string
   ): Promise<UpdateOCRTextResponse> {
     const response = await fetch(
       `${this.baseUrl}/api/v1/books/${bookId}/pages/${pageId}/ocr-text`,
@@ -80,7 +80,7 @@ export class OCRApiClient {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify({ corrected_text: correctedText } as UpdateOCRTextRequest),
-      },
+      }
     );
 
     if (!response.ok) {
@@ -98,7 +98,7 @@ export class OCRApiClient {
     bookId: string,
     pageId: string,
     limit = 10,
-    offset = 0,
+    offset = 0
   ): Promise<OCRCorrectionHistory> {
     const params = new URLSearchParams({
       limit: limit.toString(),
@@ -110,7 +110,7 @@ export class OCRApiClient {
       {
         method: 'GET',
         headers: this.getHeaders(),
-      },
+      }
     );
 
     if (!response.ok) {

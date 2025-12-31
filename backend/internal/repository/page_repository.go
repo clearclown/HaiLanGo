@@ -26,32 +26,39 @@ type PageRepository interface {
 	UpdateOCRResult(ctx context.Context, pageID uuid.UUID, ocrText string, confidence float64, detectedLang string) error
 }
 
-// MockPageRepository はモックページリポジトリ
-type MockPageRepository struct {
+// InMemoryPageRepository はインメモリページリポジトリ
+type InMemoryPageRepository struct {
 	pages map[uuid.UUID]*models.Page
 }
 
-// NewMockPageRepository は新しいモックページリポジトリを作成する
-func NewMockPageRepository() *MockPageRepository {
-	return &MockPageRepository{
+// NewInMemoryPageRepository は新しいインメモリページリポジトリを作成する
+func NewInMemoryPageRepository() PageRepository {
+	return &InMemoryPageRepository{
+		pages: make(map[uuid.UUID]*models.Page),
+	}
+}
+
+// NewMockPageRepository は新しいモックページリポジトリを作成する（後方互換性のため）
+func NewMockPageRepository() *InMemoryPageRepository {
+	return &InMemoryPageRepository{
 		pages: make(map[uuid.UUID]*models.Page),
 	}
 }
 
 // Create はページを作成する
-func (r *MockPageRepository) Create(ctx context.Context, page *models.Page) error {
+func (r *InMemoryPageRepository) Create(ctx context.Context, page *models.Page) error {
 	r.pages[page.ID] = page
 	return nil
 }
 
 // Update はページを更新する
-func (r *MockPageRepository) Update(ctx context.Context, page *models.Page) error {
+func (r *InMemoryPageRepository) Update(ctx context.Context, page *models.Page) error {
 	r.pages[page.ID] = page
 	return nil
 }
 
 // FindByID はIDでページを取得する
-func (r *MockPageRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Page, error) {
+func (r *InMemoryPageRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Page, error) {
 	page, ok := r.pages[id]
 	if !ok {
 		return nil, nil
@@ -60,7 +67,7 @@ func (r *MockPageRepository) FindByID(ctx context.Context, id uuid.UUID) (*model
 }
 
 // FindByBookID は書籍IDで全ページを取得する
-func (r *MockPageRepository) FindByBookID(ctx context.Context, bookID uuid.UUID) ([]*models.Page, error) {
+func (r *InMemoryPageRepository) FindByBookID(ctx context.Context, bookID uuid.UUID) ([]*models.Page, error) {
 	var pages []*models.Page
 	for _, page := range r.pages {
 		if page.BookID == bookID {
@@ -71,7 +78,7 @@ func (r *MockPageRepository) FindByBookID(ctx context.Context, bookID uuid.UUID)
 }
 
 // UpdateOCRResult はOCR結果を更新する
-func (r *MockPageRepository) UpdateOCRResult(ctx context.Context, pageID uuid.UUID, ocrText string, confidence float64, detectedLang string) error {
+func (r *InMemoryPageRepository) UpdateOCRResult(ctx context.Context, pageID uuid.UUID, ocrText string, confidence float64, detectedLang string) error {
 	page, ok := r.pages[pageID]
 	if !ok {
 		return nil

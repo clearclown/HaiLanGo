@@ -112,6 +112,15 @@ cd HaiLanGo
 cp .env.example .env
 # Edit .env to add API keys, or leave USE_MOCK_APIS=true for testing
 
+# Production hardening (recommended)
+# - CORS_ALLOWED_ORIGINS: comma-separated allowed frontend origins
+#   (e.g. http://localhost:3000,https://app.hailango.com)
+# - JWT_PRIVATE_KEY_PATH / JWT_PUBLIC_KEY_PATH: PEM RSA key paths for JWT signing
+#   (if unset, keys are generated at startup and tokens are invalidated on restart)
+# - X-Request-ID: returned on every API response (use for log correlation)
+# - ALLOW_TOKEN_QUERY_PARAM=true: dev-only escape hatch to allow ?token=... on non-WebSocket requests
+#   (not recommended: query tokens leak easily via logs/history/Referer)
+
 # 3. Start Backend
 cd backend
 go mod download

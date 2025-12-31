@@ -1,8 +1,8 @@
 'use client';
 
-import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { Header } from './Header';
+import { Sidebar } from './Sidebar';
 
 interface AppLayoutProps {
   children: React.ReactNode;

@@ -71,8 +71,8 @@ func (h *Handler) GeneratePlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// bookIDをURLから取得（実際のルーターで処理）
-	bookID := "test-book" // TODO: ルーターから取得
+	// bookIDをURLから取得
+	bookID := extractBookIDFromPath(r.URL.Path)
 
 	// プレイリストを生成
 	playlist, err := h.service.GeneratePlaylist(r.Context(), bookID, req.Settings)
@@ -144,7 +144,7 @@ func (h *Handler) GenerateDownloadPackage(w http.ResponseWriter, r *http.Request
 	}
 
 	// bookIDをURLから取得
-	bookID := "test-book" // TODO: ルーターから取得
+	bookID := extractBookIDFromPath(r.URL.Path)
 
 	// ダウンロードパッケージを生成
 	pkg, err := h.service.GenerateDownloadPackage(r.Context(), bookID, req.Settings)
@@ -200,8 +200,20 @@ func (h *Handler) UpdatePlaybackState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 再生状態を保存（実際はRedisやデータベースに保存）
-	// TODO: 実装
+	// bookIDをURLから取得
+	bookID := extractBookIDFromPath(r.URL.Path)
+
+	// 再生状態を保存
+	state := &teachermode.PlaybackState{
+		BookID:              bookID,
+		CurrentPage:         req.CurrentPage,
+		CurrentSegmentIndex: req.CurrentSegmentIndex,
+		ElapsedTime:         req.ElapsedTime,
+	}
+	if err := h.service.UpdatePlaybackState(r.Context(), state); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	// レスポンスを返す
 	response := UpdatePlaybackStateResponse{

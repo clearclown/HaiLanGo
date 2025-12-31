@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test.describe('Upload Page Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -76,11 +76,11 @@ test.describe('Upload Page Tests', () => {
 
   test('should show progress steps correctly', async ({ page }) => {
     // ステップ1が現在アクティブであることを確認
-    const step1 = page.locator('text=メタデータ').locator('..');
+    // アクティブなステップはprimaryカラー、それ以外はグレー
+    const step1Label = page.getByText('メタデータ').first();
+    const step1Classes = await step1Label.getAttribute('class');
 
-    // ステップインジケーターの色やスタイルを確認
-    // アクティブなステップは青色、それ以外はグレー
-    const step1Classes = await step1.getAttribute('class');
-    expect(step1Classes).toContain('blue');
+    // アクティブなステップは text-primary クラスを持つ
+    expect(step1Classes).toContain('text-primary');
   });
 });
