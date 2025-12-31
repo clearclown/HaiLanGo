@@ -88,7 +88,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const LoadingSpinner = () => (
-      <svg className={cn('animate-spin', iconSizes[size])} fill="none" viewBox="0 0 24 24">
+      <svg
+        aria-hidden="true"
+        className={cn('animate-spin', iconSizes[size])}
+        fill="none"
+        viewBox="0 0 24 24"
+      >
         <circle
           className="opacity-25"
           cx="12"

@@ -26,6 +26,7 @@ export const PageLearning: React.FC<PageLearningProps> = ({
   });
   const [studyStartTime, setStudyStartTime] = useState<number>(Date.now());
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally only reset on pageNumber change
   useEffect(() => {
     // ページが変わるたびに学習開始時刻をリセット
     setStudyStartTime(Date.now());
@@ -120,6 +121,7 @@ export const PageLearning: React.FC<PageLearningProps> = ({
       <footer className="bg-white shadow-lg p-4">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <button
+            type="button"
             onClick={handlePrevPage}
             disabled={pageNumber === 1}
             className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50"
@@ -129,6 +131,7 @@ export const PageLearning: React.FC<PageLearningProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={handleMarkCompleted}
             className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
             aria-label="学習完了"
@@ -137,6 +140,7 @@ export const PageLearning: React.FC<PageLearningProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={handleNextPage}
             className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
             aria-label="次へ"

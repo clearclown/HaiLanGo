@@ -32,6 +32,6 @@
     }
   },
   "files": {
-    "ignore": [".next", "node_modules", "dist", ".turbo"]
+    "ignore": [".next", "node_modules", "dist", ".turbo", "test-results", "playwright-report"]
   }
 }

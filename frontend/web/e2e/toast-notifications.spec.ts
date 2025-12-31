@@ -6,6 +6,8 @@ import { expect, test } from './fixtures';
  *
  * This test suite verifies the toast notification system integrated with WebSocket.
  * Tests use window.__TEST_TOAST__ API exposed by ToastProvider for E2E testing.
+ *
+ * Note: window.__TEST_TOAST__ requires 'any' type as it's a test-only global augmentation.
  */
 
 test.describe('Toast Notification System', () => {
@@ -35,6 +37,7 @@ test.describe('Toast Notification System', () => {
     // Wait for toast system to initialize
     await page.waitForFunction(
       () => {
+        // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
         return typeof (window as any).__TEST_TOAST__ !== 'undefined';
       },
       { timeout: 5000 }
@@ -44,6 +47,7 @@ test.describe('Toast Notification System', () => {
   test('should render toast notification when triggered', async ({ page }) => {
     // Trigger a notification using the test API
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showInfo('Test Notification', 'This is a test message');
     });
 
@@ -66,6 +70,7 @@ test.describe('Toast Notification System', () => {
 
     for (const { type, icon } of types) {
       await page.evaluate((notifType) => {
+        // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
         const toast = (window as any).__TEST_TOAST__;
         const methodName =
           `show${notifType.charAt(0).toUpperCase()}${notifType.slice(1)}` as keyof typeof toast;
@@ -87,6 +92,7 @@ test.describe('Toast Notification System', () => {
 
   test('should auto-dismiss toast after default duration (5 seconds)', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showInfo(
         'Auto-dismiss Test',
         'This should disappear in 5 seconds'
@@ -106,6 +112,7 @@ test.describe('Toast Notification System', () => {
   test('should handle multiple toast notifications', async ({ page }) => {
     // Trigger 3 notifications
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       const toast = (window as any).__TEST_TOAST__;
       toast.showInfo('Notification 1', 'Message 1');
       toast.showInfo('Notification 2', 'Message 2');
@@ -124,6 +131,7 @@ test.describe('Toast Notification System', () => {
 
   test('should close toast when close button is clicked', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showInfo('Closeable Toast', 'Click the X to close');
     });
 
@@ -160,12 +168,14 @@ test.describe('Toast Notification Edge Cases', () => {
     });
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
     await page.waitForFunction(() => typeof (window as any).__TEST_TOAST__ !== 'undefined');
   });
 
   test('should handle rapid consecutive notifications', async ({ page }) => {
     // Trigger 10 notifications rapidly
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       const toast = (window as any).__TEST_TOAST__;
       for (let i = 1; i <= 10; i++) {
         toast.showInfo(`Rapid Notification ${i}`, `Message ${i}`);
@@ -184,6 +194,7 @@ test.describe('Toast Notification Edge Cases', () => {
     const longMessage = 'A'.repeat(500);
 
     await page.evaluate((msg: string) => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showInfo('Long Message Test', msg);
     }, longMessage);
 
@@ -200,6 +211,7 @@ test.describe('Toast Notification Edge Cases', () => {
 
   test('should handle notifications with missing optional fields', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showInfo('Minimal Notification');
     });
 
@@ -212,6 +224,7 @@ test.describe('Toast Notification Edge Cases', () => {
 
   test('should position toasts in top-right corner', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showInfo('Position Test', 'Checking position');
     });
 
@@ -255,11 +268,13 @@ test.describe('Toast Accessibility', () => {
     });
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
     await page.waitForFunction(() => typeof (window as any).__TEST_TOAST__ !== 'undefined');
   });
 
   test('should have proper ARIA role for accessibility', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showInfo('Accessibility Test', 'Testing ARIA attributes');
     });
 
@@ -273,6 +288,7 @@ test.describe('Toast Accessibility', () => {
 
   test('should be keyboard accessible (close button focusable)', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showInfo('Keyboard Test', 'Testing keyboard navigation');
     });
 
@@ -315,11 +331,13 @@ test.describe('Integration with Toast Types', () => {
     });
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
     await page.waitForFunction(() => typeof (window as any).__TEST_TOAST__ !== 'undefined');
   });
 
   test('should use showInfo correctly', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showInfo('Info Title', 'Info message');
     });
 
@@ -331,6 +349,7 @@ test.describe('Integration with Toast Types', () => {
 
   test('should use showSuccess correctly', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showSuccess('Success Title', 'Success message');
     });
 
@@ -342,6 +361,7 @@ test.describe('Integration with Toast Types', () => {
 
   test('should use showWarning correctly', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showWarning('Warning Title', 'Warning message');
     });
 
@@ -353,6 +373,7 @@ test.describe('Integration with Toast Types', () => {
 
   test('should use showError correctly', async ({ page }) => {
     await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test window augmentation
       (window as any).__TEST_TOAST__.showError('Error Title', 'Error message');
     });
 

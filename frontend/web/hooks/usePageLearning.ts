@@ -41,6 +41,7 @@ export function usePageLearning({
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchPage is stable and only needs to run on bookId/pageNumber change
   useEffect(() => {
     fetchPage();
   }, [bookId, pageNumber]);

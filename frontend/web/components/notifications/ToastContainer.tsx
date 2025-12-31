@@ -79,6 +79,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
   // Expose toast methods to window for E2E testing
   useEffect(() => {
     if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test utility requires window augmentation
       (window as any).__TEST_TOAST__ = {
         showInfo,
         showSuccess,
@@ -90,6 +91,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
     }
     return () => {
       if (typeof window !== 'undefined') {
+        // biome-ignore lint/suspicious/noExplicitAny: E2E test utility cleanup
         (window as any).__TEST_TOAST__ = undefined;
       }
     };

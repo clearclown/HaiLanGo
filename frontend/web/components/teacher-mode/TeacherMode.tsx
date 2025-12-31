@@ -82,10 +82,10 @@ export function TeacherMode({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div role="status" className="flex flex-col items-center gap-4">
+        <output className="flex flex-col items-center gap-4" aria-live="polite">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500" />
           <p className="text-gray-600">プレイリストを読み込み中...</p>
-        </div>
+        </output>
       </div>
     );
   }
@@ -140,7 +140,13 @@ export function TeacherMode({
             onClick={() => setIsSettingsOpen(true)}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-full"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -209,6 +215,7 @@ export function TeacherMode({
             className="p-3 rounded-full bg-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             <svg
+              aria-hidden="true"
               className="w-6 h-6 text-gray-700"
               fill="none"
               stroke="currentColor"
@@ -230,7 +237,7 @@ export function TeacherMode({
               onClick={play}
               className="p-6 rounded-full bg-blue-500 text-white shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all"
             >
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
               <span className="sr-only">開始</span>
@@ -243,7 +250,7 @@ export function TeacherMode({
               onClick={pause}
               className="p-6 rounded-full bg-blue-500 text-white shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all"
             >
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
               </svg>
               <span className="sr-only">一時停止</span>
@@ -256,7 +263,7 @@ export function TeacherMode({
               onClick={play}
               className="p-6 rounded-full bg-blue-500 text-white shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all"
             >
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
               <span className="sr-only">再開</span>
@@ -272,6 +279,7 @@ export function TeacherMode({
             className="p-3 rounded-full bg-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             <svg
+              aria-hidden="true"
               className="w-6 h-6 text-gray-700"
               fill="none"
               stroke="currentColor"

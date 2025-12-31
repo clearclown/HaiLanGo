@@ -90,6 +90,7 @@ export default function StatsPage() {
         <div className="mb-6 flex gap-2">
           {(['week', 'month', 'year'] as const).map((p) => (
             <button
+              type="button"
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -137,12 +138,12 @@ export default function StatsPage() {
           <h2 className="text-xl font-bold mb-4">今週の学習時間</h2>
           <div className="flex items-end justify-between h-64 gap-2">
             {learningTime.data.length > 0 ? (
-              learningTime.data.map((item, index) => {
+              learningTime.data.map((item) => {
                 const maxMinutes = Math.max(...learningTime.data.map((d) => d.minutes), 1);
                 const heightPercent = (item.minutes / maxMinutes) * 100;
 
                 return (
-                  <div key={index} className="flex-1 flex flex-col items-center">
+                  <div key={item.date} className="flex-1 flex flex-col items-center">
                     <div
                       className="w-full bg-blue-600 rounded-t transition-all hover:bg-blue-700"
                       style={{
@@ -187,9 +188,9 @@ export default function StatsPage() {
                 <div>
                   <h3 className="font-semibold mb-3 text-gray-700">単語</h3>
                   <div className="space-y-2">
-                    {weakPoints.weakWords.map((item, index) => (
+                    {weakPoints.weakWords.map((item) => (
                       <WeakPointItem
-                        key={index}
+                        key={`${item.word}-${item.language}`}
                         text={item.word || ''}
                         language={item.language}
                         attempts={item.attempts}
@@ -203,9 +204,9 @@ export default function StatsPage() {
                 <div>
                   <h3 className="font-semibold mb-3 text-gray-700">フレーズ</h3>
                   <div className="space-y-2">
-                    {weakPoints.weakPhrases.map((item, index) => (
+                    {weakPoints.weakPhrases.map((item) => (
                       <WeakPointItem
-                        key={index}
+                        key={`${item.phrase}-${item.language}`}
                         text={item.phrase || ''}
                         language={item.language}
                         attempts={item.attempts}

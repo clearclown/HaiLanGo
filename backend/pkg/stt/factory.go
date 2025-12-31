@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/clearclown/HaiLanGo/backend/pkg/llm"
 )
 
 // NewSTTClient は環境変数に基づいて適切なSTTクライアントを返す
@@ -55,8 +57,7 @@ func NewSTTClient() (STTClient, error) {
 			// APIキーがない場合は自動的にモックを使用
 			return NewMockSTTClientNew(), nil
 		}
-		// TODO: GoogleSTTClient（新インターフェース対応）を実装
-		return NewMockSTTClientNew(), nil
+		return NewGoogleSTTClient(apiKey), nil
 
 	case ProviderDeepgram:
 		apiKey := os.Getenv("DEEPGRAM_API_KEY")
@@ -95,12 +96,19 @@ func NewPronunciationEvaluator() (PronunciationEvaluator, error) {
 	switch method {
 	case EvalMethodWhisperLLM:
 		// Whisper + LLMによる評価
-		openaiKey := os.Getenv("OPENAI_API_KEY")
-		if openaiKey == "" {
+		// STTクライアントを取得
+		sttClient, err := NewSTTClient()
+		if err != nil {
 			return NewMockPronunciationEvaluator(), nil
 		}
-		// TODO: WhisperLLMEvaluator を実装
-		return NewMockPronunciationEvaluator(), nil
+
+		// LLMクライアントを取得
+		llmClient, err := llm.NewLLMClient()
+		if err != nil {
+			return NewMockPronunciationEvaluator(), nil
+		}
+
+		return NewWhisperLLMEvaluator(sttClient, llmClient), nil
 
 	case EvalMethodAzureNative:
 		// Azure Speech発音評価

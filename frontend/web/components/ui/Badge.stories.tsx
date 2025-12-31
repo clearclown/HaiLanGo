@@ -103,7 +103,7 @@ export const WithDot: Story = {
 
 // With Icon
 const CheckIcon = () => (
-  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
@@ -235,7 +235,7 @@ export const StreakBadge: Story = {
       variant="warning"
       size="lg"
       icon={
-        <svg fill="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.88-2.88 7.19-5 9.88C9.92 16.21 7 11.85 7 9z" />
         </svg>
       }

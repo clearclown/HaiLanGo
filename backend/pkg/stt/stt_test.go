@@ -36,7 +36,7 @@ func TestGoogleSTTClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := NewGoogleSTTClient()
+			client := NewGoogleSTTClient("") // Empty API key will use mock
 			result, err := client.Recognize(ctx, tt.audioData, tt.lang)
 
 			if tt.expectError {

@@ -118,6 +118,7 @@ export const teacherModeApi = {
         pageNumber: page.pageNumber,
         segments: page.segments.map((seg, idx) => ({
           id: `segment-${page.pageNumber}-${idx}`,
+          // biome-ignore lint/suspicious/noExplicitAny: API response type conversion
           type: seg.type as any,
           audioUrl: seg.audioUrl,
           duration: seg.duration,

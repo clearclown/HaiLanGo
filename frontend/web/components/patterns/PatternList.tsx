@@ -85,23 +85,17 @@ export function PatternList({
       {/* Pattern cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sortedPatterns.map((pattern) => (
-          <div
+          <button
+            type="button"
             key={pattern.id}
             data-testid="pattern-card"
             onClick={() => onPatternClick?.(pattern)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                onPatternClick?.(pattern);
-              }
-            }}
             className={`
               p-6 rounded-lg border-2 border-gray-200
               hover:border-blue-400 hover:shadow-lg
-              transition-all cursor-pointer
+              transition-all cursor-pointer text-left
               ${onPatternClick ? 'hover:scale-105' : ''}
             `}
-            role="button"
-            tabIndex={0}
           >
             <div className="flex items-start justify-between mb-3">
               <span
@@ -119,7 +113,7 @@ export function PatternList({
               <p className="text-lg font-semibold text-gray-900">{pattern.pattern}</p>
               <p className="text-base text-gray-600">{pattern.translation}</p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

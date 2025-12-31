@@ -89,7 +89,7 @@ export const Password: Story = {
 
 // With Left Icon
 const SearchIcon = () => (
-  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -147,7 +147,7 @@ export const LoginForm: Story = {
         placeholder="your@email.com"
         type="email"
         leftIcon={
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -166,9 +166,9 @@ export const LoginForm: Story = {
           />
           <span className="text-sm text-text-secondary">Remember me</span>
         </label>
-        <a href="#" className="text-sm text-primary hover:underline">
+        <button type="button" className="text-sm text-primary hover:underline">
           Forgot password?
-        </a>
+        </button>
       </div>
       <Button variant="primary" fullWidth>
         Sign In
@@ -209,10 +209,16 @@ export const BookTitleInput: Story = {
       />
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">
+          <label
+            htmlFor="target-language"
+            className="block text-sm font-medium text-text-primary mb-2"
+          >
             Target Language
           </label>
-          <select className="w-full h-12 px-4 rounded-lg border border-border bg-white text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none">
+          <select
+            id="target-language"
+            className="w-full h-12 px-4 rounded-lg border border-border bg-white text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+          >
             <option>Russian</option>
             <option>Arabic</option>
             <option>Persian</option>
@@ -220,10 +226,16 @@ export const BookTitleInput: Story = {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">
+          <label
+            htmlFor="native-language"
+            className="block text-sm font-medium text-text-primary mb-2"
+          >
             Native Language
           </label>
-          <select className="w-full h-12 px-4 rounded-lg border border-border bg-white text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none">
+          <select
+            id="native-language"
+            className="w-full h-12 px-4 rounded-lg border border-border bg-white text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+          >
             <option>Japanese</option>
             <option>English</option>
             <option>Chinese</option>

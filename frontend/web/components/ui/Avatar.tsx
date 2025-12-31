@@ -130,6 +130,7 @@ export function AvatarGroup({ children, max = 5, size = 'md', className }: Avata
     <div className={cn('flex items-center', className)}>
       {visibleAvatars.map((child, index) => (
         <div
+          // biome-ignore lint/suspicious/noArrayIndexKey: React children don't have stable keys
           key={index}
           className={cn(index > 0 && overlapSizes[size], 'ring-2 ring-white rounded-full')}
         >

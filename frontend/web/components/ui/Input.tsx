@@ -61,9 +61,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         onClick={() => setShowPassword(!showPassword)}
         className="text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
         tabIndex={-1}
+        aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
       >
         {showPassword ? (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            aria-hidden="true"
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -72,7 +79,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             />
           </svg>
         ) : (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            aria-hidden="true"
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -129,6 +142,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {error && (
           <p className="mt-2 text-sm text-error flex items-center gap-1.5">
             <svg
+              aria-hidden="true"
               className="w-4 h-4 flex-shrink-0"
               fill="none"
               viewBox="0 0 24 24"
@@ -199,6 +213,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {error && (
           <p className="mt-2 text-sm text-error flex items-center gap-1.5">
             <svg
+              aria-hidden="true"
               className="w-4 h-4 flex-shrink-0"
               fill="none"
               viewBox="0 0 24 24"

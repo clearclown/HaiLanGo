@@ -57,6 +57,7 @@ export function Progress({
           </span>
         </div>
       )}
+      {/* biome-ignore lint/a11y/useFocusableInteractive: progressbar is display-only, not interactive */}
       <div
         className={cn('w-full rounded-full overflow-hidden', sizes[size], trackColors[variant])}
         role="progressbar"
@@ -120,6 +121,7 @@ export function ProgressCircle({
   const offset = circumference - (percentage / 100) * circumference;
 
   return (
+    // biome-ignore lint/a11y/useFocusableInteractive: progressbar is display-only, not interactive
     <div
       className={cn('relative inline-flex items-center justify-center', className)}
       style={{ width: sizeValue, height: sizeValue }}
@@ -129,7 +131,7 @@ export function ProgressCircle({
       aria-valuemax={max}
       {...props}
     >
-      <svg className="transform -rotate-90" width={sizeValue} height={sizeValue}>
+      <svg aria-hidden="true" className="transform -rotate-90" width={sizeValue} height={sizeValue}>
         <circle
           cx={sizeValue / 2}
           cy={sizeValue / 2}

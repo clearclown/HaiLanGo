@@ -19,5 +19,5 @@ func NewLegacySTTClient(useMock bool, apiKey string) LegacySTTClient {
 	if useMock || apiKey == "" {
 		return NewMockSTTClient()
 	}
-	return NewGoogleSTTClient()
+	return NewGoogleSTTClient(apiKey)
 }

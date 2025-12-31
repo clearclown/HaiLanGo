@@ -205,13 +205,13 @@ export class WebSocketClient {
   private dispatchMessage(message: Message): void {
     const handlers = this.listeners.get(message.type);
     if (handlers && handlers.size > 0) {
-      handlers.forEach((handler) => {
+      for (const handler of handlers) {
         try {
           handler(message.payload);
         } catch (error) {
           console.error(`Error in message handler for type ${message.type}:`, error);
         }
-      });
+      }
     } else {
       console.log('No handlers registered for message type:', message.type);
     }

@@ -206,7 +206,7 @@ test.describe('教師モード', () => {
 
     await page.goto('/books/test-book/teacher-mode');
 
-    // ローディングスピナーが表示される
-    await expect(page.locator('[role="status"]')).toBeVisible();
+    // ローディングスピナーが表示される（output要素は暗黙的にstatus roleを持つ）
+    await expect(page.locator('output[aria-live="polite"]')).toBeVisible();
   });
 });

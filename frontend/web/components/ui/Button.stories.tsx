@@ -161,7 +161,7 @@ export const FullWidth: Story = {
 
 // With Left Icon
 const PlayIcon = () => (
-  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -188,7 +188,7 @@ export const WithLeftIcon: Story = {
 
 // With Right Icon
 const ArrowIcon = () => (
-  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -257,7 +257,7 @@ export const LearningActions: Story = {
 
 // Pronunciation Practice Buttons
 const MicIcon = () => (
-  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"

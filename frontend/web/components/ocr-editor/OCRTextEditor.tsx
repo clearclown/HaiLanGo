@@ -133,9 +133,9 @@ export function OCRTextEditor({
       )}
 
       {success && (
-        <div className="success-message" role="status" data-testid="success-message">
+        <output className="success-message" data-testid="success-message">
           ✓ Changes saved successfully
-        </div>
+        </output>
       )}
 
       <div className="editor-actions">

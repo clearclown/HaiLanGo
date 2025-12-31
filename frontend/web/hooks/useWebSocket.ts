@@ -116,11 +116,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       stopConnectionCheck();
 
       // 全ての購読を解除
-      subscribersRef.current.forEach((handlers, type) => {
-        handlers.forEach((handler) => {
+      for (const [type, handlers] of subscribersRef.current) {
+        for (const handler of handlers) {
           clientRef.current.off(type, handler);
-        });
-      });
+        }
+      }
       subscribersRef.current.clear();
     };
   }, [autoConnect, connect, stopConnectionCheck]);
@@ -165,7 +165,9 @@ export function useWebSocketSubscriptions(
     );
 
     return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
+      for (const unsubscribe of unsubscribers) {
+        unsubscribe();
+      }
     };
   }, [subscriptions, subscribe]);
 }

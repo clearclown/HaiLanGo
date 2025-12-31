@@ -48,8 +48,7 @@ func NewTTSClient() (TTSClient, error) {
 			// APIキーがない場合は自動的にモックを使用
 			return NewMockTTSClient(), nil
 		}
-		// TODO: GoogleTTSClient（新インターフェース対応）を実装
-		return NewMockTTSClient(), nil
+		return NewGoogleTTSClient(apiKey), nil
 
 	case ProviderElevenLabs:
 		apiKey := os.Getenv("ELEVENLABS_API_KEY")
@@ -61,8 +60,7 @@ func NewTTSClient() (TTSClient, error) {
 
 	case ProviderEdgeTTS:
 		// edge-ttsは無料、APIキー不要
-		// TODO: EdgeTTSClient を実装
-		return NewMockTTSClient(), nil
+		return NewEdgeTTSClient(), nil
 
 	case ProviderCoquiTTS:
 		// Coqui TTSはオープンソース

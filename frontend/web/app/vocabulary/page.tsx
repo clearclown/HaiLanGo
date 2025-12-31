@@ -33,6 +33,7 @@ export default function VocabularyPage() {
     example: '',
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reload when sort changes
   useEffect(() => {
     loadVocabulary();
   }, [sortBy, sortOrder]);
@@ -244,8 +245,14 @@ export default function VocabularyPage() {
                   placeholder="例: /həˈloʊ/"
                 />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">言語</label>
+                  <label
+                    htmlFor="language-select"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    言語
+                  </label>
                   <select
+                    id="language-select"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     value={newWord.language}
                     onChange={(e) => setNewWord({ ...newWord, language: e.target.value })}
@@ -302,6 +309,7 @@ export default function VocabularyPage() {
                 />
               </div>
               <select
+                aria-label="並び替え項目"
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 value={sortBy}
                 onChange={(e) =>
@@ -313,6 +321,7 @@ export default function VocabularyPage() {
                 <option value="review_count">復習回数順</option>
               </select>
               <select
+                aria-label="並び替え順序"
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}

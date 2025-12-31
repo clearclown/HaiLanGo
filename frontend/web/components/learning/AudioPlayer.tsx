@@ -36,6 +36,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
         </div>
         <div className="relative">
           <button
+            type="button"
             onClick={() => setShowSpeedMenu(!showSpeedMenu)}
             className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
             aria-label={`${speed}x`}
@@ -46,6 +47,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
             <div className="absolute right-0 mt-2 bg-white border rounded shadow-lg z-10">
               {speeds.map((s) => (
                 <button
+                  type="button"
                   key={s}
                   onClick={() => handleSpeedChange(s)}
                   className="block w-full px-4 py-2 text-left hover:bg-gray-100"
@@ -61,6 +63,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
 
       <div className="flex items-center space-x-4">
         <button
+          type="button"
           onClick={togglePlayPause}
           className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-blue-500 text-white rounded-full hover:bg-blue-600"
           aria-label={playing ? '一時停止' : '再生'}
@@ -78,6 +81,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
         </div>
 
         <button
+          type="button"
           className="flex-shrink-0 px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
           aria-label="繰り返し"
         >

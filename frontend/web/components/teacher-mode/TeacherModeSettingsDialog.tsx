@@ -83,10 +83,9 @@ export function TeacherModeSettingsDialog({
       />
 
       {/* ダイアログ */}
-      <div
-        className="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto"
-        role="dialog"
-        aria-modal="true"
+      <dialog
+        open
+        className="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto m-0"
         aria-labelledby="settings-title"
       >
         {/* ヘッダー */}
@@ -100,7 +99,13 @@ export function TeacherModeSettingsDialog({
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="閉じる"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -114,8 +119,8 @@ export function TeacherModeSettingsDialog({
         {/* コンテンツ */}
         <div className="p-6 space-y-6">
           {/* 再生速度 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">再生速度</label>
+          <fieldset>
+            <legend className="block text-sm font-medium text-gray-700 mb-2">再生速度</legend>
             <div className="flex flex-wrap gap-2">
               {SPEED_OPTIONS.map((option) => (
                 <button
@@ -132,14 +137,15 @@ export function TeacherModeSettingsDialog({
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* ページ間隔 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="page-interval" className="block text-sm font-medium text-gray-700 mb-2">
               ページ間隔: {localSettings.pageInterval}秒
             </label>
             <input
+              id="page-interval"
               type="range"
               min={0}
               max={30}
@@ -159,8 +165,8 @@ export function TeacherModeSettingsDialog({
           </div>
 
           {/* リピート回数 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">リピート回数</label>
+          <fieldset>
+            <legend className="block text-sm font-medium text-gray-700 mb-2">リピート回数</legend>
             <div className="flex gap-2">
               {REPEAT_OPTIONS.map((option) => (
                 <button
@@ -179,11 +185,11 @@ export function TeacherModeSettingsDialog({
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* 音質 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">音質</label>
+          <fieldset>
+            <legend className="block text-sm font-medium text-gray-700 mb-2">音質</legend>
             <div className="flex gap-2">
               {QUALITY_OPTIONS.map((option) => (
                 <button
@@ -203,11 +209,11 @@ export function TeacherModeSettingsDialog({
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* 学習内容 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">学習内容</label>
+          <fieldset>
+            <legend className="block text-sm font-medium text-gray-700 mb-3">学習内容</legend>
             <div className="space-y-3">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
@@ -259,7 +265,7 @@ export function TeacherModeSettingsDialog({
                 <span className="text-gray-700">例文を含む</span>
               </label>
             </div>
-          </div>
+          </fieldset>
         </div>
 
         {/* フッター */}
@@ -279,7 +285,7 @@ export function TeacherModeSettingsDialog({
             保存
           </button>
         </div>
-      </div>
+      </dialog>
     </div>
   );
 }

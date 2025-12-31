@@ -50,12 +50,23 @@ export function FileDropzone({
     fileInputRef.current?.click();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
   return (
     <div
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      // biome-ignore lint/a11y/useSemanticElements: dropzone requires div for drag events, button doesn't support onDragOver
+      role="button"
+      tabIndex={0}
       className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
         isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
       }`}

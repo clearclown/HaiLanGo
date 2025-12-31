@@ -126,9 +126,10 @@ export function CardFooter({
 
 interface CardImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   aspectRatio?: 'auto' | 'video' | 'square';
+  alt: string;
 }
 
-export function CardImage({ className, aspectRatio = 'auto', alt = '', ...props }: CardImageProps) {
+export function CardImage({ className, aspectRatio = 'auto', alt, ...props }: CardImageProps) {
   const aspectRatios = {
     auto: '',
     video: 'aspect-video',
@@ -137,7 +138,7 @@ export function CardImage({ className, aspectRatio = 'auto', alt = '', ...props 
 
   return (
     <div className={cn('overflow-hidden rounded-t-xl -mx-6 -mt-6 mb-4', aspectRatios[aspectRatio])}>
-      <img className={cn('w-full h-full object-cover', className)} alt={alt} {...props} />
+      <img className={cn('w-full h-full object-cover', className)} {...props} alt={alt} />
     </div>
   );
 }
