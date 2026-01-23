@@ -8,6 +8,16 @@
 #
 # Podman users:
 #   podman-compose up -d
+#
+# Google Cloud Vision API Setup:
+#   1. Create a Service Account (NOT OAuth 2.0 Client ID!)
+#   2. Download the JSON key file
+#   3. Set GOOGLE_APPLICATION_CREDENTIALS in .env to the path
+#   Example: GOOGLE_APPLICATION_CREDENTIALS=./credentials/google-service-account.json
+#
+# Qwen-TTS (GPU required):
+#   Set ENABLE_QWEN_TTS=true in .env to enable local TTS
+#   Requires NVIDIA GPU with CUDA support
 
 services:
   # ===========================================
@@ -88,7 +98,9 @@ services:
       AZURE_COMPUTER_VISION_ENDPOINT: ${AZURE_COMPUTER_VISION_ENDPOINT:-}
       AZURE_COMPUTER_VISION_API_KEY: ${AZURE_COMPUTER_VISION_API_KEY:-}
 
-      # Google Cloud APIs
+      # Google Cloud APIs (Service Account JSON)
+      # IMPORTANT: Use Service Account, NOT OAuth 2.0 Client ID!
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/google-service-account.json
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
       GOOGLE_CLOUD_REGION: ${GOOGLE_CLOUD_REGION:-}
       GOOGLE_CLOUD_API_KEY: ${GOOGLE_CLOUD_API_KEY:-}
@@ -96,18 +108,25 @@ services:
       GOOGLE_CLOUD_STT_API_KEY: ${GOOGLE_CLOUD_STT_API_KEY:-}
       GOOGLE_CLOUD_TRANSLATE_API_KEY: ${GOOGLE_CLOUD_TRANSLATE_API_KEY:-}
 
+      # TTS Provider (azure, google, edge, qwen)
+      TTS_PROVIDER: ${TTS_PROVIDER:-azure}
+      AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY:-}
+      AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION:-eastasia}
+
+      # Qwen-TTS (local GPU-based TTS)
+      QWEN_TTS_URL: ${QWEN_TTS_URL:-http://qwen-tts:8000}
+      QWEN_TTS_MODEL: ${QWEN_TTS_MODEL:-Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice}
+
       # OpenAI
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-
-      # Stripe
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     volumes:
       - ./mocks:/app/mocks
       - backend_uploads:/app/uploads
       - backend_logs:/app/logs
+      # Google Cloud Service Account credentials
+      - ${GOOGLE_CREDENTIALS_PATH:-./credentials}:/app/credentials:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -135,6 +154,40 @@ services:
       - backend
     restart: unless-stopped
 
+  # ===========================================
+  # Qwen-TTS (Local GPU-based TTS Service)
+  # ===========================================
+  # Requires NVIDIA GPU with CUDA support
+  # Set ENABLE_QWEN_TTS=true in .env to enable
+  # Supported languages: Chinese, English, Japanese, Korean, German, French, Russian, Portuguese, Spanish, Italian
+  qwen-tts:
+    build:
+      context: ./services/qwen-tts
+      dockerfile: Dockerfile
+    container_name: hailango-qwen-tts
+    environment:
+      # Model selection (0.6B or 1.7B)
+      QWEN_TTS_MODEL: ${QWEN_TTS_MODEL:-Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice}
+      # Device configuration
+      DEVICE: cuda:0
+      DTYPE: bfloat16
+    ports:
+      - "${QWEN_TTS_PORT:-8001}:8000"
+    volumes:
+      # Model cache directory
+      - qwen_tts_models:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Only start if ENABLE_QWEN_TTS=true
+    profiles:
+      - qwen-tts
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local
@@ -143,4 +196,6 @@ volumes:
   backend_uploads:
     driver: local
   backend_logs:
+    driver: local
+  qwen_tts_models:
     driver: local
