@@ -93,3 +93,8 @@ backend/bin/
 
 # User uploads (development)
 pics/
+
+# Archive and reference repos
+archive/
+docs/repos/
+backend/main
