@@ -1,6 +1,6 @@
 # HaiLanGo - 実装状況サマリー
 
-最終更新: 2025-11-13
+最終更新: 2026-01-23
 
 ## 📊 実装進捗
 
@@ -47,7 +47,7 @@ Phase 5 (インフラ・DevOps):    ██████████████�
 | # | 機能名 | PR | マージ日 | アーカイブブランチ |
 |---|--------|----|---------|--------------------|
 | 10 | 学習統計ダッシュボード | #10 | 2025-11-13 | `archive-claude/learning-stats-dashboard-*` |
-| 11 | Stripe決済統合 | #11 | 2025-11-13 | `archive-claude/stripe-payment-integration-*` |
+| 11 | ~~Stripe決済統合~~ (削除済み) | #11 | 2025-11-13 | `archive/stripe_payment/` |
 | 12 | 辞書API統合 | #12 | 2025-11-13 | `archive-claude/integrate-dictionary-api-*` |
 | 13 | OCR結果手動修正 | #13 | 2025-11-13 | `archive-claude/ocr-manual-correction-*` |
 | 14 | 会話パターン抽出 | #14 | 2025-11-13 | `archive-claude/implement-conversation-pattern-extraction-*` |
@@ -65,6 +65,12 @@ Phase 5 (インフラ・DevOps):    ██████████████�
 | # | 機能名 | PR | マージ日 | アーカイブブランチ |
 |---|--------|----|---------|--------------------|
 | 18 | GitHub CI設定 | #18 | 2025-11-13 | `archive-claude/setup-github-ci-workflows-*` |
+
+### Phase 6: リアルタイム音声会話（新規追加 2026-01-23）
+
+| # | 機能名 | 追加日 | 実装場所 |
+|---|--------|--------|----------|
+| 19 | OpenAI Realtime API会話機能 | 2026-01-23 | `backend/pkg/realtime/`, `backend/internal/api/handler/conversation.go` |
 
 ---
 
@@ -115,16 +121,19 @@ docs/featureRDs/archives/
 - `srs/` - 間隔反復学習
 - `vocabulary/` - 単語帳
 - `stats/` - 学習統計
-- `payment/` - Stripe決済
+- ~~`payment/`~~ - ~~Stripe決済~~ (削除済み → `archive/stripe_payment/`)
 - `dictionary/` - 辞書API
 - `pattern/` - 会話パターン抽出
 - `notification/` - WebSocket通知
 
+**Packages** (`backend/pkg/`)：
+- `realtime/` - OpenAI Realtime API（音声会話）
+
 **API Handlers** (`backend/internal/api/`)：
-- `handler/` - 各種HTTPハンドラー
+- `handler/` - 各種HTTPハンドラー（conversation.go含む）
 - `teacher-mode/` - 教師モードAPI
 - `websocket/` - WebSocketハンドラー
-- `payment/` - 決済API
+- ~~`payment/`~~ - ~~決済API~~ (削除済み)
 - `ocr/` - OCR API
 
 ### Frontend（Next.js/React）
@@ -143,6 +152,7 @@ docs/featureRDs/archives/
 - `books/[bookId]/pages/[pageNumber]/page.tsx` - 学習画面
 - `settings/page.tsx` - 設定画面
 - `review/page.tsx` - 復習画面
+- `conversation/page.tsx` - AI音声会話（新規追加）
 
 ---
 
@@ -190,10 +200,13 @@ docs/featureRDs/archives/
 
 ## 🎯 次のステップ
 
-Phase 1-5のすべての機能が実装完了しました。今後の拡張可能性：
+Phase 1-5のすべての機能が実装完了しました。
 
-### Phase 6: 高度な機能（将来）
-- AI会話パートナー機能
+### 2026-01-23 更新内容
+- ✅ **Stripe決済機能を削除**（個人利用のため不要）
+- ✅ **OpenAI Realtime API音声会話機能を追加**（運転中のハンズフリー学習対応）
+
+### 今後の拡張可能性
 - ユーザー生成コンテンツ機能
 - コミュニティフォーラム
 - モバイルアプリ（Flutter）の本格実装
@@ -206,5 +219,5 @@ Phase 1-5のすべての機能が実装完了しました。今後の拡張可�
 
 ---
 
-**最終確認日**: 2025-11-13  
-**ステータス**: All Phase Complete ✅
+**最終確認日**: 2026-01-23
+**ステータス**: Phase 6 Complete ✅（音声会話機能追加）

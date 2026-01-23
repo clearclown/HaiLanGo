@@ -1,6 +1,6 @@
 # Feature Requirements Documents (RDs)
 
-**最終更新**: 2025-12-31
+**最終更新**: 2026-01-23
 **ステータス**: ✅ **COMPLETE**
 
 ---
@@ -29,9 +29,12 @@
 - ✅ Stats API - 学習統計ダッシュボード
 - ✅ Pattern API - 会話パターン抽出
 
+### リアルタイム音声（新規追加 2026-01-23）
+- ✅ Conversation API - OpenAI Realtime API音声会話
+
 ### その他
 - ✅ Dictionary API - 辞書統合
-- ✅ Payment API - Stripe決済
+- ~~Payment API - Stripe決済~~ (削除済み - 個人利用のため不要)
 - ✅ WebSocket API - リアルタイム通知
 
 **総合進捗率**: バックエンド 100%、フロントエンド 100%
@@ -42,15 +45,16 @@
 
 ```
 featureRDs/
-├── README.md                          # このファイル
-├── CRITICAL_01_Books_API.md           # ✅ 実装完了
-├── CRITICAL_02_Review_API.md          # ✅ 実装完了
-├── CRITICAL_03_Router_Integration.md  # ✅ 実装完了
-├── CRITICAL_04_Stats_API.md           # ✅ 実装完了
-├── CRITICAL_05_Learning_API.md        # ✅ 実装完了
-├── CRITICAL_06_OCR_TTS_STT_APIs.md    # ✅ 実装完了
-├── CRITICAL_07_Other_APIs.md          # ✅ 実装完了
-└── archives/                          # 過去のドキュメント
+├── README.md                              # このファイル
+├── CRITICAL_01_Books_API.md               # ✅ 実装完了
+├── CRITICAL_02_Review_API.md              # ✅ 実装完了
+├── CRITICAL_03_Router_Integration.md      # ✅ 実装完了
+├── CRITICAL_04_Stats_API.md               # ✅ 実装完了
+├── CRITICAL_05_Learning_API.md            # ✅ 実装完了
+├── CRITICAL_06_OCR_TTS_STT_APIs.md        # ✅ 実装完了
+├── CRITICAL_07_Other_APIs.md              # ✅ 実装完了
+├── 19_OpenAI_Realtime_API会話機能.md      # ✅ 新規追加
+└── archives/                              # 過去のドキュメント
 ```
 
 ---
@@ -66,6 +70,7 @@ featureRDs/
 | 5 | Learning API | `CRITICAL_05_Learning_API.md` | ✅ 完了 |
 | 6 | OCR/TTS/STT APIs | `CRITICAL_06_OCR_TTS_STT_APIs.md` | ✅ 完了 |
 | 7 | その他のAPI | `CRITICAL_07_Other_APIs.md` | ✅ 完了 |
+| 19 | Conversation API | `19_OpenAI_Realtime_API会話機能.md` | ✅ 新規追加 |
 
 ---
 
@@ -142,6 +147,7 @@ curl -X GET http://localhost:8080/api/v1/vocabulary -H "Authorization: Bearer {t
 
 | 日付 | 内容 | 更新者 |
 |------|------|--------|
+| 2026-01-23 | Stripe決済削除、OpenAI Realtime API会話機能追加 | Claude Code |
 | 2025-12-31 | 全API実装完了を反映 | Claude Code |
 | 2025-11-14 | CRITICAL状況を反映 | PM (Claude Code) |
 | 2025-11-13 | 初版作成 | Previous Session |

@@ -59,7 +59,6 @@ func SetupRouter(
 	var ocrRepo repository.OCRRepositoryInterface
 	var ttsRepo repository.TTSRepositoryInterface
 	var sttRepo repository.STTRepositoryInterface
-	var paymentRepo repository.PaymentRepositoryInterface
 	var dictionaryRepo repository.DictionaryRepositoryInterface
 	var patternRepo repository.PatternRepositoryInterface
 	var wordRepo repository.WordRepository
@@ -72,7 +71,6 @@ func SetupRouter(
 		ocrRepo = repository.NewInMemoryOCRRepository()
 		ttsRepo = repository.NewInMemoryTTSRepository()
 		sttRepo = repository.NewInMemorySTTRepository()
-		paymentRepo = repository.NewInMemoryPaymentRepository()
 		dictionaryRepo = repository.NewInMemoryDictionaryRepository()
 		patternRepo = repository.NewInMemoryPatternRepository()
 		wordRepo = repository.NewMockWordRepository()
@@ -83,7 +81,6 @@ func SetupRouter(
 		ocrRepo = repository.NewOCRRepositoryPostgres(db)
 		ttsRepo = repository.NewTTSRepositoryPostgres(db)
 		sttRepo = repository.NewSTTRepositoryPostgres(db)
-		paymentRepo = repository.NewPaymentRepositoryPostgres(db)
 		dictionaryRepo = repository.NewDictionaryRepositoryPostgres(db)
 		patternRepo = repository.NewPatternRepositoryPostgres(db)
 		wordRepo = repository.NewWordRepositoryPostgres(db)
@@ -144,11 +141,11 @@ func SetupRouter(
 	ocrHandler := handler.NewOCRHandler(ocrRepo, ocrSvc, wsHub)
 	ttsHandler := handler.NewTTSHandler(ttsRepo)
 	sttHandler := handler.NewSTTHandler(sttRepo)
-	paymentHandler := handler.NewPaymentHandler(paymentRepo)
 	dictionaryHandler := handler.NewDictionaryHandler(dictionaryRepo)
 	patternHandler := handler.NewPatternHandler(patternRepo)
 	teacherModeHandler := handler.NewTeacherModeHandler(teacherModeService)
 	vocabularyHandler := handler.NewVocabularyHandler(vocabularyService)
+	conversationHandler := handler.NewConversationHandler()
 
 	// ========================================
 	// ヘルスチェックエンドポイント
@@ -203,9 +200,6 @@ func SetupRouter(
 			// STT API
 			sttHandler.RegisterRoutes(authenticated)
 
-			// Payment API
-			paymentHandler.RegisterRoutes(authenticated)
-
 			// Dictionary API
 			dictionaryHandler.RegisterRoutes(authenticated)
 
@@ -217,6 +211,9 @@ func SetupRouter(
 
 			// Vocabulary API
 			vocabularyHandler.RegisterRoutes(authenticated)
+
+			// Conversation API (OpenAI Realtime)
+			conversationHandler.RegisterRoutes(authenticated)
 
 			// WebSocket API
 			wsHandler.RegisterRoutes(authenticated)
