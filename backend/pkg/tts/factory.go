@@ -67,6 +67,18 @@ func NewTTSClient() (TTSClient, error) {
 		// TODO: CoquiTTSClient を実装
 		return NewMockTTSClient(), nil
 
+	case ProviderQwenTTS:
+		// Qwen-TTS（ローカルGPU、10言語、無料）
+		client := NewQwenTTSClientFromEnv()
+		// Check if service is available
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if client.IsAvailable(ctx) {
+			return client, nil
+		}
+		// Fall back to mock if not available
+		return NewMockTTSClient(), nil
+
 	default:
 		return nil, fmt.Errorf("unsupported TTS provider: %s", provider)
 	}

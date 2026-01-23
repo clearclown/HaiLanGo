@@ -50,6 +50,7 @@ const (
 	ProviderElevenLabs  TTSProvider = "elevenlabs" // ElevenLabs（プレミアム）
 	ProviderEdgeTTS     TTSProvider = "edge"       // edge-tts（無料、50言語）
 	ProviderCoquiTTS    TTSProvider = "coqui"      // Coqui TTS（オープンソース）
+	ProviderQwenTTS     TTSProvider = "qwen"       // Qwen-TTS（ローカルGPU、10言語、無料）
 )
 
 // TTSResult は音声合成結果
