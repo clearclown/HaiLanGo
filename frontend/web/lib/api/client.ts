@@ -318,6 +318,44 @@ class APIClient {
       return response.blob();
     },
   };
+
+  conversation = {
+    start: async (
+      targetLanguage: string,
+      nativeLanguage: string
+    ): Promise<{ session_id: string; websocket_url: string }> => {
+      return this.fetch<{ session_id: string; websocket_url: string }>(
+        '/api/v1/conversation/start',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            target_language: targetLanguage,
+            native_language: nativeLanguage,
+          }),
+        }
+      );
+    },
+
+    stop: async (sessionId: string): Promise<{ message: string }> => {
+      return this.fetch<{ message: string }>('/api/v1/conversation/stop', {
+        method: 'POST',
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+    },
+
+    getStatus: async (
+      sessionId: string
+    ): Promise<{
+      session_id: string;
+      target_language: string;
+      native_language: string;
+      started_at: string;
+      duration_seconds: number;
+      active: boolean;
+    }> => {
+      return this.fetch(`/api/v1/conversation/status?session_id=${sessionId}`);
+    },
+  };
 }
 
 export const apiClient = new APIClient();
