@@ -54,7 +54,8 @@ test.describe('Books Page Tests', () => {
   });
 
   test('should navigate to upload page when clicking add button', async ({ page }) => {
-    const addButton = page.getByRole('link', { name: /本を追加/i });
+    // Use first() because there are multiple "本を追加" links (header + empty state)
+    const addButton = page.getByRole('link', { name: /本を追加/i }).first();
     await addButton.click();
 
     await expect(page).toHaveURL(/.*upload/);

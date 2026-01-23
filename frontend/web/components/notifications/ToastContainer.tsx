@@ -77,17 +77,24 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
   );
 
   // Expose toast methods to window for E2E testing
+  // Always expose in non-production or when E2E_TEST flag is set
   useEffect(() => {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      // biome-ignore lint/suspicious/noExplicitAny: E2E test utility requires window augmentation
-      (window as any).__TEST_TOAST__ = {
-        showInfo,
-        showSuccess,
-        showWarning,
-        showError,
-        addToast,
-        removeToast,
-      };
+    if (typeof window !== 'undefined') {
+      const isTestMode = process.env.NODE_ENV !== 'production' ||
+        // biome-ignore lint/suspicious/noExplicitAny: Check for E2E test flag
+        (window as any).__E2E_TEST_MODE__;
+
+      if (isTestMode) {
+        // biome-ignore lint/suspicious/noExplicitAny: E2E test utility requires window augmentation
+        (window as any).__TEST_TOAST__ = {
+          showInfo,
+          showSuccess,
+          showWarning,
+          showError,
+          addToast,
+          removeToast,
+        };
+      }
     }
     return () => {
       if (typeof window !== 'undefined') {

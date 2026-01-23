@@ -18,6 +18,12 @@ const mockRefreshToken = 'test-refresh-token-for-e2e';
 export const test = base.extend({
   // This hook runs before each test, setting up authentication
   page: async ({ page }, use) => {
+    // Set E2E test mode flag before page loads
+    await page.addInitScript(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: E2E test flag
+      (window as any).__E2E_TEST_MODE__ = true;
+    });
+
     // Navigate to a page first to set localStorage (localStorage is domain-bound)
     await page.goto('/login');
 
