@@ -77,10 +77,19 @@ temp/
 .claude/
 .playwright-mcp/
 
-# GCP credentials (never commit!)
+# Credentials (never commit!)
+credentials/*
+!credentials/.gitkeep
+!credentials/README.md
 credentials.json
 *-credentials.json
 *.pem
 gcp_hailingo.json
+google-service-account.json
+client_secret_*.json
+
+# Build artifacts
 backend/bin/
+
+# User uploads (development)
 pics/
