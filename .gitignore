@@ -3,52 +3,8 @@
 .env.local
 .env.*.local
 
-# Backend (Go)
-backend/bin/
-backend/storage/
-backend/*.exe
-backend/*.exe~
-backend/*.dll
-backend/*.so
-backend/*.dylib
-backend/*.test
-backend/*.out
-backend/vendor/
-backend/.DS_Store
-
-# Frontend (Next.js / Node)
-frontend/web/node_modules/
-frontend/web/.next/
-frontend/web/out/
-frontend/web/dist/
-frontend/web/.cache/
-frontend/web/.vercel
-frontend/web/.turbo
-frontend/web/npm-debug.log*
-frontend/web/yarn-debug.log*
-frontend/web/yarn-error.log*
-frontend/web/.DS_Store
-
-# Frontend (Flutter)
-frontend/mobile/.dart_tool/
-frontend/mobile/.flutter-plugins
-frontend/mobile/.flutter-plugins-dependencies
-frontend/mobile/.packages
-frontend/mobile/.pub-cache/
-frontend/mobile/.pub/
-frontend/mobile/build/
-frontend/mobile/ios/Pods/
-frontend/mobile/ios/.symlinks/
-frontend/mobile/ios/Flutter/Flutter.framework
-frontend/mobile/ios/Flutter/Flutter.podspec
-frontend/mobile/.DS_Store
-
 # IDEs
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-!.vscode/launch.json
-!.vscode/tasks.json
+.vscode/
 .idea/
 *.swp
 *.swo
@@ -58,15 +14,6 @@ frontend/mobile/.DS_Store
 # Logs
 *.log
 logs/
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Test coverage
-coverage/
-*.coverprofile
 
 # Temporary files
 tmp/
@@ -78,23 +25,13 @@ temp/
 .playwright-mcp/
 
 # Credentials (never commit!)
-credentials/*
-!credentials/.gitkeep
-!credentials/README.md
-credentials.json
-*-credentials.json
+credentials/
 *.pem
-gcp_hailingo.json
-google-service-account.json
-client_secret_*.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
 
-# Build artifacts
-backend/bin/
-
-# User uploads (development)
-pics/
-
-# Archive and reference repos
-archive/
-docs/repos/
-backend/main
+# OS files
+.DS_Store
+Thumbs.db
