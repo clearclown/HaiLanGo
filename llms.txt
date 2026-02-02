@@ -14,8 +14,8 @@ HaiLanGo enables users to:
 
 ## Technology Stack
 
-- Backend: Rust with [Reinhardt Framework](https://github.com/kent8192/reinhardt-web)
-- Frontend: Next.js (Web), Flutter (Mobile)
+- Full-Stack: Rust with [Reinhardt Framework](https://github.com/kent8192/reinhardt-web) (Django-inspired)
+- Mobile: Flutter (iOS/Android)
 - Database: PostgreSQL, Redis
 - External APIs: Google Vision (OCR), Google/Azure TTS, OpenAI Whisper (STT), Anthropic Claude (LLM)
 
@@ -40,5 +40,5 @@ Extended: Persian, Hebrew, and any language supported by TTS/STT APIs
 
 ## Optional
 
-- [Reinhardt Framework](https://github.com/kent8192/reinhardt-web): The Rust backend framework used
+- [Reinhardt Framework](https://github.com/kent8192/reinhardt-web): The Rust full-stack framework used
 - [llms.txt Specification](https://llmstxt.org/): About this file format

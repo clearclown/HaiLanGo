@@ -3,7 +3,7 @@
 **AI言語学習プラットフォーム** - 自分の教科書をAIで学習可能にする
 
 [![Rust](https://img.shields.io/badge/Rust-2024-orange?style=flat&logo=rust)](https://www.rust-lang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-14+-000000?style=flat&logo=next.js)](https://nextjs.org)
+[![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?style=flat&logo=flutter)](https://flutter.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## 概要
@@ -21,9 +21,8 @@ HaiLanGoは、既存の言語学習本とAI技術を組み合わせ、個人に�
 
 | レイヤー | 技術 |
 |---------|------|
-| Backend | Rust ([Reinhardt Framework](https://github.com/kent8192/reinhardt-web)) |
-| Frontend (Web) | Next.js 14, TypeScript, TailwindCSS, ShadCN/UI |
-| Frontend (Mobile) | Flutter |
+| Full-Stack | Rust ([Reinhardt Framework](https://github.com/kent8192/reinhardt-web)) |
+| Mobile | Flutter (iOS/Android) |
 | Database | PostgreSQL, Redis |
 | External APIs | Google Vision (OCR), Google/Azure TTS, OpenAI Whisper (STT) |
 
@@ -44,7 +43,7 @@ HaiLanGoは、既存の言語学習本とAI技術を組み合わせ、個人に�
 
 ## 開発状況
 
-🚧 **開発中** - プロジェクトをリセットし、Rust (Reinhardt) バックエンドで再構築中
+🚧 **開発中** - Reinhardt (Rust) フルスタックフレームワークで構築中
 
 ## ライセンス
 

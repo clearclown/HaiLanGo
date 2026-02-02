@@ -8,20 +8,7 @@ target/
 Cargo.lock
 **/*.rs.bk
 
-# Node.js / Next.js
-node_modules/
-.next/
-out/
-dist/
-.cache/
-.vercel
-.turbo
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Flutter
+# Flutter / Dart
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -31,6 +18,8 @@ pnpm-debug.log*
 build/
 ios/Pods/
 ios/.symlinks/
+android/.gradle/
+*.iml
 
 # IDEs
 .vscode/
@@ -68,7 +57,7 @@ google-service-account.json
 # Test artifacts
 coverage/
 *.coverprofile
-.nyc_output/
+lcov.info
 
 # Database
 *.db
@@ -84,3 +73,6 @@ coverage/
 # User uploads (development)
 storage/
 uploads/
+
+# Static files (generated)
+static/dist/

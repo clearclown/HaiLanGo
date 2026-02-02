@@ -8,18 +8,18 @@ HaiLanGo is an AI-powered language learning platform that transforms existing te
 
 ## Core Technology Stack
 
-### Backend
+### Backend & Web Frontend
 - **Framework**: [Reinhardt](https://github.com/kent8192/reinhardt-web) - A composable full-stack API framework for Rust
 - **Language**: Rust 2024 Edition
 - **ORM**: SeaORM with SeaQuery
 - **Database**: PostgreSQL + Redis
 - **Authentication**: JWT, OAuth 2.0 (Google Login)
-- **API**: REST + WebSocket (real-time features)
+- **API**: REST + WebSocket (real-time features) + GraphQL (optional)
+- **Templates**: Reinhardt's built-in template engine (Tera/Askama)
 
-### Frontend
-- **Web**: Next.js 14+ (TypeScript, React, TailwindCSS, ShadCN/UI)
-- **Mobile**: Flutter (iOS/Android)
-- **Linter/Formatter**: Biome.js (Web), `dart format` (Mobile)
+### Mobile
+- **Framework**: Flutter (iOS/Android)
+- **Linter/Formatter**: `dart format`
 
 ### External APIs
 - **OCR**: Google Vision API / Azure Computer Vision
@@ -32,60 +32,56 @@ HaiLanGo is an AI-powered language learning platform that transforms existing te
 
 ```
 HaiLanGo/
-├── backend/                 # Rust backend (Reinhardt)
-│   ├── src/
-│   │   ├── config/          # Settings, URLs, apps
-│   │   └── apps/            # Feature modules
-│   │       ├── auth/        # Authentication
-│   │       ├── books/       # Book management
-│   │       ├── learning/    # Learning sessions
-│   │       ├── ocr/         # OCR processing
-│   │       ├── tts/         # Text-to-Speech
-│   │       ├── stt/         # Speech-to-Text
-│   │       └── review/      # SRS review system
-│   └── Cargo.toml
-├── frontend/
-│   ├── web/                 # Next.js application
-│   └── mobile/              # Flutter application
-├── docs/                    # Documentation
+├── src/
+│   ├── config/
+│   │   ├── settings/        # Environment-specific settings
+│   │   ├── urls.rs          # URL routing
+│   │   └── apps.rs          # App configuration
+│   └── apps/
+│       ├── auth/            # Authentication & users
+│       ├── books/           # Book management & OCR
+│       ├── learning/        # Learning sessions & pages
+│       ├── tts/             # Text-to-Speech
+│       ├── stt/             # Speech-to-Text & pronunciation
+│       ├── review/          # SRS review system
+│       └── teacher_mode/    # Automated lesson playback
+├── templates/               # HTML templates (Tera/Askama)
+├── static/                  # Static files (CSS, JS, images)
+├── mobile/                  # Flutter mobile app
+├── migrations/              # Database migrations
+├── docs/
 │   └── requirements_definition.md
-└── infrastructure/          # Terraform, Docker
+├── Cargo.toml
+└── README.md
 ```
+
+## Module System Requirements
+
+- Use `module.rs` + `module/` directory structure (Rust 2024 Edition)
+- Never use deprecated `mod.rs` files
+- See Reinhardt docs for module organization patterns
 
 ## Code Standards
 
-### Rust (Backend)
-
-**Module System**:
-- Use `module.rs` + `module/` directory structure (Rust 2024 Edition)
-- Never use deprecated `mod.rs` files
-
-**Comments & Documentation**:
+### Comments & Documentation
 - All code comments must be in English
 - Minimize `.to_string()` calls; prefer borrowing
 - Remove obsolete code immediately without deletion records
 - Mark placeholders with `todo!()` or `// TODO:` comments
 - Document all `#[allow(...)]` attributes with explanatory comments
 
-**Placeholder Notation**:
+### Placeholder Notation
 - `todo!()` - features that will be implemented
 - `unimplemented!()` - intentionally excluded features (retain permanently)
 - `// TODO:` - planning notes
 - Delete `todo!()` and `// TODO:` upon implementation
+- Never use alternative notations like `FIXME:` for unimplemented features
 
-### TypeScript (Frontend)
-
-**Basic Rules**:
-- Use Biome.js for formatting and linting
-- Explicitly use `"use client"` or `"use server"`
-- Enable TypeScript strict mode
-- Use functional components only (no class components)
-- Allow connections from `0.0.0.0` for VPN access
-
-**Naming Conventions**:
-- Components: PascalCase (e.g., `BookCard.tsx`)
-- Hooks: `use` + PascalCase (e.g., `useBookData.ts`)
-- Utilities: camelCase (e.g., `formatDate.ts`)
+### Flutter (Mobile)
+- Use `dart format` for formatting
+- Use `flutter analyze` for linting
+- Use Riverpod for state management
+- Follow Material Design 3 guidelines
 
 ## Testing Philosophy
 
@@ -95,7 +91,7 @@ Tests must contain meaningful assertions and follow:
 - `#[serial(group_name)]` for tests accessing global state
 - Complete cleanup of all test artifacts
 
-**Backend Commands**:
+**Quality Assurance Commands**:
 ```bash
 cargo check --workspace --all-features
 cargo build --workspace --all-features
@@ -103,11 +99,11 @@ cargo test --workspace --all-features
 cargo fmt --check && cargo clippy
 ```
 
-**Frontend Commands**:
+**Mobile Commands**:
 ```bash
-pnpm test           # Vitest unit tests
-pnpm run test:e2e   # Playwright E2E tests
-pnpm run lint       # Biome.js lint
+flutter test
+flutter analyze
+dart format .
 ```
 
 ## File Management
@@ -180,7 +176,14 @@ GOOGLE_CLOUD_VISION_API_KEY=
 GOOGLE_CLOUD_TTS_API_KEY=
 OPENAI_API_KEY=
 STRIPE_SECRET_KEY=
+ANTHROPIC_API_KEY=
 ```
+
+## Container Configuration
+
+- Docker Desktop must be installed and running
+- Ensure `DOCKER_HOST` points to Docker sockets, not Podman
+- Use TestContainers for integration tests
 
 ## Key Features to Implement
 
@@ -196,7 +199,7 @@ STRIPE_SECRET_KEY=
 - [Reinhardt Framework](https://github.com/kent8192/reinhardt-web)
 - [Requirements Definition](docs/requirements_definition.md)
 - [SeaORM Documentation](https://www.sea-ql.org/SeaORM/)
-- [Next.js Documentation](https://nextjs.org/docs)
+- [Flutter Documentation](https://flutter.dev/docs)
 
 ---
 
