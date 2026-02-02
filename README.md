@@ -3,7 +3,7 @@
 **AI言語学習プラットフォーム** - 自分の教科書をAIで学習可能にする
 
 [![Rust](https://img.shields.io/badge/Rust-2024-orange?style=flat&logo=rust)](https://www.rust-lang.org/)
-[![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?style=flat&logo=flutter)](https://flutter.dev/)
+[![Reinhardt](https://img.shields.io/badge/Reinhardt-Full--Stack-blue?style=flat)](https://github.com/kent8192/reinhardt-web)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## 概要
@@ -19,12 +19,12 @@ HaiLanGoは、既存の言語学習本とAI技術を組み合わせ、個人に�
 
 ## 技術スタック
 
-| レイヤー | 技術 |
+| カテゴリ | 技術 |
 |---------|------|
-| Full-Stack | Rust ([Reinhardt Framework](https://github.com/kent8192/reinhardt-web)) |
-| Mobile | Flutter (iOS/Android) |
+| Framework | [Reinhardt](https://github.com/kent8192/reinhardt-web) (Rust Full-Stack) |
+| Frontend | SSR + HTMX/Alpine.js |
 | Database | PostgreSQL, Redis |
-| External APIs | Google Vision (OCR), Google/Azure TTS, OpenAI Whisper (STT) |
+| External APIs | Google Vision, TTS/STT, Claude API |
 
 ## 主要機能
 
@@ -33,7 +33,7 @@ HaiLanGoは、既存の言語学習本とAI技術を組み合わせ、個人に�
 3. **STT発音評価** - リアルタイムスコアリング
 4. **教師モード** - ハンズフリー自動学習
 5. **間隔反復学習 (SRS)** - 最適な復習タイミング
-6. **オフライン対応** - 音声の事前ダウンロード
+6. **オフライン対応** - PWAによる音声キャッシュ
 
 ## ドキュメント
 

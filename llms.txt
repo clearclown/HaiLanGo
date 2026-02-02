@@ -14,8 +14,8 @@ HaiLanGo enables users to:
 
 ## Technology Stack
 
-- Full-Stack: Rust with [Reinhardt Framework](https://github.com/kent8192/reinhardt-web) (Django-inspired)
-- Mobile: Flutter (iOS/Android)
+- Framework: Rust with [Reinhardt](https://github.com/kent8192/reinhardt-web) (Django-inspired full-stack)
+- Frontend: Server-side rendered HTML with HTMX/Alpine.js
 - Database: PostgreSQL, Redis
 - External APIs: Google Vision (OCR), Google/Azure TTS, OpenAI Whisper (STT), Anthropic Claude (LLM)
 
@@ -31,7 +31,7 @@ Extended: Persian, Hebrew, and any language supported by TTS/STT APIs
 3. **Teacher Mode**: Automated lesson playback for passive learning (commute, exercise)
 4. **Pronunciation Practice**: Real-time feedback with scoring (0-100)
 5. **Spaced Repetition**: SM-2 algorithm for optimal review scheduling
-6. **Offline Support**: Pre-download audio for offline use
+6. **Offline Support**: PWA with pre-downloaded audio
 
 ## Documentation
 

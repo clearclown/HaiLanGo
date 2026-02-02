@@ -8,7 +8,6 @@ HaiLanGo is an AI-powered language learning platform that transforms existing te
 
 ## Core Technology Stack
 
-### Backend & Web Frontend
 - **Framework**: [Reinhardt](https://github.com/kent8192/reinhardt-web) - A composable full-stack API framework for Rust
 - **Language**: Rust 2024 Edition
 - **ORM**: SeaORM with SeaQuery
@@ -16,10 +15,7 @@ HaiLanGo is an AI-powered language learning platform that transforms existing te
 - **Authentication**: JWT, OAuth 2.0 (Google Login)
 - **API**: REST + WebSocket (real-time features) + GraphQL (optional)
 - **Templates**: Reinhardt's built-in template engine (Tera/Askama)
-
-### Mobile
-- **Framework**: Flutter (iOS/Android)
-- **Linter/Formatter**: `dart format`
+- **Frontend**: Server-side rendered HTML with HTMX/Alpine.js for interactivity
 
 ### External APIs
 - **OCR**: Google Vision API / Azure Computer Vision
@@ -47,7 +43,6 @@ HaiLanGo/
 │       └── teacher_mode/    # Automated lesson playback
 ├── templates/               # HTML templates (Tera/Askama)
 ├── static/                  # Static files (CSS, JS, images)
-├── mobile/                  # Flutter mobile app
 ├── migrations/              # Database migrations
 ├── docs/
 │   └── requirements_definition.md
@@ -77,12 +72,6 @@ HaiLanGo/
 - Delete `todo!()` and `// TODO:` upon implementation
 - Never use alternative notations like `FIXME:` for unimplemented features
 
-### Flutter (Mobile)
-- Use `dart format` for formatting
-- Use `flutter analyze` for linting
-- Use Riverpod for state management
-- Follow Material Design 3 guidelines
-
 ## Testing Philosophy
 
 Tests must contain meaningful assertions and follow:
@@ -97,13 +86,6 @@ cargo check --workspace --all-features
 cargo build --workspace --all-features
 cargo test --workspace --all-features
 cargo fmt --check && cargo clippy
-```
-
-**Mobile Commands**:
-```bash
-flutter test
-flutter analyze
-dart format .
 ```
 
 ## File Management
@@ -192,14 +174,13 @@ ANTHROPIC_API_KEY=
 3. **STT**: Pronunciation evaluation with scoring
 4. **Teacher Mode**: Automated lesson playback
 5. **SRS**: Spaced repetition learning algorithm
-6. **Offline Support**: Pre-download audio for offline use
+6. **Offline Support**: Pre-download audio for offline use (PWA)
 
 ## References
 
 - [Reinhardt Framework](https://github.com/kent8192/reinhardt-web)
 - [Requirements Definition](docs/requirements_definition.md)
 - [SeaORM Documentation](https://www.sea-ql.org/SeaORM/)
-- [Flutter Documentation](https://flutter.dev/docs)
 
 ---
 
