@@ -1,0 +1,44 @@
+# HaiLanGo
+
+> HaiLanGo is an AI-powered language learning platform that transforms your existing textbooks into interactive learning experiences. It combines OCR, TTS, STT, and AI technologies to provide personalized 24/7 language instruction, focusing on conversation patterns and vocabulary rather than grammar.
+
+## Core Concept
+
+HaiLanGo enables users to:
+- Upload their own language learning books (PDF/images)
+- Extract text via OCR with multi-language support
+- Listen to native pronunciation via TTS
+- Practice speaking with AI-powered pronunciation evaluation
+- Learn with spaced repetition (SRS) algorithm
+- Use "Teacher Mode" for hands-free audio lessons
+
+## Technology Stack
+
+- Backend: Rust with [Reinhardt Framework](https://github.com/kent8192/reinhardt-web)
+- Frontend: Next.js (Web), Flutter (Mobile)
+- Database: PostgreSQL, Redis
+- External APIs: Google Vision (OCR), Google/Azure TTS, OpenAI Whisper (STT), Anthropic Claude (LLM)
+
+## Supported Languages
+
+Primary: Japanese, English, Chinese, Russian, Spanish, French, German, Portuguese, Italian, Turkish
+Extended: Persian, Hebrew, and any language supported by TTS/STT APIs
+
+## Key Features
+
+1. **Book Digitization**: Upload PDF or images, extract text with OCR
+2. **Interactive Learning**: Page-by-page study with audio playback
+3. **Teacher Mode**: Automated lesson playback for passive learning (commute, exercise)
+4. **Pronunciation Practice**: Real-time feedback with scoring (0-100)
+5. **Spaced Repetition**: SM-2 algorithm for optimal review scheduling
+6. **Offline Support**: Pre-download audio for offline use
+
+## Documentation
+
+- [CLAUDE.md](https://github.com/clearclown/HaiLanGo/blob/main/CLAUDE.md): Project guidelines for AI assistants
+- [Requirements Definition](https://github.com/clearclown/HaiLanGo/blob/main/docs/requirements_definition.md): Full project specification
+
+## Optional
+
+- [Reinhardt Framework](https://github.com/kent8192/reinhardt-web): The Rust backend framework used
+- [llms.txt Specification](https://llmstxt.org/): About this file format
