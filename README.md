@@ -19,12 +19,17 @@ HaiLanGoは、既存の言語学習本とAI技術を組み合わせ、個人に�
 
 ## 技術スタック
 
-| カテゴリ | 技術 |
-|---------|------|
-| Framework | [Reinhardt](https://github.com/kent8192/reinhardt-web) (Rust Full-Stack) |
-| Frontend | SSR + HTMX/Alpine.js |
-| Database | PostgreSQL, Redis |
-| External APIs | Google Vision, TTS/STT, Claude API |
+[Reinhardt](https://github.com/kent8192/reinhardt-web) (Rust Full-Stack Framework) で全て構築:
+
+| コンポーネント | クレート | 説明 |
+|---------------|---------|------|
+| ORM | `reinhardt-db` | SeaQuery + sqlx (PostgreSQL対応) |
+| Frontend | `reinhardt-pages` | WASM + SSR リアクティブUI |
+| REST API | `reinhardt-rest` | ViewSets, Serializers |
+| Auth | `reinhardt-auth` | JWT, OAuth, Session認証 |
+| Admin | `reinhardt-admin` | 自動生成管理画面 |
+| WebSocket | `reinhardt-websockets` | リアルタイム通信 |
+| Cache | Redis | キャッシュ・セッション管理 |
 
 ## 主要機能
 
@@ -32,8 +37,18 @@ HaiLanGoは、既存の言語学習本とAI技術を組み合わせ、個人に�
 2. **TTS音声合成** - 多言語対応のネイティブ発音
 3. **STT発音評価** - リアルタイムスコアリング
 4. **教師モード** - ハンズフリー自動学習
-5. **間隔反復学習 (SRS)** - 最適な復習タイミング
+5. **間隔反復学習 (SRS)** - SM-2アルゴリズムによる最適な復習
 6. **オフライン対応** - PWAによる音声キャッシュ
+
+## 外部API
+
+| API | 用途 |
+|-----|------|
+| Google Vision / Azure CV | OCR (文字認識) |
+| Google TTS / Azure Speech | 音声合成 |
+| OpenAI Whisper | 音声認識・発音評価 |
+| Anthropic Claude | LLM (解説生成等) |
+| Stripe | 決済処理 |
 
 ## ドキュメント
 

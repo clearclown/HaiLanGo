@@ -1,6 +1,18 @@
 # HaiLanGo
 
-> HaiLanGo is an AI-powered language learning platform that transforms your existing textbooks into interactive learning experiences. It combines OCR, TTS, STT, and AI technologies to provide personalized 24/7 language instruction, focusing on conversation patterns and vocabulary rather than grammar.
+> HaiLanGo is an AI-powered language learning platform that transforms your existing textbooks into interactive learning experiences. Built entirely with Reinhardt (Rust), it combines OCR, TTS, STT, and AI technologies to provide personalized 24/7 language instruction.
+
+## Technology Stack
+
+Built with [Reinhardt](https://github.com/kent8192/reinhardt-web) - a composable full-stack Rust framework (Django-inspired):
+
+- **reinhardt-db**: ORM with SeaQuery/sqlx (PostgreSQL/MySQL/SQLite)
+- **reinhardt-pages**: WASM + SSR reactive frontend (Leptos/Solid.js style)
+- **reinhardt-rest**: REST API with ViewSets and Serializers
+- **reinhardt-auth**: JWT, Token, Session, Basic authentication
+- **reinhardt-admin**: Auto-generated admin panel
+- **reinhardt-websockets**: Real-time communication
+- **Redis**: Caching and session storage (separate dependency)
 
 ## Core Concept
 
@@ -12,13 +24,6 @@ HaiLanGo enables users to:
 - Learn with spaced repetition (SRS) algorithm
 - Use "Teacher Mode" for hands-free audio lessons
 
-## Technology Stack
-
-- Framework: Rust with [Reinhardt](https://github.com/kent8192/reinhardt-web) (Django-inspired full-stack)
-- Frontend: Server-side rendered HTML with HTMX/Alpine.js
-- Database: PostgreSQL, Redis
-- External APIs: Google Vision (OCR), Google/Azure TTS, OpenAI Whisper (STT), Anthropic Claude (LLM)
-
 ## Supported Languages
 
 Primary: Japanese, English, Chinese, Russian, Spanish, French, German, Portuguese, Italian, Turkish
@@ -28,10 +33,18 @@ Extended: Persian, Hebrew, and any language supported by TTS/STT APIs
 
 1. **Book Digitization**: Upload PDF or images, extract text with OCR
 2. **Interactive Learning**: Page-by-page study with audio playback
-3. **Teacher Mode**: Automated lesson playback for passive learning (commute, exercise)
+3. **Teacher Mode**: Automated lesson playback for passive learning
 4. **Pronunciation Practice**: Real-time feedback with scoring (0-100)
 5. **Spaced Repetition**: SM-2 algorithm for optimal review scheduling
-6. **Offline Support**: PWA with pre-downloaded audio
+6. **Offline Support**: PWA with service worker caching
+
+## External APIs
+
+- OCR: Google Vision API / Azure Computer Vision
+- TTS: Google Cloud TTS / Azure Speech
+- STT: OpenAI Whisper / Azure Speech
+- LLM: Anthropic Claude API
+- Payments: Stripe
 
 ## Documentation
 
@@ -40,5 +53,5 @@ Extended: Persian, Hebrew, and any language supported by TTS/STT APIs
 
 ## Optional
 
-- [Reinhardt Framework](https://github.com/kent8192/reinhardt-web): The Rust full-stack framework used
+- [Reinhardt Framework](https://github.com/kent8192/reinhardt-web): The Rust full-stack framework
 - [llms.txt Specification](https://llmstxt.org/): About this file format
