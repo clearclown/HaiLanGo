@@ -8,18 +8,21 @@ This guide will help you set up the HaiLanGo development environment and run the
 
 | Software | Version | Installation |
 |----------|---------|--------------|
-| **Rust** | 1.75+ | [rustup.rs](https://rustup.rs) |
+| **Rust** | Nightly (1.85+) | [rustup.rs](https://rustup.rs) |
 | **PostgreSQL** | 16+ | Package manager or container |
 | **Redis** | 7+ | Package manager or container |
 | **Podman** or Docker | Latest | Package manager |
 | **podman-compose** | Latest | `pip install podman-compose` |
 
+> **Note**: Reinhardt framework requires nightly Rust. The project includes `rust-toolchain.toml` which automatically selects the nightly toolchain.
+
 ### Verify Installation
 
 ```bash
 # Check Rust toolchain
-rustc --version    # Should be 1.75+
+rustc --version    # Should be nightly-2024-xx-xx or later
 cargo --version
+rustup show        # Verify nightly is active
 
 # Check container runtime
 podman --version   # or docker --version
@@ -275,9 +278,88 @@ MOCK_STT=true
 
 ---
 
-## 5. Development Workflow
+## 5. Available Services
 
-### Running with Auto-Reload
+### 5.1 Cache Service (Redis)
+
+Redis-based caching for sessions, rate limiting, and job queues.
+
+```rust
+use hailango::services::CacheService;
+
+// Initialize cache
+let cache = CacheService::from_env().await?;
+
+// Session management
+cache.set_session("session_id", &user_data, Duration::from_secs(3600)).await?;
+let session: Option<UserSession> = cache.get_session("session_id").await?;
+
+// Rate limiting
+let remaining = cache.check_rate_limit("user:123", 100, Duration::from_secs(60)).await?;
+
+// Job queue
+cache.push_job("ocr_jobs", &job_data).await?;
+let job: Option<OcrJob> = cache.pop_job("ocr_jobs", Duration::from_secs(30)).await?;
+```
+
+### 5.2 WebSocket Service (Teacher Mode)
+
+Real-time communication for automated lesson playback.
+
+```rust
+use hailango::services::{WsConnectionManager, PlaybackState};
+
+let manager = WsConnectionManager::new();
+
+// Start lesson session
+let session = manager.start_lesson(user_id, book_id, total_pages).await;
+
+// Control playback
+manager.update_state(user_id, PlaybackState::Playing).await;
+manager.next_page(user_id).await;
+
+// Stream audio
+manager.send_audio_chunk(user_id, base64_audio, false).await;
+
+// End session
+manager.end_session(user_id).await;
+```
+
+### 5.3 i18n Service (Internationalization)
+
+Multi-language support for 7 languages.
+
+```rust
+use hailango::services::{Language, translate, keys};
+
+// Get language from code
+let lang = Language::from_code("ja").unwrap();
+
+// Translate UI strings
+let welcome = translate(lang, keys::WELCOME);  // "HaiLanGoへようこそ"
+let login = translate(lang, keys::LOGIN);      // "ログイン"
+
+// Supported languages
+let all_langs = Language::all();  // EN, JA, ZH, KO, ES, FR, DE
+```
+
+**Supported Languages:**
+
+| Code | Language |
+|------|----------|
+| `en` | English |
+| `ja` | Japanese |
+| `zh` | Chinese |
+| `ko` | Korean |
+| `es` | Spanish |
+| `fr` | French |
+| `de` | German |
+
+---
+
+## 6. Development Workflow
+
+### 6.1 Running with Auto-Reload
 
 ```bash
 # Watch for changes and rebuild
@@ -287,7 +369,7 @@ cargo watch -x run
 cargo watch -x run -i "*.md" -i "tests/*"
 ```
 
-### Running Tests
+### 6.2 Running Tests
 
 ```bash
 # Run all tests
@@ -303,7 +385,7 @@ cargo test -- --nocapture
 cargo test --test integration
 ```
 
-### Database Operations
+### 6.3 Database Operations
 
 ```bash
 # Create new migration
@@ -321,7 +403,7 @@ cargo sqlx database create
 cargo sqlx migrate run
 ```
 
-### Code Quality
+### 6.4 Code Quality
 
 ```bash
 # Format code
@@ -339,7 +421,7 @@ cargo check --workspace --all-features
 
 ---
 
-## 6. Project Structure
+## 7. Project Structure
 
 ```
 HaiLanGo/
@@ -377,7 +459,7 @@ HaiLanGo/
 
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 ### Database Connection Failed
 
@@ -472,7 +554,7 @@ Error: Invalid API key for Google Vision
 
 ---
 
-## 8. Next Steps
+## 9. Next Steps
 
 1. **Explore the Codebase**: Start with `src/apps/auth/` to understand the module structure
 2. **Read Architecture Docs**: See [System Architecture](../architecture/system_architecture.md)
