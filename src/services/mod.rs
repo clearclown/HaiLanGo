@@ -14,10 +14,15 @@ pub mod tts;
 pub mod websocket;
 
 // OCR exports
-pub use ocr::{MockOcrProvider, OcrError, OcrProvider, OcrResult};
+pub use ocr::{
+    GoogleVisionOcrProvider, MockOcrProvider, OcrError, OcrProvider, OcrResult, create_ocr_provider,
+};
 
 // TTS exports
-pub use tts::{AudioFormat, MockTtsProvider, TtsError, TtsProvider, TtsRequest, TtsResponse};
+pub use tts::{
+    AudioFormat, GoogleCloudTtsProvider, MockTtsProvider, TtsError, TtsProvider, TtsRequest,
+    TtsResponse, create_tts_provider,
+};
 
 // Cache exports
 pub use cache::CacheService;

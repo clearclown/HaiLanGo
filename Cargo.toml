@@ -59,14 +59,33 @@ argon2 = { version = "0.5", features = ["std"] }
 # Async trait support
 async-trait = "0.1"
 
+# HTTP client for external APIs
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+base64 = "0.22"
+
 # Web framework (for HTTP server)
 axum = "0.8"
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 
+# WASM-specific dependencies (conditional)
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+console_log = "1"
+log = "0.4"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Window", "Document", "HtmlElement", "console", "SubmitEvent"] }
+
 [dev-dependencies]
 tokio-test = "0.4"
 tower = { version = "0.5", features = ["util"] }
+testcontainers = "0.23"
+testcontainers-modules = { version = "0.11", features = ["postgres", "redis"] }
 
 [[bin]]
 name = "manage"
 path = "src/bin/manage.rs"
+
+[[bin]]
+name = "hailango-frontend"
+path = "src/bin/frontend.rs"

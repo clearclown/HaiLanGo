@@ -118,6 +118,145 @@ impl TtsProvider for MockTtsProvider {
     }
 }
 
+/// Google Cloud Text-to-Speech provider
+pub struct GoogleCloudTtsProvider {
+    api_key: String,
+    endpoint: String,
+}
+
+impl GoogleCloudTtsProvider {
+    /// Create a new Google Cloud TTS provider
+    pub fn new(api_key: &str) -> Self {
+        Self {
+            api_key: api_key.to_string(),
+            endpoint: "https://texttospeech.googleapis.com/v1/text:synthesize".to_string(),
+        }
+    }
+
+    /// Create from environment variable
+    pub fn from_env() -> Option<Self> {
+        std::env::var("GOOGLE_CLOUD_TTS_API_KEY")
+            .ok()
+            .map(|key| Self::new(&key))
+    }
+
+    /// Map language code to Google TTS voice configuration
+    fn get_voice_config(&self, language: &str) -> (String, String) {
+        match language {
+            "zh" => ("zh-CN".to_string(), "zh-CN-Standard-A".to_string()),
+            "ja" => ("ja-JP".to_string(), "ja-JP-Standard-A".to_string()),
+            "ko" => ("ko-KR".to_string(), "ko-KR-Standard-A".to_string()),
+            "es" => ("es-ES".to_string(), "es-ES-Standard-A".to_string()),
+            "fr" => ("fr-FR".to_string(), "fr-FR-Standard-A".to_string()),
+            "de" => ("de-DE".to_string(), "de-DE-Standard-A".to_string()),
+            "ru" => ("ru-RU".to_string(), "ru-RU-Standard-A".to_string()),
+            "ar" => ("ar-XA".to_string(), "ar-XA-Standard-A".to_string()),
+            _ => ("en-US".to_string(), "en-US-Standard-A".to_string()),
+        }
+    }
+
+    /// Map AudioFormat to Google's encoding
+    fn get_audio_encoding(&self, format: AudioFormat) -> &'static str {
+        match format {
+            AudioFormat::Mp3 => "MP3",
+            AudioFormat::Wav => "LINEAR16",
+            AudioFormat::Ogg => "OGG_OPUS",
+        }
+    }
+}
+
+#[async_trait]
+impl TtsProvider for GoogleCloudTtsProvider {
+    async fn synthesize(&self, request: TtsRequest) -> Result<TtsResponse, TtsError> {
+        if request.text.len() > 5000 {
+            return Err(TtsError::TextTooLong(request.text.len(), 5000));
+        }
+
+        let (language_code, voice_name) = self.get_voice_config(&request.language);
+        let audio_encoding = self.get_audio_encoding(request.format);
+
+        let body = serde_json::json!({
+            "input": {
+                "text": request.text
+            },
+            "voice": {
+                "languageCode": language_code,
+                "name": voice_name
+            },
+            "audioConfig": {
+                "audioEncoding": audio_encoding,
+                "speakingRate": request.speed
+            }
+        });
+
+        let client = reqwest::Client::new();
+        let url = format!("{}?key={}", self.endpoint, self.api_key);
+
+        let response = client
+            .post(&url)
+            .json(&body)
+            .send()
+            .await
+            .map_err(|_| TtsError::ServiceUnavailable)?;
+
+        if response.status() == 429 {
+            return Err(TtsError::RateLimitExceeded);
+        }
+
+        if !response.status().is_success() {
+            return Err(TtsError::GenerationFailed(format!(
+                "API returned status {}",
+                response.status()
+            )));
+        }
+
+        let result: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| TtsError::GenerationFailed(e.to_string()))?;
+
+        let audio_content = result["audioContent"].as_str().ok_or_else(|| {
+            TtsError::GenerationFailed("No audio content in response".to_string())
+        })?;
+
+        use base64::{Engine, engine::general_purpose::STANDARD};
+        let audio_data = STANDARD
+            .decode(audio_content)
+            .map_err(|e| TtsError::GenerationFailed(e.to_string()))?;
+
+        // Estimate duration based on text length and speed
+        let base_duration_ms = (request.text.len() as u64 * 60) / request.speed.max(0.5) as u64;
+
+        Ok(TtsResponse {
+            audio_data,
+            format: request.format,
+            duration_ms: base_duration_ms,
+            language: request.language,
+        })
+    }
+
+    fn supports_language(&self, language: &str) -> bool {
+        self.supported_languages().contains(&language)
+    }
+
+    fn supported_languages(&self) -> Vec<&'static str> {
+        vec![
+            "en", "ja", "zh", "ko", "es", "fr", "de", "ru", "ar", "he", "fa", "it", "pt", "nl",
+            "pl", "tr", "vi", "th", "id",
+        ]
+    }
+}
+
+/// Factory function to create the appropriate TTS provider
+pub fn create_tts_provider() -> Box<dyn TtsProvider> {
+    if let Some(provider) = GoogleCloudTtsProvider::from_env() {
+        Box::new(provider)
+    } else {
+        tracing::warn!("GOOGLE_CLOUD_TTS_API_KEY not set, using mock TTS provider");
+        Box::new(MockTtsProvider::new())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
