@@ -16,8 +16,8 @@
     "e2e_tests": false
   },
   "test_summary": {
-    "total_tests": 150,
-    "passed": 150,
+    "total_tests": 164,
+    "passed": 164,
     "failed": 0,
     "ignored": 0
   },
@@ -93,6 +93,24 @@
         "trait": true,
         "mock": true,
         "tests": 6
+      },
+      "cache": {
+        "redis_integration": true,
+        "session_management": true,
+        "rate_limiting": true,
+        "job_queue": true,
+        "tests": 4
+      },
+      "websocket": {
+        "ws_messages": true,
+        "lesson_sessions": true,
+        "connection_manager": true,
+        "tests": 5
+      },
+      "i18n": {
+        "languages": ["en", "ja", "zh", "ko", "es", "fr", "de"],
+        "translation_keys": true,
+        "tests": 5
       }
     },
     "api_middleware": {
@@ -190,7 +208,10 @@
     "PostgreSQL schema with 9 tables designed",
     "docker-compose.yml ready for local development",
     "WASM frontend components prepared (conditional compilation)",
-    "All 150 tests passing",
+    "i18n service with 7 language support",
+    "WebSocket service for Teacher Mode real-time communication",
+    "Redis cache service for sessions, rate limiting, job queues",
+    "All 164 tests passing",
     "All quality gates passing (8/9, E2E optional)"
   ]
 }
