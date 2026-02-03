@@ -1,0 +1,22 @@
+[build]
+target = "index.html"
+dist = "../dist"
+public_url = "/"
+
+[watch]
+watch = ["src", "../static", "index.html"]
+ignore = ["target", "../dist"]
+
+[serve]
+addresses = ["127.0.0.1"]
+port = 8081
+open = false
+
+[[hooks]]
+stage = "build"
+command = "sh"
+command_arguments = ["-c", "mkdir -p ../dist/static && cp -r ../static/* ../dist/static/ 2>/dev/null || true"]
+
+[tools]
+wasm_bindgen = "0.2.108"
+wasm_opt = "version_119"
