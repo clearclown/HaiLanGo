@@ -23,7 +23,7 @@ pub enum WsMessage {
         page: u32,
     },
     /// Pause lesson
-    PausLesson,
+    PauseLesson,
     /// Resume lesson
     ResumeLesson,
     /// Stop lesson
