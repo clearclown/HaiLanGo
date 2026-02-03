@@ -1,0 +1,72 @@
+[package]
+name = "hailango"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+
+[dependencies]
+# Reinhardt framework (full-stack Rust framework)
+# Note: auth and redis-backend have bugs in alpha, using direct implementations
+reinhardt = { version = "0.1.0-alpha.1", package = "reinhardt-web", default-features = false, features = [
+    "standard",
+    "conf",
+    "database",
+    "db-postgres",
+    "pages",
+    "i18n",
+    "websockets",
+    "openapi",
+    "middleware-cors",
+    "middleware-rate-limit",
+    "mail",
+    "tasks"
+] }
+
+# Redis client (workaround for reinhardt redis-backend alpha bug)
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
+
+# JWT authentication (workaround for reinhardt-auth alpha bug)
+jsonwebtoken = "9"
+
+# SQLx for direct database access (supplement to reinhardt-db)
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "uuid", "chrono"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# UUID and time
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Configuration
+dotenvy = "0.15"
+
+# Password hashing
+argon2 = { version = "0.5", features = ["std"] }
+
+# Async trait support
+async-trait = "0.1"
+
+# Web framework (for HTTP server)
+axum = "0.8"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+tower = { version = "0.5", features = ["util"] }
+
+[[bin]]
+name = "manage"
+path = "src/bin/manage.rs"

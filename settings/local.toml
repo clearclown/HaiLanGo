@@ -1,0 +1,18 @@
+# Local Development Settings (Override base.toml)
+
+[app]
+debug = true
+
+[database]
+host = "localhost"
+name = "hailango_dev"
+
+[external_apis]
+# Use mock providers in development
+ocr_provider = "mock"
+tts_provider = "mock"
+stt_provider = "mock"
+
+[logging]
+level = "debug"
+format = "pretty"

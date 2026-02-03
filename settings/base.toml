@@ -1,0 +1,74 @@
+# HaiLanGo Base Settings (Reinhardt Framework)
+
+[app]
+name = "HaiLanGo"
+version = "0.1.0"
+debug = false
+
+[server]
+host = "0.0.0.0"
+port = 8080
+workers = 4
+
+[database]
+engine = "postgresql"
+host = "localhost"
+port = 5432
+name = "hailango"
+user = "postgres"
+password = "postgres"
+pool_size = 10
+max_connections = 100
+timeout = 30
+
+[redis]
+host = "localhost"
+port = 6379
+database = 0
+pool_size = 10
+
+[auth]
+# JWT settings
+jwt_secret = "change-this-in-production"
+jwt_expiry_hours = 24
+refresh_expiry_days = 30
+
+# Session settings
+session_timeout_minutes = 30
+
+[security]
+cors_origins = ["http://localhost:3000", "http://localhost:8080"]
+cors_allow_credentials = true
+rate_limit_requests = 100
+rate_limit_window_seconds = 60
+
+[external_apis]
+# OCR Provider
+ocr_provider = "google"  # "google" | "azure" | "mock"
+google_vision_api_key = ""
+azure_vision_endpoint = ""
+azure_vision_key = ""
+
+# TTS Provider
+tts_provider = "google"  # "google" | "azure" | "mock"
+google_tts_api_key = ""
+azure_speech_endpoint = ""
+azure_speech_key = ""
+
+# STT Provider
+stt_provider = "openai"  # "openai" | "azure" | "mock"
+openai_api_key = ""
+
+# LLM Provider
+llm_provider = "anthropic"
+anthropic_api_key = ""
+
+[storage]
+# File storage settings
+upload_path = "./uploads"
+max_file_size_mb = 50
+allowed_extensions = ["pdf", "png", "jpg", "jpeg"]
+
+[logging]
+level = "info"
+format = "json"

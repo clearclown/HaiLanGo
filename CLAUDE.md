@@ -55,8 +55,17 @@ HaiLanGo/
 ├── templates/               # Server-side templates (if needed)
 ├── static/                  # Static files (CSS, JS, images)
 ├── migrations/              # Database migrations
-├── docs/
-│   └── requirements_definition.md
+├── docs/                    # Documentation
+│   ├── README.md            # Documentation index
+│   ├── requirements_definition.md
+│   ├── architecture/        # Technical specifications
+│   │   ├── system_architecture.md
+│   │   ├── database_schema.md
+│   │   └── api_specification.md
+│   ├── guides/              # Developer guides
+│   │   └── getting_started.md
+│   └── testing/             # Test documentation
+│       └── test_strategy.md
 ├── Cargo.toml
 └── README.md
 ```
@@ -215,11 +224,21 @@ ANTHROPIC_API_KEY=
 
 ## References
 
+### External Resources
 - [Reinhardt Framework](https://github.com/kent8192/reinhardt-web)
 - [Reinhardt Docs](https://docs.rs/reinhardt-web)
-- [Requirements Definition](docs/requirements_definition.md)
 - [SeaQuery Documentation](https://www.sea-ql.org/SeaQuery/)
+
+### Project Documentation
+- [Documentation Index](docs/README.md) - Start here for navigation
+- [Requirements Definition](docs/requirements_definition.md) - Feature requirements
+- [System Architecture](docs/architecture/system_architecture.md) - System design
+- [Database Schema](docs/architecture/database_schema.md) - Data models
+- [API Specification](docs/architecture/api_specification.md) - REST/WebSocket APIs
+- [Getting Started](docs/guides/getting_started.md) - Development setup
+- [Test Strategy](docs/testing/test_strategy.md) - Testing approach
 
 ---
 
 For detailed requirements, consult `docs/requirements_definition.md`.
+For quick setup, see `docs/guides/getting_started.md`.
