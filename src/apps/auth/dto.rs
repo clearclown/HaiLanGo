@@ -51,6 +51,20 @@ pub struct TokenResponse {
     pub expires_in: u64,
 }
 
+/// OAuth callback query parameters
+#[derive(Debug, Deserialize)]
+pub struct OAuthCallbackQuery {
+    pub code: String,
+    pub state: String,
+}
+
+/// OAuth provider info for listing
+#[derive(Debug, Serialize)]
+pub struct OAuthProviderInfo {
+    pub name: String,
+    pub configured: bool,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,6 +138,27 @@ mod tests {
         let json = serde_json::to_string(&response).unwrap();
         assert!(json.contains("test@example.com"));
         assert!(json.contains("Test User"));
+    }
+
+    #[test]
+    fn test_oauth_callback_query_deserialization() {
+        let json = r#"{"code":"auth_code_123","state":"random_state"}"#;
+        let query: OAuthCallbackQuery = serde_json::from_str(json).unwrap();
+
+        assert_eq!(query.code, "auth_code_123");
+        assert_eq!(query.state, "random_state");
+    }
+
+    #[test]
+    fn test_oauth_provider_info_serialization() {
+        let info = OAuthProviderInfo {
+            name: "google".to_string(),
+            configured: true,
+        };
+
+        let json = serde_json::to_string(&info).unwrap();
+        assert!(json.contains("google"));
+        assert!(json.contains("true"));
     }
 
     #[test]

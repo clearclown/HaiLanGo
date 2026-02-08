@@ -1,17 +1,23 @@
 //! Text-to-Speech app
 //!
 //! Provides audio generation for learning content.
-//! Supports multiple languages and voice options.
+//! Supports multiple languages, voice options, and quality tiers.
 //!
 //! Models:
-//! - TTSRequest: Request for audio generation
+//! - AudioGeneration: Record of a TTS generation request
 //! - AudioCache: Cached TTS results for reuse
 //!
-//! Services:
-//! - TTSService: Google Cloud TTS / Azure Speech integration
-//! - AudioCacheService: Cache management for generated audio
+//! Services (in `crate::services::tts`):
+//! - TtsProvider trait: Abstraction for TTS backends (Google, ElevenLabs, Mock)
+//! - QualityTier: Standard vs Premium voice quality
 //!
 //! Views:
-//! - TTSViewSet: Request and retrieve audio files
+//! - TtsViewSet: Synthesize speech, list history, get supported languages
 
-// TODO: Implement TTS models, views, services
+pub mod dto;
+pub mod models;
+pub mod views;
+
+pub use dto::*;
+pub use models::{AudioCache, AudioGeneration, GenerationStatus};
+pub use views::{SynthesizeResult, TtsViewSet};

@@ -244,6 +244,118 @@ impl OAuthService {
         }
         providers
     }
+
+    /// Exchange authorization code for access token
+    pub async fn exchange_code(
+        &self,
+        provider: OAuthProvider,
+        code: &str,
+    ) -> Result<OAuthTokenResponse, OAuthError> {
+        let config = self.get_config(provider).ok_or_else(|| {
+            OAuthError::InvalidProvider(format!("{:?} is not configured", provider))
+        })?;
+
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(&config.token_url)
+            .header("Accept", "application/json")
+            .form(&[
+                ("code", code),
+                ("client_id", config.client_id.as_str()),
+                ("client_secret", config.client_secret.as_str()),
+                ("redirect_uri", config.redirect_uri.as_str()),
+                ("grant_type", "authorization_code"),
+            ])
+            .send()
+            .await
+            .map_err(|e| OAuthError::HttpError(e.to_string()))?;
+
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(OAuthError::TokenExchangeFailed(body));
+        }
+
+        resp.json::<OAuthTokenResponse>()
+            .await
+            .map_err(|e| OAuthError::TokenExchangeFailed(e.to_string()))
+    }
+
+    /// Fetch and normalize user info from provider
+    pub async fn fetch_user_info(
+        &self,
+        provider: OAuthProvider,
+        access_token: &str,
+    ) -> Result<OAuthUserInfo, OAuthError> {
+        let config = self.get_config(provider).ok_or_else(|| {
+            OAuthError::InvalidProvider(format!("{:?} is not configured", provider))
+        })?;
+
+        let client = reqwest::Client::new();
+        let resp = client
+            .get(&config.userinfo_url)
+            .bearer_auth(access_token)
+            .header("User-Agent", "HaiLanGo/0.1")
+            .send()
+            .await
+            .map_err(|e| OAuthError::HttpError(e.to_string()))?;
+
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(OAuthError::UserInfoFailed(body));
+        }
+
+        match provider {
+            OAuthProvider::Google => {
+                let info = resp
+                    .json::<GoogleUserInfo>()
+                    .await
+                    .map_err(|e| OAuthError::UserInfoFailed(e.to_string()))?;
+                Ok(Self::normalize_google(info))
+            }
+            OAuthProvider::GitHub => {
+                let info = resp
+                    .json::<GitHubUserInfo>()
+                    .await
+                    .map_err(|e| OAuthError::UserInfoFailed(e.to_string()))?;
+                Self::normalize_github(info)
+            }
+        }
+    }
+
+    /// Full OAuth flow: exchange code and fetch user info
+    pub async fn authenticate(
+        &self,
+        provider: OAuthProvider,
+        code: &str,
+    ) -> Result<OAuthUserInfo, OAuthError> {
+        let tokens = self.exchange_code(provider, code).await?;
+        self.fetch_user_info(provider, &tokens.access_token).await
+    }
+
+    /// Normalize Google user info
+    fn normalize_google(info: GoogleUserInfo) -> OAuthUserInfo {
+        OAuthUserInfo {
+            provider: OAuthProvider::Google,
+            provider_id: info.id,
+            email: info.email,
+            name: info.name,
+            avatar_url: info.picture,
+        }
+    }
+
+    /// Normalize GitHub user info
+    fn normalize_github(info: GitHubUserInfo) -> Result<OAuthUserInfo, OAuthError> {
+        let email = info
+            .email
+            .ok_or(OAuthError::MissingField("email".to_string()))?;
+        Ok(OAuthUserInfo {
+            provider: OAuthProvider::GitHub,
+            provider_id: info.id.to_string(),
+            email,
+            name: info.name.or(Some(info.login)),
+            avatar_url: info.avatar_url,
+        })
+    }
 }
 
 impl Default for OAuthService {
@@ -357,5 +469,97 @@ mod tests {
         assert_eq!(urlencoding::encode("hello"), "hello");
         assert_eq!(urlencoding::encode("hello world"), "hello%20world");
         assert_eq!(urlencoding::encode("test@email.com"), "test%40email.com");
+    }
+
+    #[test]
+    fn test_normalize_google() {
+        let info = GoogleUserInfo {
+            id: "g123".to_string(),
+            email: "user@gmail.com".to_string(),
+            verified_email: Some(true),
+            name: Some("Test User".to_string()),
+            picture: Some("https://example.com/photo.jpg".to_string()),
+        };
+
+        let normalized = OAuthService::normalize_google(info);
+
+        assert_eq!(normalized.provider, OAuthProvider::Google);
+        assert_eq!(normalized.provider_id, "g123");
+        assert_eq!(normalized.email, "user@gmail.com");
+        assert_eq!(normalized.name, Some("Test User".to_string()));
+        assert!(normalized.avatar_url.is_some());
+    }
+
+    #[test]
+    fn test_normalize_github() {
+        let info = GitHubUserInfo {
+            id: 456,
+            login: "testuser".to_string(),
+            email: Some("user@github.com".to_string()),
+            name: Some("GitHub User".to_string()),
+            avatar_url: Some("https://avatars.githubusercontent.com/u/456".to_string()),
+        };
+
+        let normalized = OAuthService::normalize_github(info).unwrap();
+
+        assert_eq!(normalized.provider, OAuthProvider::GitHub);
+        assert_eq!(normalized.provider_id, "456");
+        assert_eq!(normalized.email, "user@github.com");
+        assert_eq!(normalized.name, Some("GitHub User".to_string()));
+    }
+
+    #[test]
+    fn test_normalize_github_missing_email() {
+        let info = GitHubUserInfo {
+            id: 789,
+            login: "nomail".to_string(),
+            email: None,
+            name: None,
+            avatar_url: Some("https://example.com/avatar.jpg".to_string()),
+        };
+
+        let result = OAuthService::normalize_github(info);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_github_uses_login_as_name() {
+        let info = GitHubUserInfo {
+            id: 101,
+            login: "devuser".to_string(),
+            email: Some("dev@example.com".to_string()),
+            name: None,
+            avatar_url: Some("https://example.com/a.jpg".to_string()),
+        };
+
+        let normalized = OAuthService::normalize_github(info).unwrap();
+        assert_eq!(normalized.name, Some("devuser".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_exchange_code_unconfigured() {
+        let service = OAuthService::new();
+        let result = service
+            .exchange_code(OAuthProvider::Google, "test_code")
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_fetch_user_info_unconfigured() {
+        let service = OAuthService::new();
+        let result = service
+            .fetch_user_info(OAuthProvider::GitHub, "test_token")
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_authenticate_unconfigured() {
+        let service = OAuthService::new();
+        let result = service
+            .authenticate(OAuthProvider::Google, "test_code")
+            .await;
+        assert!(result.is_err());
     }
 }

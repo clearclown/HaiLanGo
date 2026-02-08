@@ -32,4 +32,4 @@ pub use dto::*;
 pub use models::User;
 pub use oauth::{OAuthConfig, OAuthError, OAuthProvider, OAuthService, OAuthUserInfo};
 pub use services::{AuthError, hash_password, verify_password};
-pub use views::{AuthViewSet, LoginResult, RegisterResult};
+pub use views::{AuthViewSet, LoginResult, OAuthLoginResult, RegisterResult};

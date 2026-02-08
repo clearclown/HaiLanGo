@@ -2,6 +2,7 @@
 
 use super::dto::{AuthResponse, LoginRequest, RegisterRequest, TokenResponse, UserResponse};
 use super::models::User;
+use super::oauth::OAuthUserInfo;
 use super::services::{hash_password, verify_password};
 
 /// Registration request handler result
@@ -18,6 +19,13 @@ pub enum LoginResult {
     Success(AuthResponse),
     InvalidCredentials,
     UserNotFound,
+}
+
+/// OAuth login result
+#[derive(Debug)]
+pub enum OAuthLoginResult {
+    Success(AuthResponse),
+    ProviderError(String),
 }
 
 /// Auth ViewSet - handles authentication endpoints
@@ -99,6 +107,32 @@ impl AuthViewSet {
         }
     }
 
+    /// Login or create user from OAuth provider info
+    pub fn oauth_login(user_info: OAuthUserInfo) -> OAuthLoginResult {
+        let user = User::new_oauth(
+            user_info.email.clone(),
+            user_info
+                .name
+                .unwrap_or_else(|| user_info.email.clone()),
+            user_info.provider.as_str().to_string(),
+            user_info.provider_id,
+        );
+
+        let tokens = Self::generate_tokens(&user);
+
+        OAuthLoginResult::Success(AuthResponse {
+            user: UserResponse {
+                id: user.id,
+                email: user.email,
+                display_name: user.display_name,
+                native_language: user.native_language,
+                email_verified: user.email_verified,
+                created_at: user.created_at,
+            },
+            tokens,
+        })
+    }
+
     /// Generate JWT tokens (mock implementation)
     fn generate_tokens(user: &User) -> TokenResponse {
         // In production, use reinhardt-auth JWT generation
@@ -113,6 +147,7 @@ impl AuthViewSet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::apps::auth::oauth::OAuthProvider;
 
     #[test]
     fn test_register_success() {
@@ -203,5 +238,49 @@ mod tests {
 
         let result = AuthViewSet::login(request, None);
         assert!(matches!(result, LoginResult::UserNotFound));
+    }
+
+    #[test]
+    fn test_oauth_login_google() {
+        let user_info = OAuthUserInfo {
+            provider: OAuthProvider::Google,
+            provider_id: "google_123".to_string(),
+            email: "oauth@gmail.com".to_string(),
+            name: Some("OAuth User".to_string()),
+            avatar_url: Some("https://example.com/photo.jpg".to_string()),
+        };
+
+        let result = AuthViewSet::oauth_login(user_info);
+
+        match result {
+            OAuthLoginResult::Success(response) => {
+                assert_eq!(response.user.email, "oauth@gmail.com");
+                assert_eq!(response.user.display_name, "OAuth User");
+                assert!(response.user.email_verified); // OAuth users are pre-verified
+                assert!(!response.tokens.access_token.is_empty());
+            }
+            _ => panic!("Expected success"),
+        }
+    }
+
+    #[test]
+    fn test_oauth_login_without_name() {
+        let user_info = OAuthUserInfo {
+            provider: OAuthProvider::GitHub,
+            provider_id: "gh_456".to_string(),
+            email: "dev@github.com".to_string(),
+            name: None,
+            avatar_url: None,
+        };
+
+        let result = AuthViewSet::oauth_login(user_info);
+
+        match result {
+            OAuthLoginResult::Success(response) => {
+                // Falls back to email as display name
+                assert_eq!(response.user.display_name, "dev@github.com");
+            }
+            _ => panic!("Expected success"),
+        }
     }
 }

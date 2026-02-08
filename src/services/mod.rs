@@ -3,6 +3,7 @@
 //! Provides integrations with external services:
 //! - OCR: Optical Character Recognition for book scanning
 //! - TTS: Text-to-Speech for audio generation
+//! - STT: Speech-to-Text and pronunciation evaluation
 //! - Cache: Redis-based caching and session management
 //! - WebSocket: Real-time communication for Teacher Mode
 //! - i18n: Internationalization support
@@ -10,6 +11,7 @@
 pub mod cache;
 pub mod i18n;
 pub mod ocr;
+pub mod stt;
 pub mod tts;
 pub mod websocket;
 
@@ -20,8 +22,15 @@ pub use ocr::{
 
 // TTS exports
 pub use tts::{
-    AudioFormat, GoogleCloudTtsProvider, MockTtsProvider, TtsError, TtsProvider, TtsRequest,
-    TtsResponse, create_tts_provider,
+    AudioFormat, ElevenLabsTtsProvider, GoogleCloudTtsProvider, MockTtsProvider, QualityTier,
+    TtsError, TtsProvider, TtsRequest, TtsResponse, create_tts_provider, create_tts_provider_by_name,
+};
+
+// STT exports
+pub use stt::{
+    MockSttProvider, PronunciationEvaluator, PronunciationResult, SttAudioFormat, SttError,
+    SttProvider, SttRequest, SttResponse, WhisperSttProvider, WordResult, WordScore,
+    create_stt_provider,
 };
 
 // Cache exports

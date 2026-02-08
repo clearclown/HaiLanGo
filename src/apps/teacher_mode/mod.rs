@@ -1,19 +1,21 @@
 //! Teacher Mode app
 //!
 //! Provides automated lesson playback and pacing control.
-//! Allows instructors to define lesson sequences with TTS narration.
+//! Allows users to progress through book pages with TTS narration,
+//! configurable speed, page intervals, and repeat counts.
 //!
 //! Models:
-//! - LessonPlan: Sequence of pages/items to cover in a lesson
-//! - LessonPlayback: User's progress through a lesson
-//!
-//! Services:
-//! - LessonService: Lesson creation and management
-//! - PlaybackService: Control lesson playback and pacing
-//! - LessonRecommendationService: AI-generated lesson suggestions
+//! - TeacherSession: A lesson playback session with config and progress
+//! - PlaybackConfig: Speed, interval, repeat, auto-advance settings
+//! - PagePlayback: Per-page playback tracking
 //!
 //! Views:
-//! - LessonPlanViewSet: Create and retrieve lesson plans
-//! - PlaybackViewSet: Control playback and report progress
+//! - TeacherModeViewSet: Start/pause/resume/stop/next/config/status
 
-// TODO: Implement teacher_mode models, views, services
+pub mod dto;
+pub mod models;
+pub mod views;
+
+pub use dto::*;
+pub use models::*;
+pub use views::*;

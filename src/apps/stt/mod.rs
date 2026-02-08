@@ -5,14 +5,20 @@
 //!
 //! Models:
 //! - PronunciationAttempt: User's speech recording and evaluation
-//! - PronunciationFeedback: Detailed feedback on pronunciation
+//! - WordFeedback: Per-word feedback stored alongside an attempt
+//! - PronunciationStats: Aggregated pronunciation statistics
 //!
-//! Services:
-//! - STTService: OpenAI Whisper / Azure Speech integration
-//! - PronunciationService: Speech analysis and scoring
-//! - FeedbackService: Generate learner-friendly pronunciation feedback
+//! Services (in `crate::services::stt`):
+//! - SttProvider trait: Abstraction for STT backends (Whisper, Azure, Mock)
+//! - PronunciationEvaluator: Compares recognized text against expected text
 //!
 //! Views:
-//! - PronunciationViewSet: Submit and retrieve pronunciation evaluations
+//! - SttViewSet: Evaluate pronunciation, list attempts, get stats
 
-// TODO: Implement STT models, views, services
+pub mod dto;
+pub mod models;
+pub mod views;
+
+pub use dto::*;
+pub use models::{AttemptStatus, PronunciationAttempt, PronunciationStats, WeakWord, WordFeedback};
+pub use views::{EvaluateResult, GetAttemptResult, SttViewSet};
