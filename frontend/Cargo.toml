@@ -22,8 +22,13 @@ web-sys = { version = "0.3", features = [
     "Window",
     "Document",
     "HtmlElement",
+    "HtmlInputElement",
+    "HtmlAudioElement",
     "console",
     "SubmitEvent",
+    "InputEvent",
+    "Event",
+    "EventTarget",
     "Storage",
     "Headers",
     "Request",
@@ -31,6 +36,11 @@ web-sys = { version = "0.3", features = [
     "RequestMode",
     "Response",
     "Location",
+    "FileList",
+    "File",
+    "FormData",
+    "Blob",
+    "Url",
 ] }
 js-sys = "0.3"
 
@@ -47,3 +57,6 @@ serde_json = "1"
 gloo-net = "0.6"
 gloo-storage = "0.3"
 gloo-timers = "0.3"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"

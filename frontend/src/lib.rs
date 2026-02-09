@@ -5,8 +5,7 @@
 pub mod api;
 pub mod components;
 pub mod layouts;
+pub mod pages;
 pub mod routes;
 
-pub use components::*;
-pub use layouts::*;
 pub use routes::AppRouter;
