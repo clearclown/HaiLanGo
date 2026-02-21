@@ -9,6 +9,7 @@
 //! - i18n: Internationalization support
 
 pub mod cache;
+pub mod di;
 pub mod i18n;
 pub mod ocr;
 pub mod stt;

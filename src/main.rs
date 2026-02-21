@@ -5,8 +5,9 @@ use bytes::Bytes;
 use serde::Serialize;
 use serde_json::json;
 
-use hailango::{DefaultRouter, Handler, Method, Request, Response, Result, Route, Router, path};
+use hailango::{DefaultRouter, Handler, Method, MiddlewareChain, Request, Response, Result, Route, Router, StatusCode, path};
 use hailango::config::urls::configure_urls;
+use hailango::api::middleware::{CorsMiddleware, JwtAuthMiddleware, LoggingMiddleware};
 
 /// Application state shared across handlers
 #[derive(Clone)]
@@ -131,9 +132,9 @@ impl Handler for ReadyHandler {
 
         let status = if any_unhealthy { "not_ready" } else { "ready" };
         let code = if any_unhealthy {
-            http::StatusCode::SERVICE_UNAVAILABLE
+            StatusCode::SERVICE_UNAVAILABLE
         } else {
-            http::StatusCode::OK
+            StatusCode::OK
         };
 
         Response::new(code).with_json(&json!({"status": status, "checks": checks}))
@@ -155,6 +156,21 @@ pub fn create_app(state: AppState) -> DefaultRouter {
     router.add_route(path("/ready/", ReadyHandler { state }));
 
     router
+}
+
+/// Wrap the router in the Reinhardt MiddlewareChain.
+///
+/// Middleware executes in insertion order (outermost → innermost):
+/// 1. `LoggingMiddleware` — structured request/response logging
+/// 2. `CorsMiddleware`    — permissive CORS headers (restrict in production)
+/// 3. `JwtAuthMiddleware` — optional JWT validation for `/api/*` routes
+pub fn create_middleware_stack(router: DefaultRouter) -> MiddlewareChain {
+    use std::sync::Arc;
+
+    MiddlewareChain::new(Arc::new(router))
+        .with_middleware(Arc::new(LoggingMiddleware::new()))
+        .with_middleware(Arc::new(CorsMiddleware::permissive()))
+        .with_middleware(Arc::new(JwtAuthMiddleware::new()))
 }
 
 #[tokio::main]
@@ -207,15 +223,19 @@ async fn main() -> anyhow::Result<()> {
         redis_url,
     };
 
-    // Create router
+    // Create router and wrap in middleware stack
     let router = create_app(state);
+    let app = create_middleware_stack(router);
 
     // Bind to address and start Reinhardt HTTP server
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     tracing::info!("Listening on {}", addr);
 
     use reinhardt::server::HttpServer;
-    HttpServer::new(router).listen(addr).await?;
+    HttpServer::new(app)
+        .listen(addr)
+        .await
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     Ok(())
 }
