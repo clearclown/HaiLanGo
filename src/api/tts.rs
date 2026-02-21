@@ -5,13 +5,13 @@ use serde_json::json;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
-use crate::{Handler, Request, Response, Result, Route, StatusCode, path};
 use crate::apps::tts::{
     dto::SynthesizeRequest,
     models::AudioGeneration,
     views::{SynthesizeResult, TtsViewSet},
 };
 use crate::services::tts::{MockTtsProvider, TtsProvider, create_tts_provider};
+use crate::{Handler, Request, Response, Result, Route, StatusCode, path};
 
 /// Shared TTS state
 #[derive(Clone)]
@@ -71,8 +71,9 @@ impl Handler for SynthesizeHandler {
             SynthesizeResult::InvalidInput(msg) => {
                 Response::bad_request().with_json(&json!({"error": msg}))
             }
-            SynthesizeResult::ServiceError(msg) => Response::new(StatusCode::SERVICE_UNAVAILABLE)
-                .with_json(&json!({"error": msg})),
+            SynthesizeResult::ServiceError(msg) => {
+                Response::new(StatusCode::SERVICE_UNAVAILABLE).with_json(&json!({"error": msg}))
+            }
         }
     }
 }
@@ -116,7 +117,12 @@ pub fn routes() -> Vec<Route> {
                 state: state.clone(),
             },
         ),
-        path("/history/", HistoryHandler { state: state.clone() }),
+        path(
+            "/history/",
+            HistoryHandler {
+                state: state.clone(),
+            },
+        ),
         path("/languages/", LanguagesHandler { state }),
     ]
 }
@@ -124,8 +130,8 @@ pub fn routes() -> Vec<Route> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytes::Bytes;
     use crate::Method;
+    use bytes::Bytes;
 
     fn result_to_response(result: Result<Response>) -> Response {
         match result {

@@ -3,8 +3,8 @@
 //! Defines all API routes and endpoint mappings for the application.
 //! Uses Reinhardt's DefaultRouter with mount() for prefix-based grouping.
 
-use crate::{DefaultRouter, Router};
 use crate::api;
+use crate::{DefaultRouter, Router};
 
 /// Build the application router with all API routes mounted
 pub fn configure_urls() -> DefaultRouter {

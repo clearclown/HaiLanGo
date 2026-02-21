@@ -5,7 +5,6 @@ use serde_json::json;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
-use crate::{Handler, Method, Request, Response, Result, Route, path};
 use crate::apps::learning::{
     dto::{CreateSessionRequest, UpdateProgressRequest, UpdateSessionStatusRequest},
     models::LearningSession,
@@ -14,6 +13,7 @@ use crate::apps::learning::{
         UpdateSessionResult,
     },
 };
+use crate::{Handler, Method, Request, Response, Result, Route, path};
 
 /// Simulated session store
 #[derive(Clone, Default)]
@@ -59,11 +59,8 @@ impl SessionsListHandler {
 
         match LearningViewSet::create(req, user_id, book_exists) {
             CreateSessionResult::Success(response) => {
-                let session = LearningSession::new(
-                    user_id,
-                    response.book_id.unwrap(),
-                    response.session_type,
-                );
+                let session =
+                    LearningSession::new(user_id, response.book_id.unwrap(), response.session_type);
                 self.state.sessions.write().unwrap().push(session);
                 Response::created().with_json(&response)
             }
@@ -193,8 +190,8 @@ pub fn routes() -> Vec<Route> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytes::Bytes;
     use crate::Method;
+    use bytes::Bytes;
 
     fn result_to_response(result: Result<Response>) -> Response {
         match result {

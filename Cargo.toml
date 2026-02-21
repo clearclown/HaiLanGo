@@ -66,10 +66,6 @@ async-trait = "0.1"
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "multipart"], default-features = false }
 base64 = "0.22"
 
-# Web framework (for HTTP server)
-axum = "0.8"
-tower-http = { version = "0.6", features = ["cors", "trace"] }
-
 # WASM-specific dependencies (conditional)
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1"
@@ -82,7 +78,6 @@ web-sys = { version = "0.3", features = ["Window", "Document", "HtmlElement", "c
 [dev-dependencies]
 reinhardt-test = "=0.1.0-alpha.4"
 tokio-test = "0.4"
-tower = { version = "0.5", features = ["util"] }
 testcontainers = "0.23"
 testcontainers-modules = { version = "0.11", features = ["postgres", "redis"] }
 

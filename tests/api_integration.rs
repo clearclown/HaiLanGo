@@ -62,7 +62,11 @@ async fn test_auth_login_invalid_credentials() {
         .unwrap();
 
     // Login with unknown user returns 404 (user not found)
-    assert_eq!(response.status_code(), 404, "unknown user should return 404");
+    assert_eq!(
+        response.status_code(),
+        404,
+        "unknown user should return 404"
+    );
     shutdown_test_server(handle).await;
 }
 
@@ -75,7 +79,10 @@ async fn test_auth_oauth_providers() {
     assert_eq!(response.status_code(), 200);
 
     let body = response.json_value().unwrap();
-    assert!(body.is_array() || body.is_object(), "providers should be array or object");
+    assert!(
+        body.is_array() || body.is_object(),
+        "providers should be array or object"
+    );
     shutdown_test_server(handle).await;
 }
 
@@ -230,7 +237,10 @@ async fn test_tts_synthesize() {
 
     assert_eq!(response.status_code(), 200);
     let body = response.json_value().unwrap();
-    assert!(body["audio_base64"].is_string(), "response should contain audio_base64");
+    assert!(
+        body["audio_base64"].is_string(),
+        "response should contain audio_base64"
+    );
     shutdown_test_server(handle).await;
 }
 
@@ -240,7 +250,11 @@ async fn test_tts_synthesize_empty_text() {
     let client = APIClient::with_base_url(&url);
 
     let response = client
-        .post("/api/tts/synthesize/", &json!({"text": "", "language": "en"}), "json")
+        .post(
+            "/api/tts/synthesize/",
+            &json!({"text": "", "language": "en"}),
+            "json",
+        )
         .await
         .unwrap();
 

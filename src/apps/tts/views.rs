@@ -50,13 +50,10 @@ impl TtsViewSet {
         }
 
         // Create generation record
-        let mut generation = AudioGeneration::new(
-            user_id,
-            request.text.clone(),
-            request.language.clone(),
-        )
-        .with_speed(request.speed)
-        .with_quality(request.quality);
+        let mut generation =
+            AudioGeneration::new(user_id, request.text.clone(), request.language.clone())
+                .with_speed(request.speed)
+                .with_quality(request.quality);
         generation.format = request.format;
         generation.provider = provider.provider_name().to_string();
 

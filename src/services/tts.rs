@@ -239,8 +239,7 @@ impl TtsProvider for GoogleCloudTtsProvider {
             return Err(TtsError::TextTooLong(request.text.len(), 5000));
         }
 
-        let (language_code, voice_name) =
-            self.get_voice_config(&request.language, request.quality);
+        let (language_code, voice_name) = self.get_voice_config(&request.language, request.quality);
         let audio_encoding = self.get_audio_encoding(request.format);
 
         let body = serde_json::json!({
@@ -476,7 +475,9 @@ pub fn create_tts_provider() -> Box<dyn TtsProvider> {
 /// Create a provider by name (for explicit selection)
 pub fn create_tts_provider_by_name(name: &str) -> Option<Box<dyn TtsProvider>> {
     match name {
-        "elevenlabs" => ElevenLabsTtsProvider::from_env().map(|p| Box::new(p) as Box<dyn TtsProvider>),
+        "elevenlabs" => {
+            ElevenLabsTtsProvider::from_env().map(|p| Box::new(p) as Box<dyn TtsProvider>)
+        }
         "google" => GoogleCloudTtsProvider::from_env().map(|p| Box::new(p) as Box<dyn TtsProvider>),
         "mock" => Some(Box::new(MockTtsProvider::new())),
         _ => None,
@@ -624,16 +625,34 @@ mod tests {
 
     #[test]
     fn test_elevenlabs_output_format() {
-        assert_eq!(ElevenLabsTtsProvider::output_format(AudioFormat::Mp3), "mp3_44100_128");
-        assert_eq!(ElevenLabsTtsProvider::output_format(AudioFormat::Ogg), "ogg_vorbis");
-        assert_eq!(ElevenLabsTtsProvider::output_format(AudioFormat::Wav), "pcm_44100");
+        assert_eq!(
+            ElevenLabsTtsProvider::output_format(AudioFormat::Mp3),
+            "mp3_44100_128"
+        );
+        assert_eq!(
+            ElevenLabsTtsProvider::output_format(AudioFormat::Ogg),
+            "ogg_vorbis"
+        );
+        assert_eq!(
+            ElevenLabsTtsProvider::output_format(AudioFormat::Wav),
+            "pcm_44100"
+        );
     }
 
     #[test]
     fn test_elevenlabs_model_selection() {
-        assert_eq!(ElevenLabsTtsProvider::model_for_language("en"), "eleven_turbo_v2_5");
-        assert_eq!(ElevenLabsTtsProvider::model_for_language("ja"), "eleven_multilingual_v2");
-        assert_eq!(ElevenLabsTtsProvider::model_for_language("zh"), "eleven_multilingual_v2");
+        assert_eq!(
+            ElevenLabsTtsProvider::model_for_language("en"),
+            "eleven_turbo_v2_5"
+        );
+        assert_eq!(
+            ElevenLabsTtsProvider::model_for_language("ja"),
+            "eleven_multilingual_v2"
+        );
+        assert_eq!(
+            ElevenLabsTtsProvider::model_for_language("zh"),
+            "eleven_multilingual_v2"
+        );
     }
 
     #[test]

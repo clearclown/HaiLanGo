@@ -24,7 +24,8 @@ pub use ocr::{
 // TTS exports
 pub use tts::{
     AudioFormat, ElevenLabsTtsProvider, GoogleCloudTtsProvider, MockTtsProvider, QualityTier,
-    TtsError, TtsProvider, TtsRequest, TtsResponse, create_tts_provider, create_tts_provider_by_name,
+    TtsError, TtsProvider, TtsRequest, TtsResponse, create_tts_provider,
+    create_tts_provider_by_name,
 };
 
 // STT exports

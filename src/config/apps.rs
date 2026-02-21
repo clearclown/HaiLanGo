@@ -13,11 +13,32 @@ pub struct AppConfig {
 ///
 /// This list drives app discovery, migration ordering, and admin registration.
 pub const INSTALLED_APPS: &[AppConfig] = &[
-    AppConfig { name: "hailango.auth", label: "auth" },
-    AppConfig { name: "hailango.books", label: "books" },
-    AppConfig { name: "hailango.learning", label: "learning" },
-    AppConfig { name: "hailango.review", label: "review" },
-    AppConfig { name: "hailango.tts", label: "tts" },
-    AppConfig { name: "hailango.stt", label: "stt" },
-    AppConfig { name: "hailango.teacher_mode", label: "teacher_mode" },
+    AppConfig {
+        name: "hailango.auth",
+        label: "auth",
+    },
+    AppConfig {
+        name: "hailango.books",
+        label: "books",
+    },
+    AppConfig {
+        name: "hailango.learning",
+        label: "learning",
+    },
+    AppConfig {
+        name: "hailango.review",
+        label: "review",
+    },
+    AppConfig {
+        name: "hailango.tts",
+        label: "tts",
+    },
+    AppConfig {
+        name: "hailango.stt",
+        label: "stt",
+    },
+    AppConfig {
+        name: "hailango.teacher_mode",
+        label: "teacher_mode",
+    },
 ];

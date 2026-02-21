@@ -32,14 +32,10 @@ impl TeacherModeViewSet {
     ) -> TeacherActionResult {
         // Validate page range
         if request.start_page == 0 {
-            return TeacherActionResult::InvalidInput(
-                "start_page must be >= 1".to_string(),
-            );
+            return TeacherActionResult::InvalidInput("start_page must be >= 1".to_string());
         }
         if request.end_page < request.start_page {
-            return TeacherActionResult::InvalidInput(
-                "end_page must be >= start_page".to_string(),
-            );
+            return TeacherActionResult::InvalidInput("end_page must be >= start_page".to_string());
         }
 
         // Check for existing active session
@@ -79,10 +75,7 @@ impl TeacherModeViewSet {
     }
 
     /// Pause the active session
-    pub fn pause(
-        user_id: Uuid,
-        sessions: &mut [TeacherSession],
-    ) -> TeacherActionResult {
+    pub fn pause(user_id: Uuid, sessions: &mut [TeacherSession]) -> TeacherActionResult {
         let session = sessions
             .iter_mut()
             .find(|s| s.user_id == user_id && s.status == TeacherSessionStatus::Playing);
@@ -97,17 +90,12 @@ impl TeacherModeViewSet {
                     message: "Lesson paused".to_string(),
                 })
             }
-            None => TeacherActionResult::NotFound(
-                "No playing session found".to_string(),
-            ),
+            None => TeacherActionResult::NotFound("No playing session found".to_string()),
         }
     }
 
     /// Resume the paused session
-    pub fn resume(
-        user_id: Uuid,
-        sessions: &mut [TeacherSession],
-    ) -> TeacherActionResult {
+    pub fn resume(user_id: Uuid, sessions: &mut [TeacherSession]) -> TeacherActionResult {
         let session = sessions
             .iter_mut()
             .find(|s| s.user_id == user_id && s.status == TeacherSessionStatus::Paused);
@@ -122,17 +110,12 @@ impl TeacherModeViewSet {
                     message: "Lesson resumed".to_string(),
                 })
             }
-            None => TeacherActionResult::NotFound(
-                "No paused session found".to_string(),
-            ),
+            None => TeacherActionResult::NotFound("No paused session found".to_string()),
         }
     }
 
     /// Stop the active session
-    pub fn stop(
-        user_id: Uuid,
-        sessions: &mut [TeacherSession],
-    ) -> TeacherActionResult {
+    pub fn stop(user_id: Uuid, sessions: &mut [TeacherSession]) -> TeacherActionResult {
         let session = sessions
             .iter_mut()
             .find(|s| s.user_id == user_id && s.is_active());
@@ -147,17 +130,12 @@ impl TeacherModeViewSet {
                     message: "Lesson stopped".to_string(),
                 })
             }
-            None => TeacherActionResult::NotFound(
-                "No active session found".to_string(),
-            ),
+            None => TeacherActionResult::NotFound("No active session found".to_string()),
         }
     }
 
     /// Advance to the next page manually
-    pub fn next_page(
-        user_id: Uuid,
-        sessions: &mut [TeacherSession],
-    ) -> TeacherActionResult {
+    pub fn next_page(user_id: Uuid, sessions: &mut [TeacherSession]) -> TeacherActionResult {
         let session = sessions
             .iter_mut()
             .find(|s| s.user_id == user_id && s.is_active());
@@ -189,9 +167,7 @@ impl TeacherModeViewSet {
                     })
                 }
             }
-            None => TeacherActionResult::NotFound(
-                "No active session found".to_string(),
-            ),
+            None => TeacherActionResult::NotFound("No active session found".to_string()),
         }
     }
 
@@ -233,21 +209,13 @@ impl TeacherModeViewSet {
                     message: "Configuration updated".to_string(),
                 })
             }
-            None => TeacherActionResult::NotFound(
-                "No active session found".to_string(),
-            ),
+            None => TeacherActionResult::NotFound("No active session found".to_string()),
         }
     }
 
     /// Get the status of the active session
-    pub fn get_status(
-        user_id: Uuid,
-        sessions: &[TeacherSession],
-    ) -> TeacherActionResult {
-        let session = sessions
-            .iter()
-            .rev()
-            .find(|s| s.user_id == user_id);
+    pub fn get_status(user_id: Uuid, sessions: &[TeacherSession]) -> TeacherActionResult {
+        let session = sessions.iter().rev().find(|s| s.user_id == user_id);
 
         match session {
             Some(s) => TeacherActionResult::Status(LessonStatusResponse {
@@ -262,17 +230,12 @@ impl TeacherModeViewSet {
                 progress_percent: s.progress_percent(),
                 config: s.config.clone(),
             }),
-            None => TeacherActionResult::NotFound(
-                "No session found".to_string(),
-            ),
+            None => TeacherActionResult::NotFound("No session found".to_string()),
         }
     }
 
     /// List session history for a user
-    pub fn list_sessions(
-        user_id: Uuid,
-        sessions: &[TeacherSession],
-    ) -> TeacherActionResult {
+    pub fn list_sessions(user_id: Uuid, sessions: &[TeacherSession]) -> TeacherActionResult {
         let user_sessions: Vec<SessionSummaryResponse> = sessions
             .iter()
             .filter(|s| s.user_id == user_id)

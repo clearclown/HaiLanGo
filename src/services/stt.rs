@@ -186,10 +186,7 @@ impl PronunciationEvaluator {
             // Partial match - calculate similarity
             let similarity = Self::levenshtein_similarity(&expected_lower, &recognized_lower);
             let score = (similarity * 100.0) as u8;
-            let feedback = format!(
-                "Expected '{}', heard '{}'",
-                expected, recognized
-            );
+            let feedback = format!("Expected '{}', heard '{}'", expected, recognized);
             (score, Some(feedback))
         }
     }
@@ -659,9 +656,15 @@ mod tests {
 
     #[test]
     fn test_levenshtein_similarity() {
-        assert_eq!(PronunciationEvaluator::levenshtein_similarity("hello", "hello"), 1.0);
+        assert_eq!(
+            PronunciationEvaluator::levenshtein_similarity("hello", "hello"),
+            1.0
+        );
         assert_eq!(PronunciationEvaluator::levenshtein_similarity("", ""), 1.0);
-        assert_eq!(PronunciationEvaluator::levenshtein_similarity("hello", ""), 0.0);
+        assert_eq!(
+            PronunciationEvaluator::levenshtein_similarity("hello", ""),
+            0.0
+        );
 
         let sim = PronunciationEvaluator::levenshtein_similarity("hello", "helo");
         assert!(sim > 0.7 && sim < 1.0);
@@ -676,7 +679,10 @@ mod tests {
         assert_eq!(error.to_string(), "Unsupported language: xyz");
 
         let error = SttError::AudioTooLong(400_000, 300_000);
-        assert_eq!(error.to_string(), "Audio too long: 400000ms (max: 300000ms)");
+        assert_eq!(
+            error.to_string(),
+            "Audio too long: 400000ms (max: 300000ms)"
+        );
 
         let error = SttError::AudioTooShort;
         assert_eq!(error.to_string(), "Audio too short: minimum 100ms required");
@@ -690,13 +696,11 @@ mod tests {
 
     #[test]
     fn test_generate_feedback_good_with_weak_words() {
-        let word_scores = vec![
-            WordScore {
-                word: "difficult".to_string(),
-                score: 50,
-                feedback: Some("Try again".to_string()),
-            },
-        ];
+        let word_scores = vec![WordScore {
+            word: "difficult".to_string(),
+            score: 50,
+            feedback: Some("Try again".to_string()),
+        }];
         let feedback = PronunciationEvaluator::generate_feedback(80, &word_scores);
         assert!(feedback.contains("difficult"));
     }

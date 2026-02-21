@@ -1,13 +1,19 @@
 use std::net::SocketAddr;
 
 use async_trait::async_trait;
-use bytes::Bytes;
 use serde::Serialize;
 use serde_json::json;
 
-use hailango::{DefaultRouter, Handler, Method, MiddlewareChain, Request, Response, Result, Route, Router, StatusCode, path};
-use hailango::config::urls::configure_urls;
+use hailango::{
+    DefaultRouter, Handler, MiddlewareChain, Request, Response, Result, Router, StatusCode, path,
+};
+
+#[cfg(test)]
+use bytes::Bytes;
+#[cfg(test)]
+use hailango::Method;
 use hailango::api::middleware::{CorsMiddleware, JwtAuthMiddleware, LoggingMiddleware};
+use hailango::config::urls::configure_urls;
 
 /// Application state shared across handlers
 #[derive(Clone)]
@@ -310,8 +316,7 @@ mod tests {
     async fn test_api_auth_register() {
         let app = create_app(test_state());
 
-        let body =
-            r#"{"email":"test@example.com","password":"password123","display_name":"Test"}"#;
+        let body = r#"{"email":"test@example.com","password":"password123","display_name":"Test"}"#;
 
         let request = Request::builder()
             .method(Method::POST)
@@ -407,7 +412,8 @@ mod tests {
     async fn test_api_teacher_start() {
         let app = create_app(test_state());
 
-        let body = r#"{"book_id":"00000000-0000-0000-0000-000000000001","start_page":1,"end_page":10}"#;
+        let body =
+            r#"{"book_id":"00000000-0000-0000-0000-000000000001","start_page":1,"end_page":10}"#;
 
         let request = Request::builder()
             .method(Method::POST)

@@ -5,12 +5,12 @@ use serde_json::json;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
-use crate::{Handler, Method, Request, Response, Result, Route, path};
 use crate::apps::books::{
     dto::CreateBookRequest,
     models::Book,
     views::{BooksViewSet, CreateBookResult, GetBookResult},
 };
+use crate::{Handler, Method, Request, Response, Result, Route, path};
 
 /// Simulated book store (in production, use database)
 #[derive(Clone, Default)]
@@ -50,12 +50,7 @@ impl BooksListHandler {
 
         match BooksViewSet::create(user_id, req.clone()) {
             CreateBookResult::Success(response) => {
-                let book = Book::new(
-                    user_id,
-                    req.title,
-                    req.source_language,
-                    req.target_language,
-                );
+                let book = Book::new(user_id, req.title, req.source_language, req.target_language);
                 self.state.books.write().unwrap().push(book);
                 Response::created().with_json(&response)
             }
@@ -79,9 +74,7 @@ impl Handler for BooksDetailHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
         match request.method {
             Method::GET => self.retrieve(request),
-            _ => Err(crate::Error::MethodNotAllowed(
-                "Only GET is allowed".into(),
-            )),
+            _ => Err(crate::Error::MethodNotAllowed("Only GET is allowed".into())),
         }
     }
 }
@@ -116,7 +109,12 @@ pub fn routes() -> Vec<Route> {
     let state = BooksState::default();
 
     vec![
-        path("/", BooksListHandler { state: state.clone() }),
+        path(
+            "/",
+            BooksListHandler {
+                state: state.clone(),
+            },
+        ),
         path("/{id}/", BooksDetailHandler { state }),
     ]
 }
@@ -124,8 +122,8 @@ pub fn routes() -> Vec<Route> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytes::Bytes;
     use crate::Method;
+    use bytes::Bytes;
 
     fn result_to_response(result: Result<Response>) -> Response {
         match result {
@@ -137,7 +135,9 @@ mod tests {
     fn build_handler() -> (BooksListHandler, BooksDetailHandler) {
         let state = BooksState::default();
         (
-            BooksListHandler { state: state.clone() },
+            BooksListHandler {
+                state: state.clone(),
+            },
             BooksDetailHandler { state },
         )
     }

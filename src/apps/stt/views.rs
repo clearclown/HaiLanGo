@@ -3,8 +3,8 @@
 use uuid::Uuid;
 
 use super::dto::{
-    AttemptSummaryResponse, PronunciationRequest, PronunciationResponse, PronunciationStatsResponse,
-    WeakWordResponse, WordScoreResponse,
+    AttemptSummaryResponse, PronunciationRequest, PronunciationResponse,
+    PronunciationStatsResponse, WeakWordResponse, WordScoreResponse,
 };
 use super::models::{AttemptStatus, PronunciationAttempt, WordFeedback};
 use crate::services::stt::{PronunciationEvaluator, SttProvider, SttRequest};
@@ -78,8 +78,7 @@ impl SttViewSet {
         };
 
         // Evaluate pronunciation
-        let evaluation =
-            PronunciationEvaluator::evaluate(&stt_response, &request.expected_text);
+        let evaluation = PronunciationEvaluator::evaluate(&stt_response, &request.expected_text);
 
         // Build word scores
         let word_scores: Vec<WordScoreResponse> = evaluation
@@ -124,22 +123,17 @@ impl SttViewSet {
     }
 
     /// Get a single attempt
-    pub fn retrieve(
-        user_id: Uuid,
-        attempt: Option<&PronunciationAttempt>,
-    ) -> GetAttemptResult {
+    pub fn retrieve(user_id: Uuid, attempt: Option<&PronunciationAttempt>) -> GetAttemptResult {
         match attempt {
-            Some(a) if a.user_id == user_id => {
-                GetAttemptResult::Success(AttemptSummaryResponse {
-                    id: a.id,
-                    expected_text: a.expected_text.clone(),
-                    recognized_text: a.recognized_text.clone(),
-                    overall_score: a.overall_score,
-                    language: a.language.clone(),
-                    status: a.status,
-                    created_at: a.created_at,
-                })
-            }
+            Some(a) if a.user_id == user_id => GetAttemptResult::Success(AttemptSummaryResponse {
+                id: a.id,
+                expected_text: a.expected_text.clone(),
+                recognized_text: a.recognized_text.clone(),
+                overall_score: a.overall_score,
+                language: a.language.clone(),
+                status: a.status,
+                created_at: a.created_at,
+            }),
             Some(_) => GetAttemptResult::Unauthorized,
             None => GetAttemptResult::NotFound,
         }
@@ -228,8 +222,7 @@ mod tests {
             page_id: None,
         };
 
-        let result =
-            SttViewSet::evaluate(user_id, request, vec![0u8; 100], &provider).await;
+        let result = SttViewSet::evaluate(user_id, request, vec![0u8; 100], &provider).await;
 
         match result {
             EvaluateResult::Success(response) => {
@@ -253,8 +246,7 @@ mod tests {
             page_id: None,
         };
 
-        let result =
-            SttViewSet::evaluate(user_id, request, vec![0u8; 100], &provider).await;
+        let result = SttViewSet::evaluate(user_id, request, vec![0u8; 100], &provider).await;
 
         assert!(matches!(result, EvaluateResult::InvalidInput(_)));
     }
@@ -286,8 +278,7 @@ mod tests {
             page_id: None,
         };
 
-        let result =
-            SttViewSet::evaluate(user_id, request, vec![0u8; 100], &provider).await;
+        let result = SttViewSet::evaluate(user_id, request, vec![0u8; 100], &provider).await;
 
         assert!(matches!(result, EvaluateResult::InvalidInput(_)));
     }
@@ -312,8 +303,7 @@ mod tests {
     #[test]
     fn test_retrieve_attempt_success() {
         let user_id = Uuid::new_v4();
-        let attempt =
-            PronunciationAttempt::new(user_id, "test".to_string(), "en".to_string());
+        let attempt = PronunciationAttempt::new(user_id, "test".to_string(), "en".to_string());
 
         let result = SttViewSet::retrieve(user_id, Some(&attempt));
         assert!(matches!(result, GetAttemptResult::Success(_)));
@@ -323,8 +313,7 @@ mod tests {
     fn test_retrieve_attempt_unauthorized() {
         let owner_id = Uuid::new_v4();
         let other_id = Uuid::new_v4();
-        let attempt =
-            PronunciationAttempt::new(owner_id, "test".to_string(), "en".to_string());
+        let attempt = PronunciationAttempt::new(owner_id, "test".to_string(), "en".to_string());
 
         let result = SttViewSet::retrieve(other_id, Some(&attempt));
         assert!(matches!(result, GetAttemptResult::Unauthorized));

@@ -6,8 +6,8 @@
 use async_trait::async_trait;
 use std::sync::Arc;
 
-use crate::{Handler, Middleware, Request, Response, Result};
 use crate::apps::auth::services::JwtService;
+use crate::{Handler, Middleware, Request, Response, Result};
 
 // Re-export Reinhardt built-in middleware for use in main.rs
 pub use reinhardt::CorsMiddleware;
@@ -69,8 +69,8 @@ impl Middleware for JwtAuthMiddleware {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytes::Bytes;
     use crate::Method;
+    use bytes::Bytes;
 
     struct EchoHandler;
 
@@ -121,9 +121,10 @@ mod tests {
         let handler = Arc::new(EchoHandler);
 
         let mut request = make_request("/api/books/");
-        request
-            .headers
-            .insert("authorization", "Bearer invalid.token.here".parse().unwrap());
+        request.headers.insert(
+            "authorization",
+            "Bearer invalid.token.here".parse().unwrap(),
+        );
 
         // Invalid token is logged but does not block (permissive phase)
         let response = mw.process(request, handler).await.unwrap();

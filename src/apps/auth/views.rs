@@ -111,9 +111,7 @@ impl AuthViewSet {
     pub fn oauth_login(user_info: OAuthUserInfo) -> OAuthLoginResult {
         let user = User::new_oauth(
             user_info.email.clone(),
-            user_info
-                .name
-                .unwrap_or_else(|| user_info.email.clone()),
+            user_info.name.unwrap_or_else(|| user_info.email.clone()),
             user_info.provider.as_str().to_string(),
             user_info.provider_id,
         );

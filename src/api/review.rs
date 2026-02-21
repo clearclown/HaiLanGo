@@ -6,12 +6,12 @@ use serde_json::json;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
-use crate::{Handler, Method, Request, Response, Result, Route, StatusCode, path};
 use crate::apps::review::{
     dto::{CreateVocabularyRequest, RecordReviewRequest},
     models::{SrsSchedule, Vocabulary},
     views::{CreateVocabularyResult, RecordReviewResult, ReviewQueueResult, ReviewViewSet},
 };
+use crate::{Handler, Method, Request, Response, Result, Route, StatusCode, path};
 
 /// Simulated review store
 #[derive(Clone, Default)]
@@ -103,9 +103,9 @@ struct ReviewQueueHandler {
 #[async_trait]
 impl Handler for ReviewQueueHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
-        let query: QueueQuery = request
-            .query_as()
-            .unwrap_or(QueueQuery { limit: default_limit() });
+        let query: QueueQuery = request.query_as().unwrap_or(QueueQuery {
+            limit: default_limit(),
+        });
 
         let user_id = Uuid::new_v4();
         let vocabularies = self.state.vocabularies.read().unwrap();
@@ -177,7 +177,12 @@ pub fn routes() -> Vec<Route> {
                 state: state.clone(),
             },
         ),
-        path("/queue/", ReviewQueueHandler { state: state.clone() }),
+        path(
+            "/queue/",
+            ReviewQueueHandler {
+                state: state.clone(),
+            },
+        ),
         path(
             "/record/",
             RecordReviewHandler {
@@ -191,8 +196,8 @@ pub fn routes() -> Vec<Route> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytes::Bytes;
     use crate::Method;
+    use bytes::Bytes;
 
     fn result_to_response(result: Result<Response>) -> Response {
         match result {
@@ -222,8 +227,7 @@ mod tests {
         let state = ReviewState::default();
         let handler = VocabularyListHandler { state };
 
-        let body =
-            r#"{"page_id":"550e8400-e29b-41d4-a716-446655440000","word":"hello","meaning":"greeting"}"#;
+        let body = r#"{"page_id":"550e8400-e29b-41d4-a716-446655440000","word":"hello","meaning":"greeting"}"#;
 
         let request = Request::builder()
             .method(Method::POST)

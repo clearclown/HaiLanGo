@@ -5,12 +5,12 @@ use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::{Handler, Request, Response, Result, Route, StatusCode, path};
 use crate::apps::auth::{
     dto::{LoginRequest, OAuthCallbackQuery, RegisterRequest},
     oauth::{OAuthProvider, OAuthService},
     views::{AuthViewSet, LoginResult, OAuthLoginResult, RegisterResult},
 };
+use crate::{Handler, Request, Response, Result, Route, StatusCode, path};
 
 /// OAuth-enabled auth state
 #[derive(Clone)]
@@ -113,9 +113,7 @@ impl Handler for OAuthRedirectHandler {
             .oauth_service
             .get_authorization_url(provider, &state_token)
         {
-            Ok(url) => {
-                Response::ok().with_json(&json!({"auth_url": url, "state": state_token}))
-            }
+            Ok(url) => Response::ok().with_json(&json!({"auth_url": url, "state": state_token})),
             Err(e) => Response::bad_request().with_json(&json!({"error": e.to_string()})),
         }
     }
@@ -138,8 +136,7 @@ impl Handler for OAuthCallbackHandler {
         let provider = match OAuthProvider::parse(&provider_name) {
             Some(p) => p,
             None => {
-                return Response::bad_request()
-                    .with_json(&json!({"error": "Unknown provider"}));
+                return Response::bad_request().with_json(&json!({"error": "Unknown provider"}));
             }
         };
 
@@ -190,8 +187,8 @@ pub fn routes() -> Vec<Route> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytes::Bytes;
     use crate::Method;
+    use bytes::Bytes;
 
     fn result_to_response(result: Result<Response>) -> Response {
         match result {
