@@ -86,10 +86,22 @@ impl JwtService {
         }
     }
 
-    /// Create from default settings
+    /// Create from environment variables.
+    ///
+    /// Reads `JWT_SECRET` (required in production), `JWT_ACCESS_HOURS` (default 24),
+    /// and `JWT_REFRESH_DAYS` (default 30).
     pub fn from_settings() -> Self {
-        // Use default values for now, will be loaded from settings in production
-        Self::new("development-secret-key", 24, 30)
+        let secret = std::env::var("JWT_SECRET")
+            .unwrap_or_else(|_| "development-secret-key-change-in-production".to_string());
+        let access_hours = std::env::var("JWT_ACCESS_HOURS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(24);
+        let refresh_days = std::env::var("JWT_REFRESH_DAYS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(30);
+        Self::new(&secret, access_hours, refresh_days)
     }
 
     /// Generate a token pair for a user

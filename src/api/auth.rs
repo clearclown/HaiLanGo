@@ -2,7 +2,8 @@
 
 use async_trait::async_trait;
 use serde_json::json;
-use std::sync::Arc;
+use std::collections::HashSet;
+use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
 use crate::apps::auth::{
@@ -16,12 +17,16 @@ use crate::{Handler, Request, Response, Result, Route, StatusCode, path};
 #[derive(Clone)]
 pub struct AuthState {
     pub oauth_service: Arc<OAuthService>,
+    /// Pending OAuth state tokens for CSRF protection.
+    /// Populated by OAuthRedirectHandler, consumed by OAuthCallbackHandler.
+    pub pending_states: Arc<RwLock<HashSet<String>>>,
 }
 
 impl Default for AuthState {
     fn default() -> Self {
         Self {
             oauth_service: Arc::new(OAuthService::from_env()),
+            pending_states: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 }
@@ -108,6 +113,11 @@ impl Handler for OAuthRedirectHandler {
 
         let state_token = Uuid::new_v4().to_string();
 
+        // Store state token for CSRF verification in the callback
+        if let Ok(mut states) = self.state.pending_states.write() {
+            states.insert(state_token.clone());
+        }
+
         match self
             .state
             .oauth_service
@@ -142,7 +152,19 @@ impl Handler for OAuthCallbackHandler {
 
         let query: OAuthCallbackQuery = request.query_as()?;
 
-        // TODO: Verify state token against stored value for CSRF protection
+        // Verify and consume the state token to prevent CSRF attacks
+        let state_valid = self
+            .state
+            .pending_states
+            .write()
+            .ok()
+            .map(|mut states| states.remove(&query.state))
+            .unwrap_or(false);
+
+        if !state_valid {
+            return Response::new(StatusCode::FORBIDDEN)
+                .with_json(&json!({"error": "Invalid or expired OAuth state parameter"}));
+        }
 
         match self
             .state

@@ -3,7 +3,7 @@
 use super::dto::{AuthResponse, LoginRequest, RegisterRequest, TokenResponse, UserResponse};
 use super::models::User;
 use super::oauth::OAuthUserInfo;
-use super::services::{hash_password, verify_password};
+use super::services::{JwtService, hash_password, verify_password};
 
 /// Registration request handler result
 #[derive(Debug)]
@@ -131,13 +131,24 @@ impl AuthViewSet {
         })
     }
 
-    /// Generate JWT tokens (mock implementation)
+    /// Generate JWT token pair via JwtService.
     fn generate_tokens(user: &User) -> TokenResponse {
-        // In production, use reinhardt-auth JWT generation
-        TokenResponse {
-            access_token: format!("mock_access_token_{}", user.id),
-            refresh_token: format!("mock_refresh_token_{}", user.id),
-            expires_in: 3600,
+        let jwt = JwtService::from_settings();
+        match jwt.generate_tokens(user.id, &user.email) {
+            Ok(pair) => TokenResponse {
+                access_token: pair.access_token,
+                refresh_token: pair.refresh_token,
+                expires_in: pair.expires_in as u64,
+            },
+            Err(e) => {
+                tracing::error!("JWT generation failed: {}", e);
+                // Fallback: unsigned opaque token (never valid for API calls)
+                TokenResponse {
+                    access_token: format!("err_{}", user.id),
+                    refresh_token: format!("err_refresh_{}", user.id),
+                    expires_in: 0,
+                }
+            }
         }
     }
 }

@@ -232,14 +232,61 @@ impl ReviewViewSet {
             total_retention / user_schedules.len() as f32
         };
 
+        let streak_days = Self::calculate_streak(&user_schedules);
+
         ReviewStatsResponse {
             total_vocabulary: user_vocabs.len(),
             due_today,
             overdue,
             learned_count,
             average_retention_rate,
-            streak_days: 0, // TODO: Implement streak tracking
+            streak_days,
         }
+    }
+
+    /// Calculate consecutive-day review streak from schedule history.
+    ///
+    /// Collects the unique calendar dates on which at least one item was reviewed,
+    /// then counts how many consecutive days ending today (or yesterday) form a streak.
+    fn calculate_streak(schedules: &[&SrsSchedule]) -> i32 {
+        use std::collections::BTreeSet;
+
+        // Collect unique dates on which a review occurred
+        let mut review_dates: BTreeSet<chrono::NaiveDate> = BTreeSet::new();
+        for s in schedules {
+            if let Some(reviewed_at) = s.last_reviewed_at {
+                review_dates.insert(reviewed_at.date_naive());
+            }
+        }
+
+        if review_dates.is_empty() {
+            return 0;
+        }
+
+        let today = chrono::Utc::now().date_naive();
+
+        // Streak must include today or yesterday to be "active"
+        let streak_end = if review_dates.contains(&today) {
+            today
+        } else if review_dates.contains(&(today - chrono::Duration::days(1))) {
+            today - chrono::Duration::days(1)
+        } else {
+            return 0;
+        };
+
+        // Walk backwards counting consecutive days
+        let mut streak = 0i32;
+        let mut current = streak_end;
+        loop {
+            if review_dates.contains(&current) {
+                streak += 1;
+                current -= chrono::Duration::days(1);
+            } else {
+                break;
+            }
+        }
+
+        streak
     }
 
     /// Get vocabulary by ID
