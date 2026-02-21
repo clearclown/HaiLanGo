@@ -1,8 +1,29 @@
 //! Book and Page models
 
 use chrono::{DateTime, Utc};
+use reinhardt::db::orm::{FieldSelector, Model, Timestamped};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// Type-safe field selector for Book model
+#[derive(Clone)]
+pub struct BookFields;
+
+impl FieldSelector for BookFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
+
+/// Type-safe field selector for Page model
+#[derive(Clone)]
+pub struct PageFields;
+
+impl FieldSelector for PageFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
 
 /// Book processing status
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -113,6 +134,70 @@ impl Page {
         self.original_content = Some(original);
         self.processed_content = processed;
         self.is_processed = true;
+    }
+}
+
+impl Model for Book {
+    type PrimaryKey = Uuid;
+    type Fields = BookFields;
+
+    fn table_name() -> &'static str {
+        "books"
+    }
+
+    fn app_label() -> &'static str {
+        "books"
+    }
+
+    fn new_fields() -> Self::Fields {
+        BookFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
+    }
+}
+
+impl Timestamped for Book {
+    fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
+
+    fn set_updated_at(&mut self, time: DateTime<Utc>) {
+        self.updated_at = time;
+    }
+}
+
+impl Model for Page {
+    type PrimaryKey = Uuid;
+    type Fields = PageFields;
+
+    fn table_name() -> &'static str {
+        "pages"
+    }
+
+    fn app_label() -> &'static str {
+        "books"
+    }
+
+    fn new_fields() -> Self::Fields {
+        PageFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
     }
 }
 

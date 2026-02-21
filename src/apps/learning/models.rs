@@ -1,8 +1,29 @@
 //! Learning session and progress models
 
 use chrono::{DateTime, Utc};
+use reinhardt::db::orm::{FieldSelector, Model, Timestamped};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// Type-safe field selector for LearningSession model
+#[derive(Clone)]
+pub struct LearningSessionFields;
+
+impl FieldSelector for LearningSessionFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
+
+/// Type-safe field selector for LearningProgress model
+#[derive(Clone)]
+pub struct LearningProgressFields;
+
+impl FieldSelector for LearningProgressFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
 
 /// Session type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -208,6 +229,70 @@ impl LearningProgress {
             (None, Some(c)) => Some(c as f32),
             (None, None) => None,
         }
+    }
+}
+
+impl Model for LearningSession {
+    type PrimaryKey = Uuid;
+    type Fields = LearningSessionFields;
+
+    fn table_name() -> &'static str {
+        "learning_sessions"
+    }
+
+    fn app_label() -> &'static str {
+        "learning"
+    }
+
+    fn new_fields() -> Self::Fields {
+        LearningSessionFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
+    }
+}
+
+impl Timestamped for LearningSession {
+    fn created_at(&self) -> DateTime<Utc> {
+        self.started_at
+    }
+
+    fn updated_at(&self) -> DateTime<Utc> {
+        self.ended_at.unwrap_or(self.started_at)
+    }
+
+    fn set_updated_at(&mut self, _time: DateTime<Utc>) {
+        // Session timestamps are managed by state transitions
+    }
+}
+
+impl Model for LearningProgress {
+    type PrimaryKey = Uuid;
+    type Fields = LearningProgressFields;
+
+    fn table_name() -> &'static str {
+        "learning_progress"
+    }
+
+    fn app_label() -> &'static str {
+        "learning"
+    }
+
+    fn new_fields() -> Self::Fields {
+        LearningProgressFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
     }
 }
 

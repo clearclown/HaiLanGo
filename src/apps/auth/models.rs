@@ -1,8 +1,19 @@
 //! User model with Reinhardt ORM patterns
 
 use chrono::{DateTime, Utc};
+use reinhardt::db::orm::{FieldSelector, Model, Timestamped};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// Type-safe field selector for User model
+#[derive(Clone)]
+pub struct UserFields;
+
+impl FieldSelector for UserFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
 
 /// User account model
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,6 +74,45 @@ impl User {
             updated_at: now,
             last_login_at: None,
         }
+    }
+}
+
+impl Model for User {
+    type PrimaryKey = Uuid;
+    type Fields = UserFields;
+
+    fn table_name() -> &'static str {
+        "users"
+    }
+
+    fn app_label() -> &'static str {
+        "auth"
+    }
+
+    fn new_fields() -> Self::Fields {
+        UserFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
+    }
+}
+
+impl Timestamped for User {
+    fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
+
+    fn set_updated_at(&mut self, time: DateTime<Utc>) {
+        self.updated_at = time;
     }
 }
 

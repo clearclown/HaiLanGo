@@ -1,8 +1,19 @@
 //! Teacher Mode models - Lesson playback and session management
 
 use chrono::{DateTime, Utc};
+use reinhardt::db::orm::{FieldSelector, Model, Timestamped};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// Type-safe field selector for TeacherSession model
+#[derive(Clone)]
+pub struct TeacherSessionFields;
+
+impl FieldSelector for TeacherSessionFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
 
 /// Playback status of a teacher mode session
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -122,9 +133,7 @@ impl TeacherSession {
         config: PlaybackConfig,
     ) -> Self {
         let total_pages = end_page.saturating_sub(start_page) + 1;
-        let page_playbacks = (start_page..=end_page)
-            .map(PagePlayback::new)
-            .collect();
+        let page_playbacks = (start_page..=end_page).map(PagePlayback::new).collect();
 
         Self {
             id: Uuid::new_v4(),
@@ -244,6 +253,45 @@ impl TeacherSession {
             self.status,
             TeacherSessionStatus::Playing | TeacherSessionStatus::Paused
         )
+    }
+}
+
+impl Model for TeacherSession {
+    type PrimaryKey = Uuid;
+    type Fields = TeacherSessionFields;
+
+    fn table_name() -> &'static str {
+        "teacher_sessions"
+    }
+
+    fn app_label() -> &'static str {
+        "teacher_mode"
+    }
+
+    fn new_fields() -> Self::Fields {
+        TeacherSessionFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
+    }
+}
+
+impl Timestamped for TeacherSession {
+    fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    fn updated_at(&self) -> DateTime<Utc> {
+        self.ended_at.unwrap_or(self.created_at)
+    }
+
+    fn set_updated_at(&mut self, _time: DateTime<Utc>) {
+        // Session timestamps are managed by state transitions
     }
 }
 

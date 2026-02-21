@@ -1,10 +1,31 @@
 //! TTS models - Audio generation records and cache metadata
 
 use chrono::{DateTime, Utc};
+use reinhardt::db::orm::{FieldSelector, Model};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::services::tts::{AudioFormat, QualityTier};
+
+/// Type-safe field selector for AudioGeneration model
+#[derive(Clone)]
+pub struct AudioGenerationFields;
+
+impl FieldSelector for AudioGenerationFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
+
+/// Type-safe field selector for AudioCache model
+#[derive(Clone)]
+pub struct AudioCacheFields;
+
+impl FieldSelector for AudioCacheFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
 
 /// Status of an audio generation job
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -86,8 +107,37 @@ pub struct AudioCache {
 }
 
 impl AudioCache {
+    /// Create a new cache entry
+    pub fn new(
+        cache_key: String,
+        language: String,
+        format: AudioFormat,
+        quality: QualityTier,
+        audio_size_bytes: usize,
+        duration_ms: u64,
+    ) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            cache_key,
+            language,
+            format,
+            quality,
+            audio_size_bytes,
+            duration_ms,
+            hit_count: 0,
+            created_at: now,
+            last_accessed_at: now,
+        }
+    }
+
     /// Generate a cache key from synthesis parameters
-    pub fn make_key(text: &str, language: &str, format: AudioFormat, quality: QualityTier) -> String {
+    pub fn make_key(
+        text: &str,
+        language: &str,
+        format: AudioFormat,
+        quality: QualityTier,
+    ) -> String {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
 
@@ -100,6 +150,56 @@ impl AudioCache {
     }
 }
 
+impl Model for AudioGeneration {
+    type PrimaryKey = Uuid;
+    type Fields = AudioGenerationFields;
+
+    fn table_name() -> &'static str {
+        "audio_generations"
+    }
+
+    fn app_label() -> &'static str {
+        "tts"
+    }
+
+    fn new_fields() -> Self::Fields {
+        AudioGenerationFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
+    }
+}
+
+impl Model for AudioCache {
+    type PrimaryKey = Uuid;
+    type Fields = AudioCacheFields;
+
+    fn table_name() -> &'static str {
+        "audio_cache"
+    }
+
+    fn app_label() -> &'static str {
+        "tts"
+    }
+
+    fn new_fields() -> Self::Fields {
+        AudioCacheFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -107,11 +207,7 @@ mod tests {
     #[test]
     fn test_audio_generation_creation() {
         let user_id = Uuid::new_v4();
-        let audio = AudioGeneration::new(
-            user_id,
-            "Hello world".to_string(),
-            "en".to_string(),
-        );
+        let audio = AudioGeneration::new(user_id, "Hello world".to_string(), "en".to_string());
 
         assert_eq!(audio.user_id, user_id);
         assert_eq!(audio.text, "Hello world");
@@ -141,12 +237,12 @@ mod tests {
     #[test]
     fn test_audio_generation_speed_clamping() {
         let user_id = Uuid::new_v4();
-        let audio = AudioGeneration::new(user_id, "T".to_string(), "en".to_string())
-            .with_speed(5.0);
+        let audio =
+            AudioGeneration::new(user_id, "T".to_string(), "en".to_string()).with_speed(5.0);
         assert_eq!(audio.speed, 2.0);
 
-        let audio2 = AudioGeneration::new(user_id, "T".to_string(), "en".to_string())
-            .with_speed(0.1);
+        let audio2 =
+            AudioGeneration::new(user_id, "T".to_string(), "en".to_string()).with_speed(0.1);
         assert_eq!(audio2.speed, 0.5);
     }
 

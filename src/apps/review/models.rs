@@ -1,8 +1,29 @@
 //! SRS Review models - Vocabulary and SRS Schedule
 
 use chrono::{DateTime, Duration, NaiveDate, Utc};
+use reinhardt::db::orm::{FieldSelector, Model};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// Type-safe field selector for Vocabulary model
+#[derive(Clone)]
+pub struct VocabularyFields;
+
+impl FieldSelector for VocabularyFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
+
+/// Type-safe field selector for SrsSchedule model
+#[derive(Clone)]
+pub struct SrsScheduleFields;
+
+impl FieldSelector for SrsScheduleFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
 
 /// Vocabulary word extracted from a page
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,6 +137,56 @@ impl SrsSchedule {
         } else {
             self.correct_count as f32 / total as f32
         }
+    }
+}
+
+impl Model for Vocabulary {
+    type PrimaryKey = Uuid;
+    type Fields = VocabularyFields;
+
+    fn table_name() -> &'static str {
+        "vocabularies"
+    }
+
+    fn app_label() -> &'static str {
+        "review"
+    }
+
+    fn new_fields() -> Self::Fields {
+        VocabularyFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
+    }
+}
+
+impl Model for SrsSchedule {
+    type PrimaryKey = Uuid;
+    type Fields = SrsScheduleFields;
+
+    fn table_name() -> &'static str {
+        "srs_schedules"
+    }
+
+    fn app_label() -> &'static str {
+        "review"
+    }
+
+    fn new_fields() -> Self::Fields {
+        SrsScheduleFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
     }
 }
 

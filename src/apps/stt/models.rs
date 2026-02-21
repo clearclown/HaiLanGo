@@ -1,8 +1,29 @@
 //! STT models - Pronunciation attempt and feedback data
 
 use chrono::{DateTime, Utc};
+use reinhardt::db::orm::{FieldSelector, Model};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// Type-safe field selector for PronunciationAttempt model
+#[derive(Clone)]
+pub struct PronunciationAttemptFields;
+
+impl FieldSelector for PronunciationAttemptFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
+
+/// Type-safe field selector for WordFeedback model
+#[derive(Clone)]
+pub struct WordFeedbackFields;
+
+impl FieldSelector for WordFeedbackFields {
+    fn with_alias(self, _alias: &str) -> Self {
+        self
+    }
+}
 
 /// Status of a pronunciation attempt
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -52,6 +73,31 @@ impl PronunciationAttempt {
     }
 }
 
+impl Model for PronunciationAttempt {
+    type PrimaryKey = Uuid;
+    type Fields = PronunciationAttemptFields;
+
+    fn table_name() -> &'static str {
+        "pronunciation_attempts"
+    }
+
+    fn app_label() -> &'static str {
+        "stt"
+    }
+
+    fn new_fields() -> Self::Fields {
+        PronunciationAttemptFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
+    }
+}
+
 /// Detailed per-word feedback stored alongside an attempt
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordFeedback {
@@ -62,6 +108,31 @@ pub struct WordFeedback {
     pub feedback: Option<String>,
     pub start_ms: Option<u64>,
     pub end_ms: Option<u64>,
+}
+
+impl Model for WordFeedback {
+    type PrimaryKey = Uuid;
+    type Fields = WordFeedbackFields;
+
+    fn table_name() -> &'static str {
+        "word_feedback"
+    }
+
+    fn app_label() -> &'static str {
+        "stt"
+    }
+
+    fn new_fields() -> Self::Fields {
+        WordFeedbackFields
+    }
+
+    fn primary_key(&self) -> Option<Self::PrimaryKey> {
+        Some(self.id)
+    }
+
+    fn set_primary_key(&mut self, value: Self::PrimaryKey) {
+        self.id = value;
+    }
 }
 
 /// Pronunciation statistics for a user
@@ -90,11 +161,8 @@ mod tests {
     #[test]
     fn test_pronunciation_attempt_creation() {
         let user_id = Uuid::new_v4();
-        let attempt = PronunciationAttempt::new(
-            user_id,
-            "hello world".to_string(),
-            "en".to_string(),
-        );
+        let attempt =
+            PronunciationAttempt::new(user_id, "hello world".to_string(), "en".to_string());
 
         assert_eq!(attempt.user_id, user_id);
         assert_eq!(attempt.expected_text, "hello world");
@@ -109,12 +177,8 @@ mod tests {
     fn test_pronunciation_attempt_with_page() {
         let user_id = Uuid::new_v4();
         let page_id = Uuid::new_v4();
-        let attempt = PronunciationAttempt::new(
-            user_id,
-            "test".to_string(),
-            "en".to_string(),
-        )
-        .with_page(page_id);
+        let attempt = PronunciationAttempt::new(user_id, "test".to_string(), "en".to_string())
+            .with_page(page_id);
 
         assert_eq!(attempt.page_id, Some(page_id));
     }
