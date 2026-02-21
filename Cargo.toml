@@ -31,6 +31,9 @@ jsonwebtoken = "9"
 # SQLx for direct database access (supplement to reinhardt-db)
 sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "uuid", "chrono"] }
 
+# Bytes (for Reinhardt Request/Response bodies)
+bytes = "1"
+
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 

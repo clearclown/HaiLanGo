@@ -1,7 +1,7 @@
-//! API Router - Connects ViewSets to HTTP endpoints
+//! API Router - Connects ViewSets to HTTP endpoints via Reinhardt Handlers
 //!
-//! This module provides the HTTP routing layer that connects
-//! the business logic in ViewSets to axum routes.
+//! Each sub-module exposes `routes() -> Vec<Route>` which are mounted
+//! by the DefaultRouter in config/urls.rs.
 
 pub mod auth;
 pub mod books;

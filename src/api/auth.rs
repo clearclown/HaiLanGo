@@ -1,16 +1,11 @@
 //! Auth API routes
 
-use axum::{
-    Router,
-    extract::{Path, Query, State},
-    http::StatusCode,
-    response::{IntoResponse, Json},
-    routing::{get, post},
-};
+use async_trait::async_trait;
 use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::{Handler, Request, Response, Result, Route, StatusCode, path};
 use crate::apps::auth::{
     dto::{LoginRequest, OAuthCallbackQuery, RegisterRequest},
     oauth::{OAuthProvider, OAuthService},
@@ -31,268 +26,308 @@ impl Default for AuthState {
     }
 }
 
-/// POST /api/auth/register
-async fn register(Json(request): Json<RegisterRequest>) -> impl IntoResponse {
-    match AuthViewSet::register(request) {
-        RegisterResult::Success(response) => (StatusCode::CREATED, Json(json!(response))),
-        RegisterResult::EmailExists => (
-            StatusCode::CONFLICT,
-            Json(json!({"error": "Email already exists"})),
-        ),
-        RegisterResult::InvalidInput(msg) => (StatusCode::BAD_REQUEST, Json(json!({"error": msg}))),
-    }
-}
+/// Handler for POST /register
+struct RegisterHandler;
 
-/// POST /api/auth/login
-async fn login(Json(request): Json<LoginRequest>) -> impl IntoResponse {
-    // In production: lookup user from database
-    match AuthViewSet::login(request, None) {
-        LoginResult::Success(response) => (StatusCode::OK, Json(json!(response))),
-        LoginResult::InvalidCredentials => (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({"error": "Invalid credentials"})),
-        ),
-        LoginResult::UserNotFound => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "User not found"})),
-        ),
-    }
-}
+#[async_trait]
+impl Handler for RegisterHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let req: RegisterRequest = request.json()?;
 
-/// GET /api/auth/oauth/providers - List available OAuth providers
-async fn oauth_providers(
-    State(state): State<AuthState>,
-) -> (StatusCode, Json<serde_json::Value>) {
-    let providers: Vec<serde_json::Value> = state
-        .oauth_service
-        .configured_providers()
-        .iter()
-        .map(|p| json!({"name": p.as_str(), "configured": true}))
-        .collect();
-    (StatusCode::OK, Json(json!({"providers": providers})))
-}
-
-/// GET /api/auth/oauth/{provider} - Get OAuth authorization URL
-async fn oauth_redirect(
-    State(state): State<AuthState>,
-    Path(provider_name): Path<String>,
-) -> (StatusCode, Json<serde_json::Value>) {
-    let provider = match OAuthProvider::parse(&provider_name) {
-        Some(p) => p,
-        None => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({"error": format!("Unknown provider: {}", provider_name)})),
-            )
-        }
-    };
-
-    // Generate CSRF state token
-    let state_token = Uuid::new_v4().to_string();
-
-    match state
-        .oauth_service
-        .get_authorization_url(provider, &state_token)
-    {
-        Ok(url) => (
-            StatusCode::OK,
-            Json(json!({"auth_url": url, "state": state_token})),
-        ),
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": e.to_string()})),
-        ),
-    }
-}
-
-/// GET /api/auth/callback/{provider} - Handle OAuth callback
-async fn oauth_callback(
-    State(state): State<AuthState>,
-    Path(provider_name): Path<String>,
-    Query(query): Query<OAuthCallbackQuery>,
-) -> (StatusCode, Json<serde_json::Value>) {
-    let provider = match OAuthProvider::parse(&provider_name) {
-        Some(p) => p,
-        None => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({"error": "Unknown provider"})),
-            )
-        }
-    };
-
-    // TODO: Verify state token against stored value for CSRF protection
-
-    match state
-        .oauth_service
-        .authenticate(provider, &query.code)
-        .await
-    {
-        Ok(user_info) => match AuthViewSet::oauth_login(user_info) {
-            OAuthLoginResult::Success(response) => {
-                (StatusCode::OK, Json(json!(response)))
+        match AuthViewSet::register(req) {
+            RegisterResult::Success(response) => Response::created().with_json(&response),
+            RegisterResult::EmailExists => Response::new(StatusCode::CONFLICT)
+                .with_json(&json!({"error": "Email already exists"})),
+            RegisterResult::InvalidInput(msg) => {
+                Response::bad_request().with_json(&json!({"error": msg}))
             }
-            OAuthLoginResult::ProviderError(msg) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": msg})),
-            ),
-        },
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": e.to_string()})),
-        ),
+        }
     }
 }
 
-/// Create auth router
-pub fn router() -> Router {
+/// Handler for POST /login
+struct LoginHandler;
+
+#[async_trait]
+impl Handler for LoginHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let req: LoginRequest = request.json()?;
+
+        match AuthViewSet::login(req, None) {
+            LoginResult::Success(response) => Response::ok().with_json(&response),
+            LoginResult::InvalidCredentials => {
+                Response::unauthorized().with_json(&json!({"error": "Invalid credentials"}))
+            }
+            LoginResult::UserNotFound => {
+                Response::not_found().with_json(&json!({"error": "User not found"}))
+            }
+        }
+    }
+}
+
+/// Handler for GET /oauth/providers
+struct OAuthProvidersHandler {
+    state: AuthState,
+}
+
+#[async_trait]
+impl Handler for OAuthProvidersHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let providers: Vec<serde_json::Value> = self
+            .state
+            .oauth_service
+            .configured_providers()
+            .iter()
+            .map(|p| json!({"name": p.as_str(), "configured": true}))
+            .collect();
+        Response::ok().with_json(&json!({"providers": providers}))
+    }
+}
+
+/// Handler for GET /oauth/{provider}
+struct OAuthRedirectHandler {
+    state: AuthState,
+}
+
+#[async_trait]
+impl Handler for OAuthRedirectHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let provider_name = request
+            .path_params
+            .get("provider")
+            .ok_or_else(|| crate::Error::Validation("Missing provider parameter".into()))?
+            .clone();
+
+        let provider = match OAuthProvider::parse(&provider_name) {
+            Some(p) => p,
+            None => {
+                return Response::bad_request()
+                    .with_json(&json!({"error": format!("Unknown provider: {}", provider_name)}));
+            }
+        };
+
+        let state_token = Uuid::new_v4().to_string();
+
+        match self
+            .state
+            .oauth_service
+            .get_authorization_url(provider, &state_token)
+        {
+            Ok(url) => {
+                Response::ok().with_json(&json!({"auth_url": url, "state": state_token}))
+            }
+            Err(e) => Response::bad_request().with_json(&json!({"error": e.to_string()})),
+        }
+    }
+}
+
+/// Handler for GET /callback/{provider}
+struct OAuthCallbackHandler {
+    state: AuthState,
+}
+
+#[async_trait]
+impl Handler for OAuthCallbackHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let provider_name = request
+            .path_params
+            .get("provider")
+            .ok_or_else(|| crate::Error::Validation("Missing provider parameter".into()))?
+            .clone();
+
+        let provider = match OAuthProvider::parse(&provider_name) {
+            Some(p) => p,
+            None => {
+                return Response::bad_request()
+                    .with_json(&json!({"error": "Unknown provider"}));
+            }
+        };
+
+        let query: OAuthCallbackQuery = request.query_as()?;
+
+        // TODO: Verify state token against stored value for CSRF protection
+
+        match self
+            .state
+            .oauth_service
+            .authenticate(provider, &query.code)
+            .await
+        {
+            Ok(user_info) => match AuthViewSet::oauth_login(user_info) {
+                OAuthLoginResult::Success(response) => Response::ok().with_json(&response),
+                OAuthLoginResult::ProviderError(msg) => {
+                    Response::internal_server_error().with_json(&json!({"error": msg}))
+                }
+            },
+            Err(e) => Response::bad_request().with_json(&json!({"error": e.to_string()})),
+        }
+    }
+}
+
+/// Create auth routes
+pub fn routes() -> Vec<Route> {
     let state = AuthState::default();
 
-    Router::new()
-        .route("/register", post(register))
-        .route("/login", post(login))
-        .route("/oauth/providers", get(oauth_providers))
-        .route("/oauth/{provider}", get(oauth_redirect))
-        .route("/callback/{provider}", get(oauth_callback))
-        .with_state(state)
+    vec![
+        path("/register/", RegisterHandler),
+        path("/login/", LoginHandler),
+        path(
+            "/oauth/providers/",
+            OAuthProvidersHandler {
+                state: state.clone(),
+            },
+        ),
+        path(
+            "/oauth/{provider}/",
+            OAuthRedirectHandler {
+                state: state.clone(),
+            },
+        ),
+        path("/callback/{provider}/", OAuthCallbackHandler { state }),
+    ]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{body::Body, http::Request};
-    use tower::ServiceExt;
+    use bytes::Bytes;
+    use crate::Method;
+
+    fn result_to_response(result: Result<Response>) -> Response {
+        match result {
+            Ok(r) => r,
+            Err(e) => Response::from(e),
+        }
+    }
 
     #[tokio::test]
     async fn test_register_endpoint() {
-        let app = router();
+        let handler = RegisterHandler;
 
         let body =
             r#"{"email":"test@example.com","password":"password123","display_name":"Test User"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/register")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/register/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::CREATED);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 201);
     }
 
     #[tokio::test]
     async fn test_register_invalid_email() {
-        let app = router();
+        let handler = RegisterHandler;
 
         let body = r#"{"email":"invalid","password":"password123","display_name":"Test"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/register")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/register/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 400);
     }
 
     #[tokio::test]
     async fn test_login_user_not_found() {
-        let app = router();
+        let handler = LoginHandler;
 
         let body = r#"{"email":"notfound@example.com","password":"password123"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/login")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/login/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 404);
     }
 
     #[tokio::test]
     async fn test_oauth_providers_list() {
-        let app = router();
+        let state = AuthState::default();
+        let handler = OAuthProvidersHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/oauth/providers")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/oauth/providers/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_oauth_redirect_unknown_provider() {
-        let app = router();
+        let state = AuthState::default();
+        let handler = OAuthRedirectHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/oauth/unknown")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let mut params = std::collections::HashMap::new();
+        params.insert("provider".to_string(), "unknown".to_string());
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/oauth/unknown/")
+            .path_params(params)
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 400);
     }
 
     #[tokio::test]
     async fn test_oauth_redirect_unconfigured_google() {
-        let app = router();
+        let state = AuthState::default();
+        let handler = OAuthRedirectHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/oauth/google")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let mut params = std::collections::HashMap::new();
+        params.insert("provider".to_string(), "google".to_string());
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/oauth/google/")
+            .path_params(params)
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        // Google is not configured in test env
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 400);
     }
 
     #[tokio::test]
     async fn test_oauth_callback_unknown_provider() {
-        let app = router();
+        let state = AuthState::default();
+        let handler = OAuthCallbackHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/callback/invalid?code=abc&state=xyz")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let mut params = std::collections::HashMap::new();
+        params.insert("provider".to_string(), "invalid".to_string());
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/callback/invalid/?code=abc&state=xyz")
+            .path_params(params)
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 400);
     }
 }

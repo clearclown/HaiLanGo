@@ -1,17 +1,12 @@
 //! Review API routes
 
-use axum::{
-    Router,
-    extract::{Query, State},
-    http::StatusCode,
-    response::{IntoResponse, Json},
-    routing::{get, post},
-};
+use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
+use crate::{Handler, Method, Request, Response, Result, Route, StatusCode, path};
 use crate::apps::review::{
     dto::{CreateVocabularyRequest, RecordReviewRequest},
     models::{SrsSchedule, Vocabulary},
@@ -36,205 +31,241 @@ fn default_limit() -> usize {
     20
 }
 
-/// GET /api/review/vocabulary
-async fn list_vocabulary(State(state): State<ReviewState>) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let vocabularies = state.vocabularies.read().unwrap();
-
-    let response = ReviewViewSet::list_vocabularies(&vocabularies, user_id);
-    (StatusCode::OK, Json(json!(response)))
+/// Handler for GET/POST /vocabulary/
+struct VocabularyListHandler {
+    state: ReviewState,
 }
 
-/// POST /api/review/vocabulary
-async fn create_vocabulary(
-    State(state): State<ReviewState>,
-    Json(request): Json<CreateVocabularyRequest>,
-) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-
-    // Mock page exists check
-    let page_exists = true;
-
-    // Check for duplicate
-    let vocabularies = state.vocabularies.read().unwrap();
-    let word_exists = vocabularies
-        .iter()
-        .any(|v| v.user_id == user_id && v.word == request.word);
-    drop(vocabularies);
-
-    match ReviewViewSet::create_vocabulary(request.clone(), user_id, page_exists, word_exists) {
-        CreateVocabularyResult::Success(response) => {
-            // Store vocabulary and create SRS schedule
-            let vocab = Vocabulary::new(
-                request.page_id,
-                user_id,
-                response.word.clone(),
-                response.meaning.clone(),
-            );
-            let schedule = SrsSchedule::new(user_id, vocab.id);
-
-            state.vocabularies.write().unwrap().push(vocab);
-            state.schedules.write().unwrap().push(schedule);
-
-            (StatusCode::CREATED, Json(json!(response)))
-        }
-        CreateVocabularyResult::PageNotFound => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Page not found"})),
-        ),
-        CreateVocabularyResult::DuplicateWord => (
-            StatusCode::CONFLICT,
-            Json(json!({"error": "Word already exists"})),
-        ),
-        CreateVocabularyResult::InvalidInput(msg) => {
-            (StatusCode::BAD_REQUEST, Json(json!({"error": msg})))
+#[async_trait]
+impl Handler for VocabularyListHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        match request.method {
+            Method::GET => self.list(),
+            Method::POST => self.create(request),
+            _ => Err(crate::Error::MethodNotAllowed(
+                "Only GET and POST are allowed".into(),
+            )),
         }
     }
 }
 
-/// GET /api/review/queue
-async fn get_review_queue(
-    State(state): State<ReviewState>,
-    Query(query): Query<QueueQuery>,
-) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let vocabularies = state.vocabularies.read().unwrap();
-    let schedules = state.schedules.read().unwrap();
+impl VocabularyListHandler {
+    fn list(&self) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let vocabularies = self.state.vocabularies.read().unwrap();
+        let response = ReviewViewSet::list_vocabularies(&vocabularies, user_id);
+        Response::ok().with_json(&response)
+    }
 
-    match ReviewViewSet::get_review_queue(&vocabularies, &schedules, user_id, query.limit) {
-        ReviewQueueResult::Success(response) => (StatusCode::OK, Json(json!(response))),
-        ReviewQueueResult::Empty => (
-            StatusCode::OK,
-            Json(json!({"items": [], "due_count": 0, "total_vocabulary": 0})),
-        ),
+    fn create(&self, request: Request) -> Result<Response> {
+        let req: CreateVocabularyRequest = request.json()?;
+        let user_id = Uuid::new_v4();
+        let page_exists = true;
+
+        let vocabularies = self.state.vocabularies.read().unwrap();
+        let word_exists = vocabularies
+            .iter()
+            .any(|v| v.user_id == user_id && v.word == req.word);
+        drop(vocabularies);
+
+        match ReviewViewSet::create_vocabulary(req.clone(), user_id, page_exists, word_exists) {
+            CreateVocabularyResult::Success(response) => {
+                let vocab = Vocabulary::new(
+                    req.page_id,
+                    user_id,
+                    response.word.clone(),
+                    response.meaning.clone(),
+                );
+                let schedule = SrsSchedule::new(user_id, vocab.id);
+
+                self.state.vocabularies.write().unwrap().push(vocab);
+                self.state.schedules.write().unwrap().push(schedule);
+
+                Response::created().with_json(&response)
+            }
+            CreateVocabularyResult::PageNotFound => {
+                Response::not_found().with_json(&json!({"error": "Page not found"}))
+            }
+            CreateVocabularyResult::DuplicateWord => Response::new(StatusCode::CONFLICT)
+                .with_json(&json!({"error": "Word already exists"})),
+            CreateVocabularyResult::InvalidInput(msg) => {
+                Response::bad_request().with_json(&json!({"error": msg}))
+            }
+        }
     }
 }
 
-/// POST /api/review/record
-async fn record_review(
-    State(state): State<ReviewState>,
-    Json(request): Json<RecordReviewRequest>,
-) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let mut schedules = state.schedules.write().unwrap();
-    let schedule = schedules
-        .iter_mut()
-        .find(|s| s.vocabulary_id == request.vocabulary_id && s.user_id == user_id);
+/// Handler for GET /queue/
+struct ReviewQueueHandler {
+    state: ReviewState,
+}
 
-    match ReviewViewSet::record_review(request, schedule, user_id) {
-        RecordReviewResult::Success(response) => (StatusCode::OK, Json(json!(response))),
-        RecordReviewResult::VocabularyNotFound => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Vocabulary not found"})),
-        ),
-        RecordReviewResult::ScheduleNotFound => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Schedule not found"})),
-        ),
-        RecordReviewResult::InvalidQuality => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": "Quality must be 0-5"})),
-        ),
+#[async_trait]
+impl Handler for ReviewQueueHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let query: QueueQuery = request
+            .query_as()
+            .unwrap_or(QueueQuery { limit: default_limit() });
+
+        let user_id = Uuid::new_v4();
+        let vocabularies = self.state.vocabularies.read().unwrap();
+        let schedules = self.state.schedules.read().unwrap();
+
+        match ReviewViewSet::get_review_queue(&vocabularies, &schedules, user_id, query.limit) {
+            ReviewQueueResult::Success(response) => Response::ok().with_json(&response),
+            ReviewQueueResult::Empty => Response::ok()
+                .with_json(&json!({"items": [], "due_count": 0, "total_vocabulary": 0})),
+        }
     }
 }
 
-/// GET /api/review/stats
-async fn get_stats(State(state): State<ReviewState>) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let vocabularies = state.vocabularies.read().unwrap();
-    let schedules = state.schedules.read().unwrap();
-
-    let response = ReviewViewSet::get_stats(&vocabularies, &schedules, user_id);
-    (StatusCode::OK, Json(json!(response)))
+/// Handler for POST /record/
+struct RecordReviewHandler {
+    state: ReviewState,
 }
 
-/// Create review router
-pub fn router() -> Router {
+#[async_trait]
+impl Handler for RecordReviewHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let req: RecordReviewRequest = request.json()?;
+        let user_id = Uuid::new_v4();
+        let mut schedules = self.state.schedules.write().unwrap();
+        let schedule = schedules
+            .iter_mut()
+            .find(|s| s.vocabulary_id == req.vocabulary_id && s.user_id == user_id);
+
+        match ReviewViewSet::record_review(req, schedule, user_id) {
+            RecordReviewResult::Success(response) => Response::ok().with_json(&response),
+            RecordReviewResult::VocabularyNotFound => {
+                Response::not_found().with_json(&json!({"error": "Vocabulary not found"}))
+            }
+            RecordReviewResult::ScheduleNotFound => {
+                Response::not_found().with_json(&json!({"error": "Schedule not found"}))
+            }
+            RecordReviewResult::InvalidQuality => {
+                Response::bad_request().with_json(&json!({"error": "Quality must be 0-5"}))
+            }
+        }
+    }
+}
+
+/// Handler for GET /stats/
+struct ReviewStatsHandler {
+    state: ReviewState,
+}
+
+#[async_trait]
+impl Handler for ReviewStatsHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let vocabularies = self.state.vocabularies.read().unwrap();
+        let schedules = self.state.schedules.read().unwrap();
+
+        let response = ReviewViewSet::get_stats(&vocabularies, &schedules, user_id);
+        Response::ok().with_json(&response)
+    }
+}
+
+/// Create review routes
+pub fn routes() -> Vec<Route> {
     let state = ReviewState::default();
 
-    Router::new()
-        .route("/vocabulary", get(list_vocabulary).post(create_vocabulary))
-        .route("/queue", get(get_review_queue))
-        .route("/record", post(record_review))
-        .route("/stats", get(get_stats))
-        .with_state(state)
+    vec![
+        path(
+            "/vocabulary/",
+            VocabularyListHandler {
+                state: state.clone(),
+            },
+        ),
+        path("/queue/", ReviewQueueHandler { state: state.clone() }),
+        path(
+            "/record/",
+            RecordReviewHandler {
+                state: state.clone(),
+            },
+        ),
+        path("/stats/", ReviewStatsHandler { state }),
+    ]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{body::Body, http::Request};
-    use tower::ServiceExt;
+    use bytes::Bytes;
+    use crate::Method;
+
+    fn result_to_response(result: Result<Response>) -> Response {
+        match result {
+            Ok(r) => r,
+            Err(e) => Response::from(e),
+        }
+    }
 
     #[tokio::test]
     async fn test_list_vocabulary_empty() {
-        let app = router();
+        let state = ReviewState::default();
+        let handler = VocabularyListHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/vocabulary")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/vocabulary/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_create_vocabulary() {
-        let app = router();
+        let state = ReviewState::default();
+        let handler = VocabularyListHandler { state };
 
-        let body = r#"{"page_id":"550e8400-e29b-41d4-a716-446655440000","word":"hello","meaning":"greeting"}"#;
+        let body =
+            r#"{"page_id":"550e8400-e29b-41d4-a716-446655440000","word":"hello","meaning":"greeting"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/vocabulary")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/vocabulary/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::CREATED);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 201);
     }
 
     #[tokio::test]
     async fn test_get_queue() {
-        let app = router();
+        let state = ReviewState::default();
+        let handler = ReviewQueueHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/queue")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/queue/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_get_stats() {
-        let app = router();
+        let state = ReviewState::default();
+        let handler = ReviewStatsHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/stats")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/stats/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 }

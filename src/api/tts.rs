@@ -1,16 +1,11 @@
 //! TTS API routes
 
-use axum::{
-    Router,
-    extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Json},
-    routing::{get, post},
-};
+use async_trait::async_trait;
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
+use crate::{Handler, Request, Response, Result, Route, StatusCode, path};
 use crate::apps::tts::{
     dto::SynthesizeRequest,
     models::AudioGeneration,
@@ -44,215 +39,221 @@ impl TtsState {
     }
 }
 
-/// POST /api/tts/synthesize
-async fn synthesize(
-    State(state): State<TtsState>,
-    Json(request): Json<SynthesizeRequest>,
-) -> impl IntoResponse {
-    // Mock user_id (in production, extract from JWT)
-    let user_id = Uuid::new_v4();
+/// Handler for POST /synthesize/
+struct SynthesizeHandler {
+    state: TtsState,
+}
 
-    let result = TtsViewSet::synthesize(user_id, request, state.provider.as_ref()).await;
+#[async_trait]
+impl Handler for SynthesizeHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let req: SynthesizeRequest = request.json()?;
+        let user_id = Uuid::new_v4();
 
-    match result {
-        SynthesizeResult::Success {
-            metadata,
-            audio_data,
-            generation,
-        } => {
-            // Store generation record
-            state.generations.write().unwrap().push(*generation);
+        let result = TtsViewSet::synthesize(user_id, req, self.state.provider.as_ref()).await;
 
-            // Return metadata + base64 audio in JSON
-            // (In production, audio would be streamed or stored in object storage)
-            use base64::{Engine, engine::general_purpose::STANDARD};
-            let audio_b64 = STANDARD.encode(&audio_data);
+        match result {
+            SynthesizeResult::Success {
+                metadata,
+                audio_data,
+                generation,
+            } => {
+                self.state.generations.write().unwrap().push(*generation);
 
-            (
-                StatusCode::OK,
-                Json(json!({
+                use base64::{Engine, engine::general_purpose::STANDARD};
+                let audio_b64 = STANDARD.encode(&audio_data);
+
+                Response::ok().with_json(&json!({
                     "metadata": metadata,
                     "audio_base64": audio_b64
-                })),
-            )
+                }))
+            }
+            SynthesizeResult::InvalidInput(msg) => {
+                Response::bad_request().with_json(&json!({"error": msg}))
+            }
+            SynthesizeResult::ServiceError(msg) => Response::new(StatusCode::SERVICE_UNAVAILABLE)
+                .with_json(&json!({"error": msg})),
         }
-        SynthesizeResult::InvalidInput(msg) => {
-            (StatusCode::BAD_REQUEST, Json(json!({"error": msg})))
-        }
-        SynthesizeResult::ServiceError(msg) => (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(json!({"error": msg})),
-        ),
     }
 }
 
-/// GET /api/tts/history
-async fn list_history(State(state): State<TtsState>) -> impl IntoResponse {
-    // Mock user_id
-    let user_id = Uuid::new_v4();
-    let generations = state.generations.read().unwrap();
-    let history = TtsViewSet::list_history(user_id, &generations);
-    (StatusCode::OK, Json(json!(history)))
+/// Handler for GET /history/
+struct HistoryHandler {
+    state: TtsState,
 }
 
-/// GET /api/tts/languages
-async fn supported_languages(State(state): State<TtsState>) -> impl IntoResponse {
-    let response = TtsViewSet::supported_languages(state.provider.as_ref());
-    (StatusCode::OK, Json(json!(response)))
+#[async_trait]
+impl Handler for HistoryHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let generations = self.state.generations.read().unwrap();
+        let history = TtsViewSet::list_history(user_id, &generations);
+        Response::ok().with_json(&history)
+    }
 }
 
-/// Create TTS router
-pub fn router() -> Router {
+/// Handler for GET /languages/
+struct LanguagesHandler {
+    state: TtsState,
+}
+
+#[async_trait]
+impl Handler for LanguagesHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let response = TtsViewSet::supported_languages(self.state.provider.as_ref());
+        Response::ok().with_json(&response)
+    }
+}
+
+/// Create TTS routes
+pub fn routes() -> Vec<Route> {
     let state = TtsState::default();
 
-    Router::new()
-        .route("/synthesize", post(synthesize))
-        .route("/history", get(list_history))
-        .route("/languages", get(supported_languages))
-        .with_state(state)
+    vec![
+        path(
+            "/synthesize/",
+            SynthesizeHandler {
+                state: state.clone(),
+            },
+        ),
+        path("/history/", HistoryHandler { state: state.clone() }),
+        path("/languages/", LanguagesHandler { state }),
+    ]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{body::Body, http::Request};
-    use tower::ServiceExt;
+    use bytes::Bytes;
+    use crate::Method;
+
+    fn result_to_response(result: Result<Response>) -> Response {
+        match result {
+            Ok(r) => r,
+            Err(e) => Response::from(e),
+        }
+    }
+
+    fn make_handler() -> SynthesizeHandler {
+        SynthesizeHandler {
+            state: TtsState::default(),
+        }
+    }
 
     #[tokio::test]
     async fn test_synthesize_success() {
-        let app = router();
-
+        let handler = make_handler();
         let body = r#"{"text":"Hello world","language":"en"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/synthesize")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/synthesize/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_synthesize_with_options() {
-        let app = router();
-
+        let handler = make_handler();
         let body = r#"{"text":"Bonjour le monde","language":"fr","speed":1.2,"format":"ogg","quality":"premium"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/synthesize")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/synthesize/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_synthesize_empty_text() {
-        let app = router();
-
+        let handler = make_handler();
         let body = r#"{"text":"","language":"en"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/synthesize")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/synthesize/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 400);
     }
 
     #[tokio::test]
     async fn test_synthesize_unsupported_language() {
-        let app = router();
-
+        let handler = make_handler();
         let body = r#"{"text":"test","language":"xyz"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/synthesize")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/synthesize/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 400);
     }
 
     #[tokio::test]
     async fn test_list_history() {
-        let app = router();
+        let state = TtsState::default();
+        let handler = HistoryHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/history")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/history/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_supported_languages() {
-        let app = router();
+        let state = TtsState::default();
+        let handler = LanguagesHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/languages")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/languages/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_synthesize_invalid_json() {
-        let app = router();
+        let handler = make_handler();
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/synthesize")
-                    .header("content-type", "application/json")
-                    .body(Body::from("not-json"))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/synthesize/")
+            .header("content-type", "application/json")
+            .body(Bytes::from("not-json"))
+            .build()
             .unwrap();
 
-        // Axum returns 400 for malformed JSON bodies
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let response = result_to_response(handler.handle(request).await);
+        // request.json() returns Error::Serialization which maps to 400
+        assert_eq!(response.status, 400);
     }
 }

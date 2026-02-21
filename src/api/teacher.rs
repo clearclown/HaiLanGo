@@ -1,16 +1,11 @@
 //! Teacher Mode API routes
 
-use axum::{
-    Router,
-    extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Json},
-    routing::{get, post, put},
-};
+use async_trait::async_trait;
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
+use crate::{Handler, Request, Response, Result, Route, StatusCode, path};
 use crate::apps::teacher_mode::{
     dto::{StartLessonRequest, UpdateConfigRequest},
     models::TeacherSession,
@@ -31,117 +26,185 @@ impl Default for TeacherState {
     }
 }
 
-/// Helper to convert TeacherActionResult into HTTP response
-fn action_response(result: TeacherActionResult) -> impl IntoResponse {
+/// Convert TeacherActionResult into a Response
+fn action_response(result: TeacherActionResult) -> Result<Response> {
     match result {
-        TeacherActionResult::Started(resp) => (StatusCode::CREATED, Json(json!(resp))),
-        TeacherActionResult::Updated(resp) => (StatusCode::OK, Json(json!(resp))),
-        TeacherActionResult::Status(resp) => (StatusCode::OK, Json(json!(resp))),
-        TeacherActionResult::Sessions(list) => (StatusCode::OK, Json(json!(list))),
+        TeacherActionResult::Started(resp) => Response::created().with_json(&resp),
+        TeacherActionResult::Updated(resp) => Response::ok().with_json(&resp),
+        TeacherActionResult::Status(resp) => Response::ok().with_json(&resp),
+        TeacherActionResult::Sessions(list) => Response::ok().with_json(&list),
         TeacherActionResult::InvalidInput(msg) => {
-            (StatusCode::BAD_REQUEST, Json(json!({"error": msg})))
+            Response::bad_request().with_json(&json!({"error": msg}))
         }
         TeacherActionResult::NotFound(msg) => {
-            (StatusCode::NOT_FOUND, Json(json!({"error": msg})))
+            Response::not_found().with_json(&json!({"error": msg}))
         }
         TeacherActionResult::InvalidState(msg) => {
-            (StatusCode::CONFLICT, Json(json!({"error": msg})))
+            Response::new(StatusCode::CONFLICT).with_json(&json!({"error": msg}))
         }
     }
 }
 
-/// POST /api/teacher/start
-async fn start_lesson(
-    State(state): State<TeacherState>,
-    Json(request): Json<StartLessonRequest>,
-) -> impl IntoResponse {
-    // Mock user_id (in production, extract from JWT)
-    let user_id = Uuid::new_v4();
-    let mut sessions = state.sessions.write().unwrap();
-    let result = TeacherModeViewSet::start_lesson(user_id, request, &mut sessions);
-    action_response(result)
+/// Handler for POST /start/
+struct StartLessonHandler {
+    state: TeacherState,
 }
 
-/// POST /api/teacher/pause
-async fn pause_lesson(State(state): State<TeacherState>) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let mut sessions = state.sessions.write().unwrap();
-    let result = TeacherModeViewSet::pause(user_id, &mut sessions);
-    action_response(result)
+#[async_trait]
+impl Handler for StartLessonHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let req: StartLessonRequest = request.json()?;
+        let user_id = Uuid::new_v4();
+        let mut sessions = self.state.sessions.write().unwrap();
+        let result = TeacherModeViewSet::start_lesson(user_id, req, &mut sessions);
+        action_response(result)
+    }
 }
 
-/// POST /api/teacher/resume
-async fn resume_lesson(State(state): State<TeacherState>) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let mut sessions = state.sessions.write().unwrap();
-    let result = TeacherModeViewSet::resume(user_id, &mut sessions);
-    action_response(result)
+/// Handler for POST /pause/
+struct PauseLessonHandler {
+    state: TeacherState,
 }
 
-/// POST /api/teacher/stop
-async fn stop_lesson(State(state): State<TeacherState>) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let mut sessions = state.sessions.write().unwrap();
-    let result = TeacherModeViewSet::stop(user_id, &mut sessions);
-    action_response(result)
+#[async_trait]
+impl Handler for PauseLessonHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let mut sessions = self.state.sessions.write().unwrap();
+        let result = TeacherModeViewSet::pause(user_id, &mut sessions);
+        action_response(result)
+    }
 }
 
-/// POST /api/teacher/next
-async fn next_page(State(state): State<TeacherState>) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let mut sessions = state.sessions.write().unwrap();
-    let result = TeacherModeViewSet::next_page(user_id, &mut sessions);
-    action_response(result)
+/// Handler for POST /resume/
+struct ResumeLessonHandler {
+    state: TeacherState,
 }
 
-/// PUT /api/teacher/config
-async fn update_config(
-    State(state): State<TeacherState>,
-    Json(request): Json<UpdateConfigRequest>,
-) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let mut sessions = state.sessions.write().unwrap();
-    let result = TeacherModeViewSet::update_config(user_id, request, &mut sessions);
-    action_response(result)
+#[async_trait]
+impl Handler for ResumeLessonHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let mut sessions = self.state.sessions.write().unwrap();
+        let result = TeacherModeViewSet::resume(user_id, &mut sessions);
+        action_response(result)
+    }
 }
 
-/// GET /api/teacher/status
-async fn get_status(State(state): State<TeacherState>) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let sessions = state.sessions.read().unwrap();
-    let result = TeacherModeViewSet::get_status(user_id, &sessions);
-    action_response(result)
+/// Handler for POST /stop/
+struct StopLessonHandler {
+    state: TeacherState,
 }
 
-/// GET /api/teacher/sessions
-async fn list_sessions(State(state): State<TeacherState>) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let sessions = state.sessions.read().unwrap();
-    let result = TeacherModeViewSet::list_sessions(user_id, &sessions);
-    action_response(result)
+#[async_trait]
+impl Handler for StopLessonHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let mut sessions = self.state.sessions.write().unwrap();
+        let result = TeacherModeViewSet::stop(user_id, &mut sessions);
+        action_response(result)
+    }
 }
 
-/// Create Teacher Mode router
-pub fn router() -> Router {
+/// Handler for POST /next/
+struct NextPageHandler {
+    state: TeacherState,
+}
+
+#[async_trait]
+impl Handler for NextPageHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let mut sessions = self.state.sessions.write().unwrap();
+        let result = TeacherModeViewSet::next_page(user_id, &mut sessions);
+        action_response(result)
+    }
+}
+
+/// Handler for PUT /config/
+struct UpdateConfigHandler {
+    state: TeacherState,
+}
+
+#[async_trait]
+impl Handler for UpdateConfigHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let req: UpdateConfigRequest = request.json()?;
+        let user_id = Uuid::new_v4();
+        let mut sessions = self.state.sessions.write().unwrap();
+        let result = TeacherModeViewSet::update_config(user_id, req, &mut sessions);
+        action_response(result)
+    }
+}
+
+/// Handler for GET /status/
+struct GetStatusHandler {
+    state: TeacherState,
+}
+
+#[async_trait]
+impl Handler for GetStatusHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let sessions = self.state.sessions.read().unwrap();
+        let result = TeacherModeViewSet::get_status(user_id, &sessions);
+        action_response(result)
+    }
+}
+
+/// Handler for GET /sessions/
+struct ListSessionsHandler {
+    state: TeacherState,
+}
+
+#[async_trait]
+impl Handler for ListSessionsHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let sessions = self.state.sessions.read().unwrap();
+        let result = TeacherModeViewSet::list_sessions(user_id, &sessions);
+        action_response(result)
+    }
+}
+
+/// Create Teacher Mode routes
+pub fn routes() -> Vec<Route> {
     let state = TeacherState::default();
 
-    Router::new()
-        .route("/start", post(start_lesson))
-        .route("/pause", post(pause_lesson))
-        .route("/resume", post(resume_lesson))
-        .route("/stop", post(stop_lesson))
-        .route("/next", post(next_page))
-        .route("/config", put(update_config))
-        .route("/status", get(get_status))
-        .route("/sessions", get(list_sessions))
-        .with_state(state)
+    vec![
+        path("/start/", StartLessonHandler { state: state.clone() }),
+        path("/pause/", PauseLessonHandler { state: state.clone() }),
+        path(
+            "/resume/",
+            ResumeLessonHandler {
+                state: state.clone(),
+            },
+        ),
+        path("/stop/", StopLessonHandler { state: state.clone() }),
+        path("/next/", NextPageHandler { state: state.clone() }),
+        path(
+            "/config/",
+            UpdateConfigHandler {
+                state: state.clone(),
+            },
+        ),
+        path("/status/", GetStatusHandler { state: state.clone() }),
+        path("/sessions/", ListSessionsHandler { state }),
+    ]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{body::Body, http::Request};
-    use tower::ServiceExt;
+    use bytes::Bytes;
+    use crate::Method;
+
+    fn result_to_response(result: Result<Response>) -> Response {
+        match result {
+            Ok(r) => r,
+            Err(e) => Response::from(e),
+        }
+    }
 
     fn start_body(end_page: u32) -> String {
         format!(
@@ -150,136 +213,121 @@ mod tests {
         )
     }
 
+    fn make_state() -> TeacherState {
+        TeacherState::default()
+    }
+
     #[tokio::test]
     async fn test_start_lesson_success() {
-        let app = router();
+        let handler = StartLessonHandler { state: make_state() };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/start")
-                    .header("content-type", "application/json")
-                    .body(Body::from(start_body(10)))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/start/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(start_body(10)))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::CREATED);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 201);
     }
 
     #[tokio::test]
     async fn test_start_lesson_invalid_range() {
-        let app = router();
+        let handler = StartLessonHandler { state: make_state() };
 
-        let body = r#"{"book_id":"00000000-0000-0000-0000-000000000001","start_page":10,"end_page":5}"#;
+        let body =
+            r#"{"book_id":"00000000-0000-0000-0000-000000000001","start_page":10,"end_page":5}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/start")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/start/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 400);
     }
 
     #[tokio::test]
     async fn test_start_lesson_with_config() {
-        let app = router();
+        let handler = StartLessonHandler { state: make_state() };
 
         let body = r#"{"book_id":"00000000-0000-0000-0000-000000000001","start_page":1,"end_page":10,"language":"ja","speed":1.5,"page_interval_secs":10,"repeat_count":2}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/start")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/start/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::CREATED);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 201);
     }
 
     #[tokio::test]
     async fn test_get_sessions_empty() {
-        let app = router();
+        let handler = ListSessionsHandler { state: make_state() };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/sessions")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/sessions/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_get_status_not_found() {
-        let app = router();
+        let handler = GetStatusHandler { state: make_state() };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/status")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/status/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        // New user_id each time, so no session found
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 404);
     }
 
     #[tokio::test]
     async fn test_pause_not_found() {
-        let app = router();
+        let handler = PauseLessonHandler { state: make_state() };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/pause")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/pause/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 404);
     }
 
     #[tokio::test]
     async fn test_invalid_json() {
-        let app = router();
+        let handler = StartLessonHandler { state: make_state() };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/start")
-                    .header("content-type", "application/json")
-                    .body(Body::from("not-json"))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/start/")
+            .header("content-type", "application/json")
+            .body(Bytes::from("not-json"))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 400);
     }
 }

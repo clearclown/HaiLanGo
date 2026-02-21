@@ -1,16 +1,11 @@
 //! Learning API routes
 
-use axum::{
-    Router,
-    extract::{Path, State},
-    http::StatusCode,
-    response::{IntoResponse, Json},
-    routing::{get, patch, post},
-};
+use async_trait::async_trait;
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
+use crate::{Handler, Method, Request, Response, Result, Route, path};
 use crate::apps::learning::{
     dto::{CreateSessionRequest, UpdateProgressRequest, UpdateSessionStatusRequest},
     models::LearningSession,
@@ -26,171 +21,221 @@ pub struct LearningState {
     pub sessions: Arc<RwLock<Vec<LearningSession>>>,
 }
 
-/// GET /api/learning/sessions
-async fn list_sessions(State(state): State<LearningState>) -> impl IntoResponse {
-    let user_id = Uuid::new_v4(); // Mock user (from JWT in production)
-    let sessions = state.sessions.read().unwrap();
-
-    match LearningViewSet::list(&sessions, user_id) {
-        ListSessionResult::Success(response) => (StatusCode::OK, Json(json!(response))),
-        ListSessionResult::Unauthorized => (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({"error": "Unauthorized"})),
-        ),
-    }
+/// Handler for GET/POST /sessions/
+struct SessionsListHandler {
+    state: LearningState,
 }
 
-/// POST /api/learning/sessions
-async fn create_session(
-    State(state): State<LearningState>,
-    Json(request): Json<CreateSessionRequest>,
-) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-
-    // Mock book exists check (in production, query database)
-    let book_exists = true;
-
-    match LearningViewSet::create(request, user_id, book_exists) {
-        CreateSessionResult::Success(response) => {
-            // Store session
-            let session =
-                LearningSession::new(user_id, response.book_id.unwrap(), response.session_type);
-            state.sessions.write().unwrap().push(session);
-            (StatusCode::CREATED, Json(json!(response)))
-        }
-        CreateSessionResult::BookNotFound => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Book not found"})),
-        ),
-        CreateSessionResult::InvalidPageRange(msg) => {
-            (StatusCode::BAD_REQUEST, Json(json!({"error": msg})))
+#[async_trait]
+impl Handler for SessionsListHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        match request.method {
+            Method::GET => self.list(),
+            Method::POST => self.create(request),
+            _ => Err(crate::Error::MethodNotAllowed(
+                "Only GET and POST are allowed".into(),
+            )),
         }
     }
 }
 
-/// GET /api/learning/sessions/:id
-async fn get_session(
-    State(state): State<LearningState>,
-    Path(id): Path<Uuid>,
-) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let sessions = state.sessions.read().unwrap();
-    let session = sessions.iter().find(|s| s.id == id);
+impl SessionsListHandler {
+    fn list(&self) -> Result<Response> {
+        let user_id = Uuid::new_v4();
+        let sessions = self.state.sessions.read().unwrap();
 
-    match LearningViewSet::retrieve(session, user_id) {
-        Some(response) => (StatusCode::OK, Json(json!(response))),
-        None => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Session not found"})),
-        ),
+        match LearningViewSet::list(&sessions, user_id) {
+            ListSessionResult::Success(response) => Response::ok().with_json(&response),
+            ListSessionResult::Unauthorized => {
+                Response::unauthorized().with_json(&json!({"error": "Unauthorized"}))
+            }
+        }
     }
-}
 
-/// PATCH /api/learning/sessions/:id/status
-async fn update_session_status(
-    State(state): State<LearningState>,
-    Path(id): Path<Uuid>,
-    Json(request): Json<UpdateSessionStatusRequest>,
-) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let mut sessions = state.sessions.write().unwrap();
-    let session = sessions.iter_mut().find(|s| s.id == id);
+    fn create(&self, request: Request) -> Result<Response> {
+        let req: CreateSessionRequest = request.json()?;
+        let user_id = Uuid::new_v4();
+        let book_exists = true;
 
-    match LearningViewSet::update_status(request, session, user_id) {
-        UpdateSessionResult::Success(response) => (StatusCode::OK, Json(json!(response))),
-        UpdateSessionResult::SessionNotFound => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Session not found"})),
-        ),
-        UpdateSessionResult::InvalidAction(msg) => {
-            (StatusCode::BAD_REQUEST, Json(json!({"error": msg})))
+        match LearningViewSet::create(req, user_id, book_exists) {
+            CreateSessionResult::Success(response) => {
+                let session = LearningSession::new(
+                    user_id,
+                    response.book_id.unwrap(),
+                    response.session_type,
+                );
+                self.state.sessions.write().unwrap().push(session);
+                Response::created().with_json(&response)
+            }
+            CreateSessionResult::BookNotFound => {
+                Response::not_found().with_json(&json!({"error": "Book not found"}))
+            }
+            CreateSessionResult::InvalidPageRange(msg) => {
+                Response::bad_request().with_json(&json!({"error": msg}))
+            }
         }
     }
 }
 
-/// POST /api/learning/sessions/:id/progress
-async fn record_progress(
-    State(state): State<LearningState>,
-    Path(id): Path<Uuid>,
-    Json(request): Json<UpdateProgressRequest>,
-) -> impl IntoResponse {
-    let user_id = Uuid::new_v4();
-    let sessions = state.sessions.read().unwrap();
-    let session = sessions.iter().find(|s| s.id == id);
+/// Handler for GET /sessions/{id}/
+struct SessionDetailHandler {
+    state: LearningState,
+}
 
-    // Mock page exists check
-    let page_exists = true;
+#[async_trait]
+impl Handler for SessionDetailHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let id = parse_uuid_param(&request, "id")?;
+        let user_id = Uuid::new_v4();
+        let sessions = self.state.sessions.read().unwrap();
+        let session = sessions.iter().find(|s| s.id == id);
 
-    match LearningViewSet::record_progress(request, session, user_id, page_exists) {
-        UpdateProgressResult::Success(response) => (StatusCode::CREATED, Json(json!(response))),
-        UpdateProgressResult::SessionNotFound => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Session not found"})),
-        ),
-        UpdateProgressResult::PageNotFound => (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Page not found"})),
-        ),
-        UpdateProgressResult::InvalidInput(msg) => {
-            (StatusCode::BAD_REQUEST, Json(json!({"error": msg})))
+        match LearningViewSet::retrieve(session, user_id) {
+            Some(response) => Response::ok().with_json(&response),
+            None => Response::not_found().with_json(&json!({"error": "Session not found"})),
         }
     }
 }
 
-/// Create learning router
-pub fn router() -> Router {
+/// Handler for PATCH /sessions/{id}/status/
+struct SessionStatusHandler {
+    state: LearningState,
+}
+
+#[async_trait]
+impl Handler for SessionStatusHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let id = parse_uuid_param(&request, "id")?;
+        let req: UpdateSessionStatusRequest = request.json()?;
+        let user_id = Uuid::new_v4();
+        let mut sessions = self.state.sessions.write().unwrap();
+        let session = sessions.iter_mut().find(|s| s.id == id);
+
+        match LearningViewSet::update_status(req, session, user_id) {
+            UpdateSessionResult::Success(response) => Response::ok().with_json(&response),
+            UpdateSessionResult::SessionNotFound => {
+                Response::not_found().with_json(&json!({"error": "Session not found"}))
+            }
+            UpdateSessionResult::InvalidAction(msg) => {
+                Response::bad_request().with_json(&json!({"error": msg}))
+            }
+        }
+    }
+}
+
+/// Handler for POST /sessions/{id}/progress/
+struct SessionProgressHandler {
+    state: LearningState,
+}
+
+#[async_trait]
+impl Handler for SessionProgressHandler {
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let id = parse_uuid_param(&request, "id")?;
+        let req: UpdateProgressRequest = request.json()?;
+        let user_id = Uuid::new_v4();
+        let sessions = self.state.sessions.read().unwrap();
+        let session = sessions.iter().find(|s| s.id == id);
+        let page_exists = true;
+
+        match LearningViewSet::record_progress(req, session, user_id, page_exists) {
+            UpdateProgressResult::Success(response) => Response::created().with_json(&response),
+            UpdateProgressResult::SessionNotFound => {
+                Response::not_found().with_json(&json!({"error": "Session not found"}))
+            }
+            UpdateProgressResult::PageNotFound => {
+                Response::not_found().with_json(&json!({"error": "Page not found"}))
+            }
+            UpdateProgressResult::InvalidInput(msg) => {
+                Response::bad_request().with_json(&json!({"error": msg}))
+            }
+        }
+    }
+}
+
+/// Parse a UUID from path parameters
+fn parse_uuid_param(request: &Request, name: &str) -> std::result::Result<Uuid, crate::Error> {
+    request
+        .path_params
+        .get(name)
+        .ok_or_else(|| crate::Error::Validation(format!("Missing {} parameter", name)))?
+        .parse()
+        .map_err(|_| crate::Error::Validation("Invalid UUID".into()))
+}
+
+/// Create learning routes
+pub fn routes() -> Vec<Route> {
     let state = LearningState::default();
 
-    Router::new()
-        .route("/sessions", get(list_sessions).post(create_session))
-        .route("/sessions/{id}", get(get_session))
-        .route("/sessions/{id}/status", patch(update_session_status))
-        .route("/sessions/{id}/progress", post(record_progress))
-        .with_state(state)
+    vec![
+        path(
+            "/sessions/",
+            SessionsListHandler {
+                state: state.clone(),
+            },
+        ),
+        path(
+            "/sessions/{id}/",
+            SessionDetailHandler {
+                state: state.clone(),
+            },
+        ),
+        path(
+            "/sessions/{id}/status/",
+            SessionStatusHandler {
+                state: state.clone(),
+            },
+        ),
+        path("/sessions/{id}/progress/", SessionProgressHandler { state }),
+    ]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{body::Body, http::Request};
-    use tower::ServiceExt;
+    use bytes::Bytes;
+    use crate::Method;
+
+    fn result_to_response(result: Result<Response>) -> Response {
+        match result {
+            Ok(r) => r,
+            Err(e) => Response::from(e),
+        }
+    }
 
     #[tokio::test]
     async fn test_list_sessions_empty() {
-        let app = router();
+        let state = LearningState::default();
+        let handler = SessionsListHandler { state };
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/sessions")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/sessions/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_create_session() {
-        let app = router();
+        let state = LearningState::default();
+        let handler = SessionsListHandler { state };
 
         let body =
             r#"{"book_id":"550e8400-e29b-41d4-a716-446655440000","session_type":"page_by_page"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/sessions")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/sessions/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::CREATED);
+        let response = result_to_response(handler.handle(request).await);
+        assert_eq!(response.status, 201);
     }
 }

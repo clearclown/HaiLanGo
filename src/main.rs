@@ -1,11 +1,12 @@
 use std::net::SocketAddr;
 
-use axum::{Router, extract::State, http::StatusCode, response::Json, routing::get};
+use async_trait::async_trait;
+use bytes::Bytes;
 use serde::Serialize;
 use serde_json::json;
-use tower_http::trace::TraceLayer;
 
-use hailango::api;
+use hailango::{DefaultRouter, Handler, Method, Request, Response, Result, Route, Router, path};
+use hailango::config::urls::configure_urls;
 
 /// Application state shared across handlers
 #[derive(Clone)]
@@ -24,30 +25,42 @@ pub struct HealthResponse {
     pub version: String,
 }
 
-/// Root endpoint - API info
-async fn root() -> Json<serde_json::Value> {
-    Json(json!({
-        "app": "HaiLanGo",
-        "version": env!("CARGO_PKG_VERSION"),
-        "description": "AI-powered language learning platform",
-        "endpoints": {
-            "auth": "/api/auth",
-            "books": "/api/books",
-            "learning": "/api/learning",
-            "review": "/api/review",
-            "tts": "/api/tts",
-            "teacher": "/api/teacher"
-        }
-    }))
+/// Root endpoint handler - API info
+struct RootHandler;
+
+#[async_trait]
+impl Handler for RootHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        Response::ok().with_json(&json!({
+            "app": "HaiLanGo",
+            "version": env!("CARGO_PKG_VERSION"),
+            "description": "AI-powered language learning platform",
+            "endpoints": {
+                "auth": "/api/auth",
+                "books": "/api/books",
+                "learning": "/api/learning",
+                "review": "/api/review",
+                "tts": "/api/tts",
+                "teacher": "/api/teacher"
+            }
+        }))
+    }
 }
 
-/// Health check endpoint
-async fn health_check(State(state): State<AppState>) -> Json<HealthResponse> {
-    Json(HealthResponse {
-        status: "healthy".to_string(),
-        app: state.app_name,
-        version: state.version,
-    })
+/// Health check handler
+struct HealthHandler {
+    state: AppState,
+}
+
+#[async_trait]
+impl Handler for HealthHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        Response::ok().with_json(&HealthResponse {
+            status: "healthy".to_string(),
+            app: self.state.app_name.clone(),
+            version: self.state.version.clone(),
+        })
+    }
 }
 
 /// Check database connectivity
@@ -64,80 +77,84 @@ async fn check_redis(url: &str) -> bool {
     match redis::aio::ConnectionManager::new(client).await {
         Ok(mut conn) => {
             use redis::AsyncCommands;
-            let result: Result<String, _> = conn.get("__healthcheck__").await;
-            // GET on non-existent key returns Nil, which is a redis error, but connection works
+            let result: std::result::Result<String, _> = conn.get("__healthcheck__").await;
             result.is_ok() || result.is_err()
         }
         Err(_) => false,
     }
 }
 
-/// Readiness check (for Kubernetes)
-async fn ready(State(state): State<AppState>) -> (StatusCode, Json<serde_json::Value>) {
-    let mut checks = serde_json::Map::new();
-    let mut any_unhealthy = false;
-
-    // Database check
-    match &state.db_pool {
-        Some(pool) => {
-            let healthy = check_db(pool).await;
-            checks.insert(
-                "database".to_string(),
-                json!(if healthy { "healthy" } else { "unhealthy" }),
-            );
-            if !healthy {
-                any_unhealthy = true;
-            }
-        }
-        None => {
-            checks.insert("database".to_string(), json!("unconfigured"));
-        }
-    }
-
-    // Redis check
-    match &state.redis_url {
-        Some(url) => {
-            let healthy = check_redis(url).await;
-            checks.insert(
-                "redis".to_string(),
-                json!(if healthy { "healthy" } else { "unhealthy" }),
-            );
-            if !healthy {
-                any_unhealthy = true;
-            }
-        }
-        None => {
-            checks.insert("redis".to_string(), json!("unconfigured"));
-        }
-    }
-
-    let status = if any_unhealthy { "not_ready" } else { "ready" };
-    let code = if any_unhealthy {
-        StatusCode::SERVICE_UNAVAILABLE
-    } else {
-        StatusCode::OK
-    };
-
-    (code, Json(json!({"status": status, "checks": checks})))
+/// Readiness check handler (for Kubernetes)
+struct ReadyHandler {
+    state: AppState,
 }
 
-/// Create the application router
-pub fn create_app(state: AppState) -> Router {
-    // Create base router with state
-    let base = Router::new()
-        .route("/", get(root))
-        .route("/health", get(health_check))
-        .route("/ready", get(ready))
-        .with_state(state);
+#[async_trait]
+impl Handler for ReadyHandler {
+    async fn handle(&self, _request: Request) -> Result<Response> {
+        let mut checks = serde_json::Map::new();
+        let mut any_unhealthy = false;
 
-    // Nest API routers (each has its own state)
-    base.nest("/api/auth", api::auth::router())
-        .nest("/api/books", api::books::router())
-        .nest("/api/learning", api::learning::router())
-        .nest("/api/review", api::review::router())
-        .nest("/api/tts", api::tts::router())
-        .nest("/api/teacher", api::teacher::router())
-        .layer(TraceLayer::new_for_http())
+        // Database check
+        match &self.state.db_pool {
+            Some(pool) => {
+                let healthy = check_db(pool).await;
+                checks.insert(
+                    "database".to_string(),
+                    json!(if healthy { "healthy" } else { "unhealthy" }),
+                );
+                if !healthy {
+                    any_unhealthy = true;
+                }
+            }
+            None => {
+                checks.insert("database".to_string(), json!("unconfigured"));
+            }
+        }
+
+        // Redis check
+        match &self.state.redis_url {
+            Some(url) => {
+                let healthy = check_redis(url).await;
+                checks.insert(
+                    "redis".to_string(),
+                    json!(if healthy { "healthy" } else { "unhealthy" }),
+                );
+                if !healthy {
+                    any_unhealthy = true;
+                }
+            }
+            None => {
+                checks.insert("redis".to_string(), json!("unconfigured"));
+            }
+        }
+
+        let status = if any_unhealthy { "not_ready" } else { "ready" };
+        let code = if any_unhealthy {
+            http::StatusCode::SERVICE_UNAVAILABLE
+        } else {
+            http::StatusCode::OK
+        };
+
+        Response::new(code).with_json(&json!({"status": status, "checks": checks}))
+    }
+}
+
+/// Create the application router with all routes
+pub fn create_app(state: AppState) -> DefaultRouter {
+    let mut router = configure_urls();
+
+    // Add root-level routes
+    router.add_route(path("/", RootHandler));
+    router.add_route(path(
+        "/health/",
+        HealthHandler {
+            state: state.clone(),
+        },
+    ));
+    router.add_route(path("/ready/", ReadyHandler { state }));
+
+    router
 }
 
 #[tokio::main]
@@ -191,15 +208,14 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // Create router
-    let app = create_app(state);
+    let router = create_app(state);
 
-    // Bind to address
+    // Bind to address and start Reinhardt HTTP server
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     tracing::info!("Listening on {}", addr);
 
-    // Start server
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    use reinhardt::server::HttpServer;
+    HttpServer::new(router).listen(addr).await?;
 
     Ok(())
 }
@@ -207,11 +223,6 @@ async fn main() -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{
-        body::Body,
-        http::{Request, StatusCode},
-    };
-    use tower::ServiceExt;
 
     fn test_state() -> AppState {
         AppState {
@@ -222,140 +233,136 @@ mod tests {
         }
     }
 
+    fn result_to_response(result: Result<Response>) -> Response {
+        match result {
+            Ok(r) => r,
+            Err(e) => Response::from(e),
+        }
+    }
+
     #[tokio::test]
     async fn test_root_endpoint() {
         let app = create_app(test_state());
 
-        let response = app
-            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_health_endpoint() {
         let app = create_app(test_state());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/health/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_ready_endpoint() {
         let app = create_app(test_state());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/ready")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/ready/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
+        let response = result_to_response(app.handle(request).await);
         // No DB/Redis configured -> unconfigured -> OK
-        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_api_auth_register() {
         let app = create_app(test_state());
 
-        let body = r#"{"email":"test@example.com","password":"password123","display_name":"Test"}"#;
+        let body =
+            r#"{"email":"test@example.com","password":"password123","display_name":"Test"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/api/auth/register")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/api/auth/register/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::CREATED);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 201);
     }
 
     #[tokio::test]
     async fn test_api_auth_oauth_providers() {
         let app = create_app(test_state());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/api/auth/oauth/providers")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/api/auth/oauth/providers/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_api_books_list() {
         let app = create_app(test_state());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/api/books")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/api/books/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_api_learning_sessions() {
         let app = create_app(test_state());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/api/learning/sessions")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/api/learning/sessions/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_api_review_stats() {
         let app = create_app(test_state());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/api/review/stats")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/api/review/stats/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
@@ -364,19 +371,16 @@ mod tests {
 
         let body = r#"{"text":"Hello world","language":"en"}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/api/tts/synthesize")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/api/tts/synthesize/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
@@ -385,52 +389,45 @@ mod tests {
 
         let body = r#"{"book_id":"00000000-0000-0000-0000-000000000001","start_page":1,"end_page":10}"#;
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/api/teacher/start")
-                    .header("content-type", "application/json")
-                    .body(Body::from(body))
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("/api/teacher/start/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(body))
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::CREATED);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 201);
     }
 
     #[tokio::test]
     async fn test_api_teacher_sessions() {
         let app = create_app(test_state());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/api/teacher/sessions")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/api/teacher/sessions/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 
     #[tokio::test]
     async fn test_api_tts_languages() {
         let app = create_app(test_state());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/api/tts/languages")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/api/tts/languages/")
+            .body(Bytes::new())
+            .build()
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = result_to_response(app.handle(request).await);
+        assert_eq!(response.status, 200);
     }
 }
