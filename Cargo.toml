@@ -80,6 +80,7 @@ wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["Window", "Document", "HtmlElement", "console", "SubmitEvent"] }
 
 [dev-dependencies]
+reinhardt-test = "=0.1.0-alpha.4"
 tokio-test = "0.4"
 tower = { version = "0.5", features = ["util"] }
 testcontainers = "0.23"
