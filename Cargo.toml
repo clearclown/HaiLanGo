@@ -74,6 +74,8 @@ log = "0.4"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["Window", "Document", "HtmlElement", "console", "SubmitEvent"] }
+gloo-net = { version = "0.6", features = ["http"] }
+gloo-storage = "0.3"
 
 [dev-dependencies]
 reinhardt-test = "=0.1.0-alpha.4"

@@ -2,6 +2,7 @@
 //!
 //! Uses reinhardt-pages for reactive frontend development.
 
+pub mod api;
 pub mod components;
 pub mod layouts;
 pub mod routes;

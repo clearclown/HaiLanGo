@@ -7,22 +7,40 @@ use reinhardt::pages::prelude::*;
 use crate::pages::components::{Alert, Button, Card, Input, Spinner};
 use crate::pages::layouts::{AuthLayout, MainLayout};
 
+#[cfg(target_arch = "wasm32")]
+use crate::pages::api;
+
 /// Home page - Landing/Dashboard
 #[component]
 pub fn HomePage() -> impl IntoView {
+    let words_learned = create_rw_signal(0u32);
+    let books_count = create_rw_signal(0u32);
+    let streak_days = create_rw_signal(0u32);
+
+    create_effect(move |_| {
+        spawn_local(async move {
+            #[cfg(target_arch = "wasm32")]
+            if let Ok(stats) = api::fetch_dashboard_stats().await {
+                words_learned.set(stats.words_learned);
+                books_count.set(stats.books_count);
+                streak_days.set(stats.streak_days);
+            }
+        });
+    });
+
     view! {
         <MainLayout>
             <div class="dashboard">
                 <h1>"Welcome to HaiLanGo"</h1>
                 <div class="stats-grid">
                     <Card title="Words Learned".to_string()>
-                        <p class="stat-number">"0"</p>
+                        <p class="stat-number">{move || words_learned.get().to_string()}</p>
                     </Card>
                     <Card title="Books".to_string()>
-                        <p class="stat-number">"0"</p>
+                        <p class="stat-number">{move || books_count.get().to_string()}</p>
                     </Card>
                     <Card title="Study Streak".to_string()>
-                        <p class="stat-number">"0 days"</p>
+                        <p class="stat-number">{move || format!("{} days", streak_days.get())}</p>
                     </Card>
                 </div>
                 <div class="quick-actions">
@@ -47,9 +65,19 @@ pub fn LoginPage() -> impl IntoView {
         loading.set(true);
         error.set(None);
 
-        // TODO: Call login API
+        let email_val = email.get();
+        let password_val = password.get();
+
         spawn_local(async move {
-            // Simulate API call
+            #[cfg(target_arch = "wasm32")]
+            match api::login(&email_val, &password_val).await {
+                Ok(_) => {
+                    if let Some(window) = web_sys::window() {
+                        let _ = window.location().set_href("/");
+                    }
+                }
+                Err(e) => error.set(Some(e)),
+            }
             loading.set(false);
         });
     };
@@ -110,8 +138,20 @@ pub fn RegisterPage() -> impl IntoView {
         loading.set(true);
         error.set(None);
 
-        // TODO: Call register API
+        let email_val = email.get();
+        let password_val = password.get();
+        let name_val = display_name.get();
+
         spawn_local(async move {
+            #[cfg(target_arch = "wasm32")]
+            match api::register(&email_val, &password_val, &name_val).await {
+                Ok(_) => {
+                    if let Some(window) = web_sys::window() {
+                        let _ = window.location().set_href("/");
+                    }
+                }
+                Err(e) => error.set(Some(e)),
+            }
             loading.set(false);
         });
     };
@@ -175,7 +215,40 @@ pub fn BooksPage() -> impl IntoView {
     // Fetch books on mount
     create_effect(move |_| {
         spawn_local(async move {
-            // TODO: Fetch from API
+            #[cfg(target_arch = "wasm32")]
+            {
+                use gloo_net::http::Request;
+                if let Some(token) = api::get_token() {
+                    if let Ok(resp) = Request::get("/api/books/")
+                        .header("Authorization", &format!("Bearer {token}"))
+                        .send()
+                        .await
+                    {
+                        #[derive(serde::Deserialize)]
+                        struct BookResp {
+                            title: String,
+                            author: Option<String>,
+                            total_pages: Option<u32>,
+                        }
+                        #[derive(serde::Deserialize)]
+                        struct BooksListResp {
+                            books: Vec<BookResp>,
+                        }
+                        if let Ok(list) = resp.json::<BooksListResp>().await {
+                            books.set(
+                                list.books
+                                    .into_iter()
+                                    .map(|b| BookItem {
+                                        title: b.title,
+                                        author: b.author.unwrap_or_default(),
+                                        total_pages: b.total_pages.unwrap_or(0),
+                                    })
+                                    .collect(),
+                            );
+                        }
+                    }
+                }
+            }
             loading.set(false);
         });
     });
