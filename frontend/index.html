@@ -20,6 +20,11 @@
     <noscript>
         <p>HaiLanGo requires JavaScript. Please enable it.</p>
     </noscript>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js');
+        }
+    </script>
     <link data-trunk rel="rust" href="Cargo.toml" data-wasm-opt="z" data-bin="hailango-frontend" />
 </body>
 </html>
