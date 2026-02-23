@@ -12,6 +12,7 @@ AI-powered language learning platform that transforms existing textbooks into in
 | [API Specification](architecture/api_specification.md) | REST API, WebSocket, authentication endpoints |
 | [Getting Started](guides/getting_started.md) | Quick start guide for developers |
 | [Test Strategy](testing/test_strategy.md) | Testing approach, coverage goals, CI/CD |
+| [Implementation Status](IMPLEMENTATION_STATUS.md) | Current API endpoint and feature status |
 
 ## Technology Stack
 
@@ -52,6 +53,7 @@ HaiLanGo/
 │   │   └── teacher_mode/ # Automated lesson playback
 │   └── pages/            # WASM frontend components
 ├── migrations/           # Database migrations
+├── e2e/                  # Playwright end-to-end tests
 ├── docs/                 # Documentation (you are here)
 └── Cargo.toml
 ```
