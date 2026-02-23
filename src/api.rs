@@ -8,5 +8,6 @@ pub mod books;
 pub mod learning;
 pub mod middleware;
 pub mod review;
+pub mod stt;
 pub mod teacher;
 pub mod tts;

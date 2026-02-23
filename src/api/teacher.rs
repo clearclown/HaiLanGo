@@ -53,8 +53,11 @@ struct StartLessonHandler {
 #[async_trait]
 impl Handler for StartLessonHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let req: StartLessonRequest = request.json()?;
-        let user_id = Uuid::new_v4();
         let mut sessions = self.state.sessions.write().unwrap();
         let result = TeacherModeViewSet::start_lesson(user_id, req, &mut sessions);
         action_response(result)
@@ -68,8 +71,11 @@ struct PauseLessonHandler {
 
 #[async_trait]
 impl Handler for PauseLessonHandler {
-    async fn handle(&self, _request: Request) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let mut sessions = self.state.sessions.write().unwrap();
         let result = TeacherModeViewSet::pause(user_id, &mut sessions);
         action_response(result)
@@ -83,8 +89,11 @@ struct ResumeLessonHandler {
 
 #[async_trait]
 impl Handler for ResumeLessonHandler {
-    async fn handle(&self, _request: Request) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let mut sessions = self.state.sessions.write().unwrap();
         let result = TeacherModeViewSet::resume(user_id, &mut sessions);
         action_response(result)
@@ -98,8 +107,11 @@ struct StopLessonHandler {
 
 #[async_trait]
 impl Handler for StopLessonHandler {
-    async fn handle(&self, _request: Request) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let mut sessions = self.state.sessions.write().unwrap();
         let result = TeacherModeViewSet::stop(user_id, &mut sessions);
         action_response(result)
@@ -113,8 +125,11 @@ struct NextPageHandler {
 
 #[async_trait]
 impl Handler for NextPageHandler {
-    async fn handle(&self, _request: Request) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let mut sessions = self.state.sessions.write().unwrap();
         let result = TeacherModeViewSet::next_page(user_id, &mut sessions);
         action_response(result)
@@ -129,8 +144,11 @@ struct UpdateConfigHandler {
 #[async_trait]
 impl Handler for UpdateConfigHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let req: UpdateConfigRequest = request.json()?;
-        let user_id = Uuid::new_v4();
         let mut sessions = self.state.sessions.write().unwrap();
         let result = TeacherModeViewSet::update_config(user_id, req, &mut sessions);
         action_response(result)
@@ -144,8 +162,11 @@ struct GetStatusHandler {
 
 #[async_trait]
 impl Handler for GetStatusHandler {
-    async fn handle(&self, _request: Request) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let sessions = self.state.sessions.read().unwrap();
         let result = TeacherModeViewSet::get_status(user_id, &sessions);
         action_response(result)
@@ -159,8 +180,11 @@ struct ListSessionsHandler {
 
 #[async_trait]
 impl Handler for ListSessionsHandler {
-    async fn handle(&self, _request: Request) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let sessions = self.state.sessions.read().unwrap();
         let result = TeacherModeViewSet::list_sessions(user_id, &sessions);
         action_response(result)

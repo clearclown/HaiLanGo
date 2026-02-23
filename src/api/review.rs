@@ -39,9 +39,13 @@ struct VocabularyListHandler {
 #[async_trait]
 impl Handler for VocabularyListHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         match request.method {
-            Method::GET => self.list(),
-            Method::POST => self.create(request),
+            Method::GET => self.list(user_id),
+            Method::POST => self.create(user_id, request),
             _ => Err(crate::Error::MethodNotAllowed(
                 "Only GET and POST are allowed".into(),
             )),
@@ -50,16 +54,14 @@ impl Handler for VocabularyListHandler {
 }
 
 impl VocabularyListHandler {
-    fn list(&self) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    fn list(&self, user_id: Uuid) -> Result<Response> {
         let vocabularies = self.state.vocabularies.read().unwrap();
         let response = ReviewViewSet::list_vocabularies(&vocabularies, user_id);
         Response::ok().with_json(&response)
     }
 
-    fn create(&self, request: Request) -> Result<Response> {
+    fn create(&self, user_id: Uuid, request: Request) -> Result<Response> {
         let req: CreateVocabularyRequest = request.json()?;
-        let user_id = Uuid::new_v4();
         let page_exists = true;
 
         let vocabularies = self.state.vocabularies.read().unwrap();
@@ -103,11 +105,13 @@ struct ReviewQueueHandler {
 #[async_trait]
 impl Handler for ReviewQueueHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let query: QueueQuery = request.query_as().unwrap_or(QueueQuery {
             limit: default_limit(),
         });
-
-        let user_id = Uuid::new_v4();
         let vocabularies = self.state.vocabularies.read().unwrap();
         let schedules = self.state.schedules.read().unwrap();
 
@@ -127,8 +131,11 @@ struct RecordReviewHandler {
 #[async_trait]
 impl Handler for RecordReviewHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let req: RecordReviewRequest = request.json()?;
-        let user_id = Uuid::new_v4();
         let mut schedules = self.state.schedules.write().unwrap();
         let schedule = schedules
             .iter_mut()
@@ -156,8 +163,11 @@ struct ReviewStatsHandler {
 
 #[async_trait]
 impl Handler for ReviewStatsHandler {
-    async fn handle(&self, _request: Request) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let vocabularies = self.state.vocabularies.read().unwrap();
         let schedules = self.state.schedules.read().unwrap();
 

@@ -27,6 +27,7 @@ pub fn configure_urls() -> DefaultRouter {
         Some("review".to_string()),
     );
     router.mount("/api/tts", api::tts::routes(), Some("tts".to_string()));
+    router.mount("/api/stt", api::stt::routes(), Some("stt".to_string()));
     router.mount(
         "/api/teacher",
         api::teacher::routes(),

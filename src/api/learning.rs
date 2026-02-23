@@ -29,9 +29,13 @@ struct SessionsListHandler {
 #[async_trait]
 impl Handler for SessionsListHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         match request.method {
-            Method::GET => self.list(),
-            Method::POST => self.create(request),
+            Method::GET => self.list(user_id),
+            Method::POST => self.create(user_id, request),
             _ => Err(crate::Error::MethodNotAllowed(
                 "Only GET and POST are allowed".into(),
             )),
@@ -40,8 +44,7 @@ impl Handler for SessionsListHandler {
 }
 
 impl SessionsListHandler {
-    fn list(&self) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    fn list(&self, user_id: Uuid) -> Result<Response> {
         let sessions = self.state.sessions.read().unwrap();
 
         match LearningViewSet::list(&sessions, user_id) {
@@ -52,9 +55,8 @@ impl SessionsListHandler {
         }
     }
 
-    fn create(&self, request: Request) -> Result<Response> {
+    fn create(&self, user_id: Uuid, request: Request) -> Result<Response> {
         let req: CreateSessionRequest = request.json()?;
-        let user_id = Uuid::new_v4();
         let book_exists = true;
 
         match LearningViewSet::create(req, user_id, book_exists) {
@@ -82,8 +84,11 @@ struct SessionDetailHandler {
 #[async_trait]
 impl Handler for SessionDetailHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let id = parse_uuid_param(&request, "id")?;
-        let user_id = Uuid::new_v4();
         let sessions = self.state.sessions.read().unwrap();
         let session = sessions.iter().find(|s| s.id == id);
 
@@ -102,9 +107,12 @@ struct SessionStatusHandler {
 #[async_trait]
 impl Handler for SessionStatusHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let id = parse_uuid_param(&request, "id")?;
         let req: UpdateSessionStatusRequest = request.json()?;
-        let user_id = Uuid::new_v4();
         let mut sessions = self.state.sessions.write().unwrap();
         let session = sessions.iter_mut().find(|s| s.id == id);
 
@@ -128,9 +136,12 @@ struct SessionProgressHandler {
 #[async_trait]
 impl Handler for SessionProgressHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let id = parse_uuid_param(&request, "id")?;
         let req: UpdateProgressRequest = request.json()?;
-        let user_id = Uuid::new_v4();
         let sessions = self.state.sessions.read().unwrap();
         let session = sessions.iter().find(|s| s.id == id);
         let page_exists = true;

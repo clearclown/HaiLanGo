@@ -5,6 +5,7 @@
 
 use async_trait::async_trait;
 use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::apps::auth::services::JwtService;
 use crate::{Handler, Middleware, Request, Response, Result};
@@ -48,6 +49,11 @@ impl Middleware for JwtAuthMiddleware {
                     match self.jwt.verify_token(token) {
                         Ok(claims) => {
                             tracing::debug!(user_id = %claims.sub, "JWT authenticated");
+                            // Inject the verified user_id into request extensions so
+                            // downstream handlers can identify the authenticated user.
+                            if let Ok(user_id) = Uuid::parse_str(&claims.sub) {
+                                request.extensions.insert(user_id);
+                            }
                         }
                         Err(e) => {
                             tracing::warn!("Invalid JWT token: {}", e);

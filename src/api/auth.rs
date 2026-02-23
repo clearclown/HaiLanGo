@@ -2,24 +2,28 @@
 
 use async_trait::async_trait;
 use serde_json::json;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
 use crate::apps::auth::{
     dto::{LoginRequest, OAuthCallbackQuery, RegisterRequest},
+    models::User,
     oauth::{OAuthProvider, OAuthService},
     views::{AuthViewSet, LoginResult, OAuthLoginResult, RegisterResult},
 };
 use crate::{Handler, Request, Response, Result, Route, StatusCode, path};
 
-/// OAuth-enabled auth state
+/// OAuth-enabled auth state, also serving as the in-memory user store.
 #[derive(Clone)]
 pub struct AuthState {
     pub oauth_service: Arc<OAuthService>,
     /// Pending OAuth state tokens for CSRF protection.
     /// Populated by OAuthRedirectHandler, consumed by OAuthCallbackHandler.
     pub pending_states: Arc<RwLock<HashSet<String>>>,
+    /// In-memory user store keyed by email address.
+    /// RegisterHandler writes; LoginHandler reads.
+    pub users: Arc<RwLock<HashMap<String, User>>>,
 }
 
 impl Default for AuthState {
@@ -27,20 +31,38 @@ impl Default for AuthState {
         Self {
             oauth_service: Arc::new(OAuthService::from_env()),
             pending_states: Arc::new(RwLock::new(HashSet::new())),
+            users: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
 
 /// Handler for POST /register
-struct RegisterHandler;
+struct RegisterHandler {
+    state: AuthState,
+}
 
 #[async_trait]
 impl Handler for RegisterHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
         let req: RegisterRequest = request.json()?;
+        let email = req.email.clone();
+
+        // Check for duplicate email before registration
+        if let Ok(users) = self.state.users.read() {
+            if users.contains_key(&email) {
+                return Response::new(StatusCode::CONFLICT)
+                    .with_json(&json!({"error": "Email already exists"}));
+            }
+        }
 
         match AuthViewSet::register(req) {
-            RegisterResult::Success(response) => Response::created().with_json(&response),
+            RegisterResult::Success(response, user) => {
+                // Persist user in the shared store for subsequent logins
+                if let Ok(mut users) = self.state.users.write() {
+                    users.insert(user.email.clone(), *user);
+                }
+                Response::created().with_json(&*response)
+            }
             RegisterResult::EmailExists => Response::new(StatusCode::CONFLICT)
                 .with_json(&json!({"error": "Email already exists"})),
             RegisterResult::InvalidInput(msg) => {
@@ -51,14 +73,24 @@ impl Handler for RegisterHandler {
 }
 
 /// Handler for POST /login
-struct LoginHandler;
+struct LoginHandler {
+    state: AuthState,
+}
 
 #[async_trait]
 impl Handler for LoginHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
         let req: LoginRequest = request.json()?;
 
-        match AuthViewSet::login(req, None) {
+        // Look up user by email from the shared store
+        let stored_user = self
+            .state
+            .users
+            .read()
+            .ok()
+            .and_then(|users| users.get(&req.email).cloned());
+
+        match AuthViewSet::login(req, stored_user.as_ref()) {
             LoginResult::Success(response) => Response::ok().with_json(&response),
             LoginResult::InvalidCredentials => {
                 Response::unauthorized().with_json(&json!({"error": "Invalid credentials"}))
@@ -188,8 +220,18 @@ pub fn routes() -> Vec<Route> {
     let state = AuthState::default();
 
     vec![
-        path("/register/", RegisterHandler),
-        path("/login/", LoginHandler),
+        path(
+            "/register/",
+            RegisterHandler {
+                state: state.clone(),
+            },
+        ),
+        path(
+            "/login/",
+            LoginHandler {
+                state: state.clone(),
+            },
+        ),
         path(
             "/oauth/providers/",
             OAuthProvidersHandler {
@@ -219,9 +261,19 @@ mod tests {
         }
     }
 
+    fn build_auth_handlers() -> (RegisterHandler, LoginHandler) {
+        let state = AuthState::default();
+        (
+            RegisterHandler {
+                state: state.clone(),
+            },
+            LoginHandler { state },
+        )
+    }
+
     #[tokio::test]
     async fn test_register_endpoint() {
-        let handler = RegisterHandler;
+        let (handler, _) = build_auth_handlers();
 
         let body =
             r#"{"email":"test@example.com","password":"password123","display_name":"Test User"}"#;
@@ -240,7 +292,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_register_invalid_email() {
-        let handler = RegisterHandler;
+        let (handler, _) = build_auth_handlers();
 
         let body = r#"{"email":"invalid","password":"password123","display_name":"Test"}"#;
 
@@ -258,7 +310,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_login_user_not_found() {
-        let handler = LoginHandler;
+        let (_, handler) = build_auth_handlers();
 
         let body = r#"{"email":"notfound@example.com","password":"password123"}"#;
 
@@ -272,6 +324,65 @@ mod tests {
 
         let response = result_to_response(handler.handle(request).await);
         assert_eq!(response.status, 404);
+    }
+
+    #[tokio::test]
+    async fn test_login_after_register() {
+        let (reg_handler, login_handler) = build_auth_handlers();
+
+        // Register
+        let reg_body =
+            r#"{"email":"flow@example.com","password":"password123","display_name":"Flow User"}"#;
+        let reg_request = Request::builder()
+            .method(Method::POST)
+            .uri("/register/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(reg_body))
+            .build()
+            .unwrap();
+        let reg_response = result_to_response(reg_handler.handle(reg_request).await);
+        assert_eq!(reg_response.status, 201);
+
+        // Login with same credentials
+        let login_body = r#"{"email":"flow@example.com","password":"password123"}"#;
+        let login_request = Request::builder()
+            .method(Method::POST)
+            .uri("/login/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(login_body))
+            .build()
+            .unwrap();
+        let login_response = result_to_response(login_handler.handle(login_request).await);
+        assert_eq!(login_response.status, 200);
+    }
+
+    #[tokio::test]
+    async fn test_login_wrong_password() {
+        let (reg_handler, login_handler) = build_auth_handlers();
+
+        // Register
+        let reg_body =
+            r#"{"email":"wrong@example.com","password":"correctpassword","display_name":"User"}"#;
+        let reg_request = Request::builder()
+            .method(Method::POST)
+            .uri("/register/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(reg_body))
+            .build()
+            .unwrap();
+        result_to_response(reg_handler.handle(reg_request).await);
+
+        // Login with wrong password
+        let login_body = r#"{"email":"wrong@example.com","password":"wrongpassword"}"#;
+        let login_request = Request::builder()
+            .method(Method::POST)
+            .uri("/login/")
+            .header("content-type", "application/json")
+            .body(Bytes::from(login_body))
+            .build()
+            .unwrap();
+        let login_response = result_to_response(login_handler.handle(login_request).await);
+        assert_eq!(login_response.status, 401);
     }
 
     #[tokio::test]

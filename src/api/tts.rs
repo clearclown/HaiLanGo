@@ -47,8 +47,11 @@ struct SynthesizeHandler {
 #[async_trait]
 impl Handler for SynthesizeHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let req: SynthesizeRequest = request.json()?;
-        let user_id = Uuid::new_v4();
 
         let result = TtsViewSet::synthesize(user_id, req, self.state.provider.as_ref()).await;
 
@@ -85,8 +88,11 @@ struct HistoryHandler {
 
 #[async_trait]
 impl Handler for HistoryHandler {
-    async fn handle(&self, _request: Request) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    async fn handle(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let generations = self.state.generations.read().unwrap();
         let history = TtsViewSet::list_history(user_id, &generations);
         Response::ok().with_json(&history)

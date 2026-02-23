@@ -8,7 +8,7 @@ use super::services::{JwtService, hash_password, verify_password};
 /// Registration request handler result
 #[derive(Debug)]
 pub enum RegisterResult {
-    Success(AuthResponse),
+    Success(Box<AuthResponse>, Box<User>),
     EmailExists,
     InvalidInput(String),
 }
@@ -61,17 +61,19 @@ impl AuthViewSet {
         // Generate tokens
         let tokens = Self::generate_tokens(&user);
 
-        RegisterResult::Success(AuthResponse {
+        let response = AuthResponse {
             user: UserResponse {
                 id: user.id,
-                email: user.email,
-                display_name: user.display_name,
-                native_language: user.native_language,
+                email: user.email.clone(),
+                display_name: user.display_name.clone(),
+                native_language: user.native_language.clone(),
                 email_verified: user.email_verified,
                 created_at: user.created_at,
             },
             tokens,
-        })
+        };
+
+        RegisterResult::Success(Box::new(response), Box::new(user))
     }
 
     /// Login with email and password
@@ -170,7 +172,7 @@ mod tests {
         let result = AuthViewSet::register(request);
 
         match result {
-            RegisterResult::Success(response) => {
+            RegisterResult::Success(response, _user) => {
                 assert_eq!(response.user.email, "test@example.com");
                 assert!(!response.tokens.access_token.is_empty());
             }

@@ -26,9 +26,15 @@ struct BooksListHandler {
 #[async_trait]
 impl Handler for BooksListHandler {
     async fn handle(&self, request: Request) -> Result<Response> {
+        // Use the authenticated user_id injected by JwtAuthMiddleware, or a
+        // temporary ID if the route is accessed without authentication.
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         match request.method {
-            Method::GET => self.list(),
-            Method::POST => self.create(request),
+            Method::GET => self.list(user_id),
+            Method::POST => self.create(user_id, request),
             _ => Err(crate::Error::MethodNotAllowed(
                 "Only GET and POST are allowed".into(),
             )),
@@ -37,16 +43,14 @@ impl Handler for BooksListHandler {
 }
 
 impl BooksListHandler {
-    fn list(&self) -> Result<Response> {
-        let user_id = Uuid::new_v4();
+    fn list(&self, user_id: Uuid) -> Result<Response> {
         let books = self.state.books.read().unwrap();
         let response = BooksViewSet::list(user_id, &books);
         Response::ok().with_json(&response)
     }
 
-    fn create(&self, request: Request) -> Result<Response> {
+    fn create(&self, user_id: Uuid, request: Request) -> Result<Response> {
         let req: CreateBookRequest = request.json()?;
-        let user_id = Uuid::new_v4();
 
         match BooksViewSet::create(user_id, req.clone()) {
             CreateBookResult::Success(response) => {
@@ -81,14 +85,16 @@ impl Handler for BooksDetailHandler {
 
 impl BooksDetailHandler {
     fn retrieve(&self, request: Request) -> Result<Response> {
+        let user_id = request
+            .extensions
+            .get::<Uuid>()
+            .unwrap_or_else(Uuid::new_v4);
         let id: Uuid = request
             .path_params
             .get("id")
             .ok_or_else(|| crate::Error::Validation("Missing id parameter".into()))?
             .parse()
             .map_err(|_| crate::Error::Validation("Invalid UUID".into()))?;
-
-        let user_id = Uuid::new_v4();
         let books = self.state.books.read().unwrap();
         let book = books.iter().find(|b| b.id == id);
 
